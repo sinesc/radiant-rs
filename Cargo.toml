@@ -1,0 +1,12 @@
+[package]
+name = "radiant-rs"
+version = "0.1.0"
+authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
+
+[dependencies]
+glium = "*"
+image = "*"
+rand = "*"
+regex = "*"
+lazy_static = "*"
+num = "*"
