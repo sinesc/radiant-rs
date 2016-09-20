@@ -1,5 +1,5 @@
 use glium::glutin::{Event, ElementState, MouseButton/*, VirtualKeyCode*/};
-use glium::Display;
+use display::Display;
 
 pub struct MouseCoordinate {
     pub x: u32,
@@ -23,7 +23,7 @@ pub struct Input {
 
 impl Input {
 
-    pub fn new(display: Display) -> Self {
+    pub fn new(display: &Display) -> Self {
         Input {
             mouse       : MouseCoordinate { x: 0, y: 0 },
             button      : (false, false, false),
@@ -36,13 +36,13 @@ impl Input {
             shift_right : false,
             escape      : false,
             should_close: false,
-            display     : display,
+            display     : display.clone(),
         }
     }
 
     pub fn poll(&mut self) {
 
-        for event in self.display.poll_events() {
+        for event in self.display.handle.poll_events() {
             match event {
                 // !todo vkeys seem broken
                 /*Event::KeyboardInput(element_state, scan_code, Some(virtual_code)) => {

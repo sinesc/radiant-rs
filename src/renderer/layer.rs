@@ -23,7 +23,7 @@ impl Layer {
     pub fn new(renderer: Renderer) -> Self {
 
         let glium = renderer.glium.lock().unwrap();
-        let (width, height) = glium.display.get_framebuffer_dimensions();
+        let (width, height) = glium.display.handle.get_framebuffer_dimensions();
         let mut matrix = Mat4::<f32>::init_identity();
         matrix.translate(&Vec3(-1.0, 1.0, 0.0));
         matrix.scale(&Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0));
@@ -31,7 +31,7 @@ impl Layer {
         Layer {
             matrix          : matrix,
             blend           : Blend::alpha_blending(),
-            vertex_buffer   : glium::VertexBuffer::empty_persistent(&glium.display, renderer.max_sprites as usize * 4).unwrap(),
+            vertex_buffer   : glium::VertexBuffer::empty_persistent(&glium.display.handle, renderer.max_sprites as usize * 4).unwrap(),
             sprite_id       : 0,
             renderer        : renderer.clone(),
         }
@@ -217,7 +217,7 @@ impl Layer {
             let mut lock = self.renderer.glium.lock().unwrap();
             let mut glium = lock.deref_mut();
 
-            let empty = &glium::texture::Texture2dArray::empty(&glium.display, 2, 2, 1).unwrap();
+            let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
             let mut arrays = Vec::<&glium::texture::Texture2dArray>::new();
 
             for i in 0..5 {

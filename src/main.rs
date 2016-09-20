@@ -1,24 +1,14 @@
-#[macro_use] extern crate glium;
 extern crate radiant_rs;
 
 use std::thread;
 use std::time::{Duration, Instant};
-use glium::DisplayBuild;
-use glium::glutin::WindowBuilder;
-use radiant_rs::{Input, Color, Renderer, Vec3};
+use radiant_rs::{Input, Color, Renderer, Vec3, Descriptor, Display};
 
 fn main() {
 
-    let display = WindowBuilder::new()
-        .with_title("Hello World!")
-        //.with_transparency(true) // fun
-        //.with_pixel_format(24, 8)
-        //.with_depth_buffer(24)
-        .build_glium()
-        .unwrap();
-
-    let mut input = Input::new(display.clone());
-    let renderer = Renderer::new(display.clone(), 1000);
+    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, ..Descriptor::default() });
+    let mut input = Input::new(&display);
+    let renderer = Renderer::new(&display, 1000);
 
     let asteroid = renderer.texture(r"C:\Users\nyda\Projekte\#js\ferocitylib\demo\www\sprite\asteroid\type1_64x64x60.png");
     let mine = renderer.texture(r"C:\Users\nyda\Projekte\#js\ferocitylib\demo\www\sprite\hostile\radial_64x64x1.png");

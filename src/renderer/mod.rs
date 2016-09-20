@@ -13,6 +13,7 @@ use image;
 use image::GenericImage;
 use regex::Regex;
 use color::Color;
+use display::Display;
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -41,7 +42,7 @@ struct GliumState {
     tex_array       : Vec<Option<glium::texture::Texture2dArray>>,
     raw_tex_data    : Vec<Vec<RawFrame>>,
     target          : Option<glium::Frame>,
-    display         : glium::Display,
+    display         : Display,
 }
 
 #[derive(Clone)]
@@ -58,14 +59,14 @@ impl Renderer {
     /// returns a new sprite renderer instance
     ///
     /// display is a glium Display obtained by i.e. glium::glutin::WindowBuilder::new().with_depth_buffer(24).build_glium().unwrap()
-    pub fn new(display: glium::Display, max_sprites: u32) -> Self {
+    pub fn new(display: &Display, max_sprites: u32) -> Self {
         let glium = GliumState {
-            index_buffer    : Self::create_index_buffer(&display, max_sprites),
-            program         : Self::create_program(&display),
+            index_buffer    : Self::create_index_buffer(&display.handle, max_sprites),
+            program         : Self::create_program(&display.handle),
             tex_array       : Vec::new(),
             raw_tex_data    : Vec::new(),
             target          : Option::None,
-            display         : display,
+            display         : display.clone(),
         };
         Renderer {
             max_sprites     : max_sprites,
@@ -118,7 +119,7 @@ impl Renderer {
     /// prepares a new target for drawing
     pub fn prepare_target(&self) {
         let mut glium = self.glium.lock().unwrap();
-        glium.target = Some(glium.display.draw());
+        glium.target = Some(glium.display.handle.draw());
     }
 
     /// clears the prepared target with given color
@@ -242,7 +243,7 @@ impl Renderer {
             for bucket_id in 0..glium.raw_tex_data.len() {
                 if glium.raw_tex_data[bucket_id].len() > 0 {
                     let raw_data = mem::replace(&mut glium.raw_tex_data[bucket_id as usize], Vec::new());
-                    let array = glium::texture::Texture2dArray::new(&glium.display, raw_data).unwrap();
+                    let array = glium::texture::Texture2dArray::new(&glium.display.handle, raw_data).unwrap();
                     glium.tex_array.push(Some(array));
                 } else {
                     glium.tex_array.push(None);
