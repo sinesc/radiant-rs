@@ -2,7 +2,7 @@ use std::fmt;
 use glium::uniforms::{AsUniformValue, UniformValue};
 use glium::vertex::{Attribute, AttributeType};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Color(pub u8, pub u8, pub u8, pub u8);
 
 impl Color {

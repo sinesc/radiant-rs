@@ -15,7 +15,7 @@ use regex::Regex;
 use color::Color;
 use display::Display;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 struct Vertex {
     position    : [f32; 2],
     offset      : [f32; 2],
@@ -129,10 +129,19 @@ impl Renderer {
         glium.target.as_mut().unwrap().clear_color(r, g, b, a);
     }
 
+    /// prepares a new target and clears it with given color
+    pub fn prepare_and_clear_target(&self, color: &Color) {
+        let mut glium = self.glium.lock().unwrap();
+        let (r, g, b, a) = color.as_f32_tuple();
+        let mut target = glium.display.handle.draw();
+        target.clear_color(r, g, b, a);
+        glium.target = Some(target);
+    }
+
     /// finishes drawing and swaps the drawing target to front
     pub fn swap_target(&self) {
         let mut glium = self.glium.lock().unwrap();
-        glium.target.take().unwrap().finish().unwrap(); // todo why take?
+        glium.target.take().unwrap().finish().unwrap();
     }
 
     /// takes the target frame from radiant-rs

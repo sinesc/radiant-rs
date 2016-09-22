@@ -1,7 +1,9 @@
 use glium;
 use glium::draw_parameters::*;
 use glium::Surface;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 use maths::*;
 use color::Color;
@@ -12,9 +14,11 @@ use super::Vertex;
 pub struct Layer {
     pub matrix      : Mat4<f32>,
     pub blend       : Blend,
-    vertex_buffer   : glium::VertexBuffer<Vertex>,
-    sprite_id       : u32,
+    vertex_data     : Vec<Vertex>,
+    sprite_id       : AtomicUsize,
     renderer        : Renderer,
+    dirty           : AtomicBool,
+    vertex_buffer   : Arc<Mutex<glium::VertexBuffer<Vertex>>>,
 }
 
 impl Layer {
@@ -24,6 +28,7 @@ impl Layer {
 
         let glium = renderer.glium.lock().unwrap();
         let (width, height) = glium.display.handle.get_framebuffer_dimensions();
+        let vertex_buffer = glium::VertexBuffer::empty_dynamic(&glium.display.handle, renderer.max_sprites as usize * 4).unwrap();
         let mut matrix = Mat4::<f32>::init_identity();
         matrix.translate(&Vec3(-1.0, 1.0, 0.0));
         matrix.scale(&Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0));
@@ -31,9 +36,11 @@ impl Layer {
         Layer {
             matrix          : matrix,
             blend           : Blend::alpha_blending(),
-            vertex_buffer   : glium::VertexBuffer::empty_persistent(&glium.display.handle, renderer.max_sprites as usize * 4).unwrap(),
-            sprite_id       : 0,
+            vertex_data     : vec![Vertex::default(); renderer.max_sprites as usize * 4],
+            sprite_id       : AtomicUsize::new(0),
+            dirty           : AtomicBool::new(true),
             renderer        : renderer.clone(),
+            vertex_buffer   : Arc::new(Mutex::new(vertex_buffer)),
         }
     }
 
@@ -132,14 +139,17 @@ impl Layer {
     /// adds a sprite to the draw queue
     pub fn sprite(&mut self, sprite: &Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &mut Self {
 
-        assert!(self.sprite_id < self.renderer.max_sprites);
+        self.dirty.store(true, Ordering::Relaxed);
+        let sprite_id = self.sprite_id.fetch_add(1, Ordering::Relaxed);
+
+        assert!((sprite_id as u32) < self.renderer.max_sprites);
 
         let texture_id = sprite.texture_id(frame_id);
         let bucket_id = sprite.bucket_id();
-        let vertex_id = self.sprite_id as usize * 4;
+        let vertex_id = sprite_id as usize * 4;
 
         {
-            let mut vertex = self.vertex_buffer.map();
+            let vertex = &mut self.vertex_data;
 
             // corner positions relative to x/y
 
@@ -200,7 +210,6 @@ impl Layer {
             vertex[vertex_id+3].texture_uv[1] = sprite.v_max();
         }
 
-        self.sprite_id += 1;
         self
     }
 
@@ -214,8 +223,8 @@ impl Layer {
         {
             // prepare texture array uniforms
 
-            let mut lock = self.renderer.glium.lock().unwrap();
-            let mut glium = lock.deref_mut();
+            let mut glium_mutexguard = self.renderer.glium.lock().unwrap();
+            let mut glium = glium_mutexguard.deref_mut();
 
             let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
             let mut arrays = Vec::<&glium::texture::Texture2dArray>::new();
@@ -247,8 +256,19 @@ impl Layer {
 
             // draw up to sprite_id
 
-            let ib_slice = glium.index_buffer.slice(0 .. self.sprite_id as usize * 4 * 6).unwrap();
-            glium.target.as_mut().unwrap().draw(&self.vertex_buffer, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
+            let dirty = self.dirty.swap(false, Ordering::Relaxed);
+            let sprite_id = self.sprite_id.load(Ordering::Relaxed);
+
+            let vertex_buffer_mutexguard = self.vertex_buffer.lock().unwrap();
+            let vertex_buffer = vertex_buffer_mutexguard.deref();
+            if dirty {
+                let size = sprite_id as usize * 4;
+                let vb_slice = vertex_buffer.slice(0 .. size).unwrap();
+                vb_slice.write(&self.vertex_data[0 .. size]);
+            }
+
+            let ib_slice = glium.index_buffer.slice(0 .. sprite_id as usize * 6).unwrap();
+            glium.target.as_mut().unwrap().draw(vertex_buffer, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
         }
 
         self
@@ -256,7 +276,7 @@ impl Layer {
 
     /// removes previously added sprites from the drawing queue. typically invoked after draw()
     pub fn reset(self: &mut Self) -> &mut Self {
-        self.sprite_id = 0;
+        self.sprite_id.store(0, Ordering::Relaxed);
         self
     }
 }

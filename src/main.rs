@@ -72,9 +72,7 @@ fn main() {
 
         // prepare render target, draw layers and swap
 
-        renderer.prepare_target();
-
-        renderer.clear_target(&Color::black());
+        renderer.prepare_and_clear_target(&Color::black());
 
         for i in 0..50 {
             testlayer
@@ -113,6 +111,12 @@ pub fn start_loop<F>(mut callback: F) where F: FnMut() -> Action {
     let mut accumulator = Duration::new(0, 0);
     let mut previous_clock = Instant::now();
 
+    let frame_interval = Duration::new(0, 166667); //16666667
+
+    let second = Duration::new(1, 0);
+    let mut second_elapsed = Duration::new(0, 0);
+    let mut frames_elapsed = 0;
+
     loop {
         match callback() {
             Action::Stop => break,
@@ -120,15 +124,25 @@ pub fn start_loop<F>(mut callback: F) where F: FnMut() -> Action {
         };
 
         let now = Instant::now();
-        accumulator += now - previous_clock;
-        previous_clock = now;
 
-        let fixed_time_stamp = Duration::new(0, 16666667);
-        while accumulator >= fixed_time_stamp {
-            accumulator -= fixed_time_stamp;
+        // determine thread sleep to maintain X FPS
+        accumulator += now - previous_clock;
+
+        while accumulator >= frame_interval {
+            accumulator -= frame_interval;
             // if you have a game, update the state here
         }
 
-        thread::sleep(fixed_time_stamp - accumulator);
+        // framerate print
+        second_elapsed += now - previous_clock;
+        frames_elapsed += 1;
+        if second_elapsed >= second {
+            println!("Frames rendered: {}", frames_elapsed);
+            second_elapsed -= second;
+            frames_elapsed = 0;
+        }
+
+        previous_clock = now;
+        //thread::sleep(frame_interval - accumulator);
     }
 }
