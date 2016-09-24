@@ -1,6 +1,7 @@
 #version 140
 
 uniform mat4 matrix;
+uniform mat4 model_matrix;
 
 in vec2 position;
 in vec2 offset;
@@ -25,7 +26,12 @@ void main() {
     trans.x = offset.x * cos_rotation - offset.y * sin_rotation;
     trans.y = offset.x * sin_rotation + offset.y * cos_rotation;
 
-    gl_Position = matrix * vec4(position + trans, 0.0, 1.0);
+    vec4 final_trans = model_matrix * vec4(trans, 0.0, 1.0);
+    //vec4 view_position = vec4(position, 0.0, 1.0);
+
+    //gl_Position = matrix * (view_position + vec4(trans, 0.0, 1.0));
+
+    gl_Position = matrix * vec4(position + vec2(final_trans), 0.0, 1.0);
 
     // compute fragment shader information
 

@@ -13,13 +13,18 @@ use super::Vertex;
 
 pub struct Layer {
     pub matrix      : Mat4<f32>,
+    pub model_matrix : Mat4<f32>,
     pub blend       : Blend,
+    pub color       : Color,
+    renderer        : Renderer,
     vertex_data     : Vec<Vertex>,
     sprite_id       : AtomicUsize,
-    renderer        : Renderer,
     dirty           : AtomicBool,
     vertex_buffer   : Arc<Mutex<glium::VertexBuffer<Vertex>>>,
 }
+
+unsafe impl Sync for Layer { }
+unsafe impl Send for Layer { }
 
 impl Layer {
 
@@ -29,13 +34,12 @@ impl Layer {
         let glium = renderer.glium.lock().unwrap();
         let (width, height) = glium.display.handle.get_framebuffer_dimensions();
         let vertex_buffer = glium::VertexBuffer::empty_dynamic(&glium.display.handle, renderer.max_sprites as usize * 4).unwrap();
-        let mut matrix = Mat4::<f32>::init_identity();
-        matrix.translate(&Vec3(-1.0, 1.0, 0.0));
-        matrix.scale(&Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0));
 
         Layer {
-            matrix          : matrix,
+            matrix          : Self::viewport_matrix(width, height),
+            model_matrix     : Mat4::<f32>::new_identity(),
             blend           : Blend::alpha_blending(),
+            color           : Color::white(),
             vertex_data     : vec![Vertex::default(); renderer.max_sprites as usize * 4],
             sprite_id       : AtomicUsize::new(0),
             dirty           : AtomicBool::new(true),
@@ -44,10 +48,29 @@ impl Layer {
         }
     }
 
+    /// sets drawing color multiplicator
+    pub fn set_color(&mut self, color: Color) -> &mut Self {
+        self.color = color.clone();
+        self
+    }
+
     /// sets the drawing matrix
-    pub fn matrix(&mut self, matrix: Mat4<f32>) -> &mut Mat4<f32> {
-        self.matrix = matrix;
-        &mut self.matrix
+    pub fn set_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
+        self.matrix = matrix.clone();
+        self
+    }
+
+    fn viewport_matrix(width: u32, height: u32) -> Mat4<f32> {
+        let mut matrix = Mat4::<f32>::new_identity();
+        *matrix
+            .translate(Vec3(-1.0, 1.0, 0.0))
+            .scale(Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0))
+    }
+
+    pub fn matrix_reset(&mut self) {
+        let glium = self.renderer.glium.lock().unwrap(); // !todo expensive...
+        let (width, height) = glium.display.handle.get_framebuffer_dimensions();
+        self.matrix = Self::viewport_matrix(width, height);
     }
 
     /// sets the blend function for the layer (standard alpha blending)
@@ -137,7 +160,7 @@ impl Layer {
     }
 
     /// adds a sprite to the draw queue
-    pub fn sprite(&mut self, sprite: &Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &mut Self {
+    pub fn sprite(&mut self, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &mut Self {
 
         self.dirty.store(true, Ordering::Relaxed);
         let sprite_id = self.sprite_id.fetch_add(1, Ordering::Relaxed);
@@ -238,12 +261,14 @@ impl Layer {
             }
 
             let uniforms = uniform! {
-                matrix: self.matrix,
-                tex0: arrays[0],
-                tex1: arrays[1],
-                tex2: arrays[2],
-                tex3: arrays[3],
-                tex4: arrays[4]
+                matrix      : self.matrix,
+                model_matrix : self.model_matrix,
+                tex0        : arrays[0],
+                tex1        : arrays[1],
+                tex2        : arrays[2],
+                tex3        : arrays[3],
+                tex4        : arrays[4],
+                global_color: self.color,
             };
 
             // set up draw parameters for given blend options
@@ -254,7 +279,7 @@ impl Layer {
                 .. Default::default()
             };
 
-            // draw up to sprite_id
+            // draw up to sprite_id !todo: vertex_data may still be written at this time, maybe lock/unlock with layer.begin/end ? ugly though.
 
             let dirty = self.dirty.swap(false, Ordering::Relaxed);
             let sprite_id = self.sprite_id.load(Ordering::Relaxed);

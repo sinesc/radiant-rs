@@ -1,5 +1,4 @@
 #[macro_use] extern crate glium;
-extern crate rand;
 extern crate image;
 #[macro_use] extern crate lazy_static;
 extern crate regex;

@@ -1,5 +1,6 @@
 use renderer::Renderer;
 
+#[derive(Copy, Clone)]
 pub struct Sprite {
     pub anchor_x    : f32,
     pub anchor_y    : f32,

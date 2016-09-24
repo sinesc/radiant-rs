@@ -1,31 +1,56 @@
 extern crate radiant_rs;
 
-use std::thread;
 use std::time::{Duration, Instant};
 use radiant_rs::{Input, Color, Renderer, Vec3, Descriptor, Display};
 
+/* to avoid rand dependency just for this "demo", not suitable for general use */
+fn dummyrand(state: &mut f64) -> f32 /* 0..1 */ {
+    let large = (*state as f64).sin() * 100000000.0;
+    *state += 1.0;
+    (large - large.floor())  as f32
+}
+
 fn main() {
 
-    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, ..Descriptor::default() });
-    let mut input = Input::new(&display);
-    let renderer = Renderer::new(&display, 1000);
+    // initialize a display, and input source and a renderer
 
-    let asteroid = renderer.texture(r"C:\Users\nyda\Projekte\#js\ferocitylib\demo\www\sprite\asteroid\type1_64x64x60.png");
-    let mine = renderer.texture(r"C:\Users\nyda\Projekte\#js\ferocitylib\demo\www\sprite\hostile\radial_64x64x1.png");
-    let powerup = renderer.texture(r"C:\Users\nyda\Projekte\#js\ferocitylib\demo\www\sprite\powerup\ball_h_32x32x18.jpg");
-    let test = renderer.texture(r"C:\Users\nyda\Projekte\radiant-rs\res\test_64x32x1.png");
-    let test2 = renderer.texture(r"C:\Users\nyda\Projekte\radiant-rs\res\test_32x64x1.png");
-    let test3 = renderer.texture(r"C:\Users\nyda\Projekte\radiant-rs\res\test_59x30x1.png");
+    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: true, ..Descriptor::default() });
+    let mut input = Input::new(&display);
+    let renderer = Renderer::new(&display, 1500);
+
+    // load some textures
+
+    let test1 = renderer.texture(r"res/test_64x32x1.png");
+    let test2 = renderer.texture(r"res/test_32x64x1.png");
+    let test3 = renderer.texture(r"res/test_59x30x1.png");
+    let sparkles = renderer.texture(r"res/sparkles_64x64x1.png");
+
+    // set up two rendering layers
 
     let mut layer = renderer.layer();
-    let mut testlayer = renderer.layer();
-    let mut testlayer2 = renderer.layer();
-    testlayer2.blend_overlay();
+    let mut persistent_layer = renderer.layer();
+    persistent_layer.blend_lighten();
 
-    let mut rot = 0.0;
-    let mut scale = 1.0;
-    let mut scaler = 0.1;
-    let mut frame = 0;
+    // put some random sparkles on the persistent_layer (we'll draw it a couple of times, hence the name)
+
+    let mut rand_state = 0.0;
+    let radius = 500.0;
+
+    for i in 0..1000 {
+        let r = dummyrand(&mut rand_state) * radius / 2.0;
+        let a = dummyrand(&mut rand_state) * 2.0 * 3.14157;
+        let x = (radius / 2.0) + a.sin() * r;
+        let y = (radius / 2.0) + a.cos() * r;
+        let s = dummyrand(&mut rand_state);
+        persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::white(), r, s, s);
+    }
+
+    let mut pm1 = persistent_layer.matrix.clone();
+    let mut pm2 = persistent_layer.matrix.clone();
+    let mut pm3 = persistent_layer.matrix.clone();
+    let pos1 = 300.0;
+    let pos2 = 300.0;
+    let pos3 = 300.0;
 
     // the main loop
     start_loop(|| {
@@ -40,61 +65,52 @@ fn main() {
 
         // add some sprites to render
 
-        layer.sprite(&asteroid, 0, 40, 40, Color(255, 255, 0, 255), 0.0, 1.0, 1.0);
-        layer.sprite(&asteroid, 0, 80, 80, Color(255, 0, 255, 255), 0.0, 1.0, 1.0);
-        layer.sprite(&asteroid, 10, 100, 100, Color(0, 255, 255, 255), 0.0, scale, scale);
-        layer.sprite(&asteroid, 20, 150, 150, Color(255, 255, 255, 255), 0.0, 1.0, 1.0);
-        layer.sprite(&asteroid, 50, 300, 300, Color(127, 0, 127, 127), 0.0, scale, 1.0);
-        layer.sprite(&asteroid, frame, 320, 320, Color(127, 0, 127, 127), 0.0, 1.0, 1.0);
-        layer.sprite(&mine, 50, 220, 420, Color(127, 0, 127, 127), rot, 1.0, 1.0);
-        layer.sprite(&test, 50, 600, 600, Color::white(), rot, 1.0, 1.0);
-        layer.sprite(&test2, 50, 650, 650, Color::white(), rot, 1.0, 1.0);
-        layer.sprite(&test3, 50, 700, 700, Color::white(), rot, 1.0, 1.0);
-        //testlayer.sprite(&asteroid, 50, 420, 320, Color::white(), 0.0, scale, 1.0);
-        //testlayer.sprite(&asteroid, 50, 420, 320, Color::white(), 0.0, 1.0, scale);
-        testlayer.sprite(&asteroid, 50, 420, 320, Color::white(), rot, 1.0, 1.0);
-        let big = if input.button.0 { 3.0 } else { 1.0 };
-        testlayer2.sprite(&powerup, 50, input.mouse.x, input.mouse.y, Color::white(), 0.0, scale * big, 1.0);
-        testlayer2.sprite(&powerup, 50, input.mouse.x, input.mouse.y, Color::white(), 0.0, 1.0, scale * big);
-        testlayer2.sprite(&powerup, 50, input.mouse.x, input.mouse.y, Color::white(), rot, 1.0, 1.0);
+        layer.sprite(test1, 50, 600, 600, Color::white(), 0.0, 1.0, 1.0);
+        layer.sprite(test2, 50, 650, 650, Color::white(), 0.0, 1.0, 1.0);
+        layer.sprite(test3, 50, 700, 700, Color::white(), 0.0, 1.0, 1.0);
 
-        testlayer.matrix
-            .translate(&Vec3(320.0, 220.0, 0.0))
-            .rotate_z(0.01f32)
-            .translate(&Vec3(-320.0, -220.0, 0.0));
-
-        rot += 0.01;
-        scale += scaler;
-        if scale > 3.0 || scale < 0.0 {
-            scaler = -scaler;
-        }
-        frame += 1;
+        layer.matrix.rotate_z_at(Vec3(650.0, 650.0, 0.0), 0.005);
 
         // prepare render target, draw layers and swap
 
         renderer.prepare_and_clear_target(&Color::black());
 
-        for i in 0..50 {
-            testlayer
-                .blend_alpha_const(255-(i*5))
-                .matrix
-                .translate(&Vec3(320.0, 220.0, 0.0))
-                .rotate_z(-0.04f32)
-                .translate(&Vec3(-320.0, -220.0, 0.0));
-            testlayer
-                .draw();
-        }
-
-        testlayer
-            .reset()
-            .matrix
-            .translate(&Vec3(320.0, 220.0, 0.0))
-            .rotate_z(2f32)
-            .translate(&Vec3(-320.0, -220.0, 0.0));
-
         layer.draw().reset();
-        //testlayer.draw().reset();
-        testlayer2.draw().reset();
+
+        pm1 .translate(Vec3(pos1, pos1, 0.0))
+            .rotate_z(0.005)
+            .translate(Vec3(-250.0, -250.0, 0.0));
+
+        pm2 .translate(Vec3(pos2, pos2, 0.0))
+            .rotate_z(0.004)
+            .translate(Vec3(-250.0, -250.0, 0.0));
+
+        pm3 .translate(Vec3(pos3, pos3, 0.0))
+            .rotate_z(0.003)
+            .translate(Vec3(-250.0, -250.0, 0.0));
+
+        persistent_layer
+            .model_matrix
+            .rotate_z(0.01);
+
+        persistent_layer.set_matrix(pm3).set_color(Color::lightness(0.25)).draw();
+
+        persistent_layer
+            .model_matrix
+            .rotate_z(-0.005);
+
+        persistent_layer.set_matrix(pm2).set_color(Color::lightness(0.5)).draw();
+        persistent_layer.set_matrix(pm1).set_color(Color::lightness(1.0)).draw();
+
+
+        pm1 .translate(Vec3(250.0, 250.0, 0.0))
+            .translate(Vec3(-pos1, -pos1, 0.0));
+
+        pm2 .translate(Vec3(250.0, 250.0, 0.0))
+            .translate(Vec3(-pos2, -pos2, 0.0));
+
+        pm3 .translate(Vec3(250.0, 250.0, 0.0))
+            .translate(Vec3(-pos3, -pos3, 0.0));
 
         renderer.swap_target();
 
@@ -111,7 +127,7 @@ pub fn start_loop<F>(mut callback: F) where F: FnMut() -> Action {
     let mut accumulator = Duration::new(0, 0);
     let mut previous_clock = Instant::now();
 
-    let frame_interval = Duration::new(0, 166667); //16666667
+    let frame_interval = Duration::new(0, 16666667);
 
     let second = Duration::new(1, 0);
     let mut second_elapsed = Duration::new(0, 0);

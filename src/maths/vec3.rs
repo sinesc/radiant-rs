@@ -1,5 +1,6 @@
 use num::traits::Float;
 use std::fmt;
+use std::ops::Neg;
 use glium::uniforms::{AsUniformValue, UniformValue};
 
 #[derive(Copy, Clone, Debug)]
@@ -8,6 +9,14 @@ pub struct Vec3<T: Copy + fmt::Display + Float>(pub T, pub T, pub T);
 impl<T: Copy + fmt::Display + Float> Vec3<T> {
     pub fn new() -> Vec3<T> {
         Vec3::<T>(T::zero(), T::zero(), T::zero())
+    }
+}
+
+impl<T: Copy + fmt::Display + Float> Neg for Vec3<T> {
+    type Output = Vec3<T>;
+
+    fn neg(self) -> Vec3<T> {
+        Vec3::<T>(-self.0, -self.1, -self.2)
     }
 }
 

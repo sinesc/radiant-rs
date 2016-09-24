@@ -16,7 +16,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         }
     }
 
-    pub fn init_identity() -> Mat4<T> {
+    pub fn new_identity() -> Mat4<T> {
         Mat4::<T> {
             d: [
                 T::one(),
@@ -61,9 +61,9 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
-    pub fn translate(&mut self, v: &Vec3<T>) -> &mut Self {
+    pub fn translate(&mut self, v: Vec3<T>) -> &mut Self {
 
-        let Vec3::<T>(x, y, z) = *v;
+        let Vec3::<T>(x, y, z) = v;
 
         self.d[12] = self.d[0] * x + self.d[4] * y + self.d[8] * z + self.d[12];
         self.d[13] = self.d[1] * x + self.d[5] * y + self.d[9] * z + self.d[13];
@@ -73,9 +73,9 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
-    pub fn scale(&mut self, v: &Vec3<T>) -> &mut Self {
+    pub fn scale(&mut self, v: Vec3<T>) -> &mut Self {
 
-        let Vec3::<T>(x, y, z) = *v;
+        let Vec3::<T>(x, y, z) = v;
 
         self.d[0]  = self.d[0]  * x;
         self.d[1]  = self.d[1]  * x;
@@ -93,9 +93,9 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
-    pub fn rotate(&mut self, rad: T, axis: &Vec3<T>) -> &mut Self {
+    pub fn rotate(&mut self, rad: T, axis: Vec3<T>) -> &mut Self {
 
-        let Vec3::<T>(mut x, mut y, mut z) = *axis;
+        let Vec3::<T>(mut x, mut y, mut z) = axis;
 
         let mut len: T = (x * x + y * y + z * z).sqrt();
 
@@ -175,6 +175,14 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self.d[5] = a11 * c - a01 * s;
         self.d[6] = a12 * c - a02 * s;
         self.d[7] = a13 * c - a03 * s;
+
+        self
+    }
+
+    pub fn rotate_z_at(&mut self, v: Vec3<T>, rad: T) -> &mut Self {
+        self.translate(v)
+            .rotate_z(rad)
+            .translate(-v);
 
         self
     }

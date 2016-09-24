@@ -6,7 +6,6 @@ authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 [dependencies]
 glium = "*"
 image = "*"
-rand = "*"
 regex = "*"
 lazy_static = "*"
 num = "*"
