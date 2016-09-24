@@ -8,9 +8,10 @@ fn main() {
 
     // initialize a display, and input source and a renderer
 
+    let max_sprites = 1500;
     let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: true, ..Descriptor::default() });
     let mut input = Input::new(&display);
-    let renderer = Renderer::new(&display, 2000);
+    let renderer = Renderer::new(&display, max_sprites);
 
     // load some textures
 
@@ -31,17 +32,19 @@ fn main() {
     let mut rand_state = 0.0;
     let radius = 600.0;
 
-    for i in 0..2000 {
+    for i in 0..max_sprites {
         let l = sinrand(&mut rand_state);
         let r = l * radius / 2.0;
         let a = sinrand(&mut rand_state) * 2.0 * 3.14157;
         let x = (radius / 2.0) + a.sin() * r;
         let y = (radius / 2.0) + a.cos() * r;
         let s = sinrand(&mut rand_state);
-        if sinrand(&mut rand_state) > 0.95 {
-            persistent_layer.sprite(spark, i, x as u32, y as u32, Color::lightness(1.5-(l/2.0)), r, 0.2, 0.2);
+        if sinrand(&mut rand_state) > 0.90 {
+            let temperature = sinrand(&mut rand_state) * (40000.0 - 2000.0) + 2000.0;
+            persistent_layer.sprite(spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
         } else {
-            persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::lightness(1.0-l), r, s, s);
+            let temperature = sinrand(&mut rand_state) * (15000.0 - 2000.0) + 2000.0;
+            persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
         }
     }
 
@@ -87,9 +90,9 @@ fn main() {
         pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.0009);
         pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.0007);
         pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.0004);
-        pm1.rotate_z(-0.01);
-        pm2.rotate_z(0.013);
-        pm3.rotate_z(0.004);
+        pm1.rotate_z(-0.005);
+        pm2.rotate_z(0.004);
+        pm3.rotate_z(0.003);
 
         // prepare render target, required before drawing
 

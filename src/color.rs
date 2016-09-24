@@ -1,4 +1,5 @@
 use std::fmt;
+use std::cmp::{min, max};
 use glium::uniforms::{AsUniformValue, UniformValue};
 use glium::vertex::{Attribute, AttributeType};
 
@@ -78,63 +79,70 @@ impl Color {
         self.3
     }
 
-    pub fn set_r(&mut self, value: f32) -> &mut Color {
+    pub fn set_r(&mut self, value: f32) -> Color {
         self.0 = value;
-        self
+        *self
     }
 
-    pub fn set_g(&mut self, value: f32) -> &mut Color {
+    pub fn set_g(&mut self, value: f32) -> Color {
         self.1 = value;
-        self
+        *self
     }
 
-    pub fn set_b(&mut self, value: f32) -> &mut Color {
+    pub fn set_b(&mut self, value: f32) -> Color {
         self.2 = value;
-        self
+        *self
     }
 
-    pub fn set_a(&mut self, value: f32) -> &mut Color {
+    pub fn set_a(&mut self, value: f32) -> Color {
         self.3 = value;
-        self
+        *self
+    }
+
+    pub fn scale(&mut self, scaling: f32) -> Color {
+        self.0 *= scaling;
+        self.1 *= scaling;
+        self.2 *= scaling;
+        *self
     }
 
     pub fn as_tuple(&self) -> (f32, f32, f32, f32) {
         (self.0, self.1, self.2, self.3)
     }
 
-    /*
-     * creates new color instance from given color temperature value
-     * based on http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
-     *
-     */
-/*    pub fn set_temperature(temperature: f32, alpha: f32) {
 
-        let value = (temperature / 100) | 0;
-        let red = 0, green = 0, blue = 0;
+    // create color from temperature (~1000 to ~40000K)
+    // based on http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
+    pub fn temperature(temperature: f32, alpha: f32) -> Color {
 
-        if (value <= 66) {
+        let value = (temperature / 100.0).floor();
+        let red;
+        let green;
+        let blue;
+
+        if value <= 66.0 {
             red = 255;
-            green = (99.4708025861 * Math.log(value) - 161.1195681661) | 0;
+            green = (99.4708025861 * value.ln() - 161.1195681661) as i32;
         } else {
-            red = (329.698727466 * Math.pow(value - 60, -0.1332047592)) | 0;
-            green = (288.1221695283 * Math.pow(value - 60, -0.0755148492)) | 0;
+            red = (329.698727466 * (value - 60.0).powf(-0.1332047592)) as i32;
+            green = (288.1221695283 * (value - 60.0).powf(-0.0755148492)) as i32;
         }
 
-        if (value >= 66) {
+        if value >= 66.0 {
             blue = 255;
-        } else if (value <= 19) {
+        } else if value <= 19.0 {
             blue = 0;
         } else {
-            blue = (138.5177312231 * Math.log(value - 10) - 305.0447927307) | 0;
+            blue = (138.5177312231 * (value - 10.0).ln() - 305.0447927307) as i32;
         }
 
-        return new Color(Math.max(0, Math.min(255, red)),
-                         Math.max(0, Math.min(255, green)),
-                         Math.max(0, Math.min(255, blue)),
-                         alpha);
-
+        Color(
+            max(0, min(255, red)) as f32 / 255.0,
+            max(0, min(255, green)) as f32 / 255.0,
+            max(0, min(255, blue)) as f32 / 255.0,
+            alpha
+        )
     }
-*/
 }
 
 unsafe impl Attribute for Color {
