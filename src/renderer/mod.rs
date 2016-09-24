@@ -123,14 +123,14 @@ impl Renderer {
     }
 
     /// clears the prepared target with given color
-    pub fn clear_target(&self, color: &Color) {
+    pub fn clear_target(&self, color: Color) {
         let mut glium = self.glium.lock().unwrap();
         let (r, g, b, a) = color.as_tuple();
         glium.target.as_mut().unwrap().clear_color(r, g, b, a);
     }
 
     /// prepares a new target and clears it with given color
-    pub fn prepare_and_clear_target(&self, color: &Color) {
+    pub fn prepare_and_clear_target(&self, color: Color) {
         let mut glium = self.glium.lock().unwrap();
         let (r, g, b, a) = color.as_tuple();
         let mut target = glium.display.handle.draw();

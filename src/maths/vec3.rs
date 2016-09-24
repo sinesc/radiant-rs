@@ -1,6 +1,9 @@
 use num::traits::Float;
 use std::fmt;
+use std::ops::Add;
+use std::ops::Mul;
 use std::ops::Neg;
+use maths::VecType;
 use glium::uniforms::{AsUniformValue, UniformValue};
 
 #[derive(Copy, Clone, Debug)]
@@ -12,11 +15,31 @@ impl<T: Copy + fmt::Display + Float> Vec3<T> {
     }
 }
 
+impl<T: Copy + fmt::Display + Float> VecType<T> for Vec3<T> {
+    fn as_vec3(&self) -> Vec3<T> {
+        *self
+    }
+}
+
 impl<T: Copy + fmt::Display + Float> Neg for Vec3<T> {
     type Output = Vec3<T>;
 
     fn neg(self) -> Vec3<T> {
         Vec3::<T>(-self.0, -self.1, -self.2)
+    }
+}
+
+impl<T: Copy + fmt::Display + Float> Add for Vec3<T> {
+    type Output = Vec3<T>;
+    fn add(self, other: Vec3<T>) -> Vec3<T> {
+        Vec3::<T>(self.0 + other.0, self.1 + other.1, self.2 + other.2)
+    }
+}
+
+impl<T: Copy + fmt::Display + Float> Mul<T> for Vec3<T> {
+    type Output = Vec3<T>;
+    fn mul(self, other: T) -> Vec3<T> {
+        Vec3::<T>(self.0 * other, self.1 * other, self.2 * other)
     }
 }
 

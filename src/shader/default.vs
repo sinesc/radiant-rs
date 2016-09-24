@@ -1,6 +1,6 @@
 #version 140
 
-uniform mat4 matrix;
+uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 
 in vec2 position;
@@ -18,7 +18,7 @@ flat out uint v_bucket_id;
 
 void main() {
 
-    // compute final vertex positon
+    // compute vertex positon
 
     vec2 trans;
     float sin_rotation = sin(rotation);
@@ -26,24 +26,13 @@ void main() {
     trans.x = offset.x * cos_rotation - offset.y * sin_rotation;
     trans.y = offset.x * sin_rotation + offset.y * cos_rotation;
 
+    // apply global per sprite matrix (model)
+
     vec4 final_trans = model_matrix * vec4(trans, 0.0, 1.0);
-    //vec4 view_position = vec4(position, 0.0, 1.0);
 
-    //gl_Position = matrix * (view_position + vec4(trans, 0.0, 1.0));
+    gl_Position = view_matrix * vec4(position + vec2(final_trans), 0.0, 1.0);
 
-    gl_Position = matrix * vec4(position + vec2(final_trans), 0.0, 1.0);
-
-    // compute fragment shader information
-
-    /*if (gl_VertexID % 4 == 0) {
-        v_tex_coords = vec2(0.0, 1.0);
-    } else if (gl_VertexID % 4 == 1) {
-        v_tex_coords = vec2(1.0, 1.0);
-    } else if (gl_VertexID % 4 == 2) {
-        v_tex_coords = vec2(0.0, 0.0);
-    } else {
-        v_tex_coords = vec2(1.0, 0.0);
-    }*/
+    // pass along to fragment shader
 
     v_color = color;
     v_bucket_id = bucket_id;

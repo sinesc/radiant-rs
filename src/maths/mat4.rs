@@ -1,6 +1,7 @@
 use num::traits::Float;
 use std::fmt;
 use maths::vec3::Vec3;
+use maths::VecType;
 use glium::uniforms::{AsUniformValue, UniformValue};
 
 #[derive(Copy, Clone, Debug)]
@@ -61,9 +62,9 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
-    pub fn translate(&mut self, v: Vec3<T>) -> &mut Self {
+    pub fn translate<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
 
-        let Vec3::<T>(x, y, z) = v;
+        let Vec3::<T>(x, y, z) = v.as_vec3();
 
         self.d[12] = self.d[0] * x + self.d[4] * y + self.d[8] * z + self.d[12];
         self.d[13] = self.d[1] * x + self.d[5] * y + self.d[9] * z + self.d[13];
@@ -73,9 +74,9 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
-    pub fn scale(&mut self, v: Vec3<T>) -> &mut Self {
+    pub fn scale<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
 
-        let Vec3::<T>(x, y, z) = v;
+        let Vec3::<T>(x, y, z) = v.as_vec3();
 
         self.d[0]  = self.d[0]  * x;
         self.d[1]  = self.d[1]  * x;
@@ -93,9 +94,9 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
-    pub fn rotate(&mut self, rad: T, axis: Vec3<T>) -> &mut Self {
+    pub fn rotate<Vector: VecType<T>>(&mut self, rad: T, axis: Vector) -> &mut Self {
 
-        let Vec3::<T>(mut x, mut y, mut z) = axis;
+        let Vec3::<T>(mut x, mut y, mut z) = axis.as_vec3();
 
         let mut len: T = (x * x + y * y + z * z).sqrt();
 
@@ -179,10 +180,11 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
-    pub fn rotate_z_at(&mut self, v: Vec3<T>, rad: T) -> &mut Self {
-        self.translate(v)
+    pub fn rotate_z_at<Vector: VecType<T>>(&mut self, v: Vector, rad: T) -> &mut Self {
+        let v3 = v.as_vec3();
+        self.translate(v3)
             .rotate_z(rad)
-            .translate(-v);
+            .translate(-v3);
 
         self
     }

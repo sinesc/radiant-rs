@@ -1,14 +1,8 @@
 extern crate radiant_rs;
 
+//use std::thread;
 use std::time::{Duration, Instant};
-use radiant_rs::{Input, Color, Renderer, Vec3, Descriptor, Display};
-
-/* to avoid rand dependency just for this "demo", not suitable for general use */
-fn dummyrand(state: &mut f64) -> f32 /* 0..1 */ {
-    let large = (*state as f64).sin() * 100000000.0;
-    *state += 1.0;
-    (large - large.floor())  as f32
-}
+use radiant_rs::{Input, Color, Renderer, Descriptor, Display};
 
 fn main() {
 
@@ -16,7 +10,7 @@ fn main() {
 
     let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: true, ..Descriptor::default() });
     let mut input = Input::new(&display);
-    let renderer = Renderer::new(&display, 1500);
+    let renderer = Renderer::new(&display, 2000);
 
     // load some textures
 
@@ -24,33 +18,50 @@ fn main() {
     let test2 = renderer.texture(r"res/test_32x64x1.png");
     let test3 = renderer.texture(r"res/test_59x30x1.png");
     let sparkles = renderer.texture(r"res/sparkles_64x64x1.png");
+    let spark = renderer.texture(r"res/basic_64x64x1.png");
 
-    // set up two rendering layers
+    // set up two rendering layers, switch to lighten blend mode for one
 
     let mut layer = renderer.layer();
     let mut persistent_layer = renderer.layer();
     persistent_layer.blend_lighten();
 
-    // put some random sparkles on the persistent_layer (we'll draw it a couple of times, hence the name)
+    // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 
     let mut rand_state = 0.0;
-    let radius = 500.0;
+    let radius = 600.0;
 
-    for i in 0..1000 {
-        let r = dummyrand(&mut rand_state) * radius / 2.0;
-        let a = dummyrand(&mut rand_state) * 2.0 * 3.14157;
+    for i in 0..2000 {
+        let l = sinrand(&mut rand_state);
+        let r = l * radius / 2.0;
+        let a = sinrand(&mut rand_state) * 2.0 * 3.14157;
         let x = (radius / 2.0) + a.sin() * r;
         let y = (radius / 2.0) + a.cos() * r;
-        let s = dummyrand(&mut rand_state);
-        persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::white(), r, s, s);
+        let s = sinrand(&mut rand_state);
+        if sinrand(&mut rand_state) > 0.95 {
+            persistent_layer.sprite(spark, i, x as u32, y as u32, Color::lightness(1.5-(l/2.0)), r, 0.2, 0.2);
+        } else {
+            persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::lightness(1.0-l), r, s, s);
+        }
     }
 
-    let mut pm1 = persistent_layer.matrix.clone();
-    let mut pm2 = persistent_layer.matrix.clone();
-    let mut pm3 = persistent_layer.matrix.clone();
-    let pos1 = 300.0;
-    let pos2 = 300.0;
-    let pos3 = 300.0;
+    persistent_layer.view_matrix.translate((150.0, 100.0));
+
+    // clone a couple of view matricies
+
+    let mut pv1 = persistent_layer.view_matrix.clone();
+    let mut pv2 = persistent_layer.view_matrix.clone();
+    let mut pv3 = persistent_layer.view_matrix.clone();
+    pv1.rotate_z_at((radius / 2.0, radius / 2.0), 1.0);
+    pv2.rotate_z_at((radius / 2.0, radius / 2.0), 2.0);
+    pv3.rotate_z_at((radius / 2.0, radius / 2.0), 3.0);
+    pv1.scale((0.9, 0.9)).translate((15.0, 10.0));
+
+    // model matricies as well
+
+    let mut pm1 = persistent_layer.model_matrix.clone();
+    let mut pm2 = persistent_layer.model_matrix.clone();
+    let mut pm3 = persistent_layer.model_matrix.clone();
 
     // the main loop
     start_loop(|| {
@@ -69,53 +80,60 @@ fn main() {
         layer.sprite(test2, 50, 650, 650, Color::white(), 0.0, 1.0, 1.0);
         layer.sprite(test3, 50, 700, 700, Color::white(), 0.0, 1.0, 1.0);
 
-        layer.matrix.rotate_z_at(Vec3(650.0, 650.0, 0.0), 0.005);
+        // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
 
-        // prepare render target, draw layers and swap
+        layer.view_matrix.rotate_z_at((650.0, 650.0), 0.005);
 
-        renderer.prepare_and_clear_target(&Color::black());
+        pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.0009);
+        pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.0007);
+        pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.0004);
+        pm1.rotate_z(-0.01);
+        pm2.rotate_z(0.013);
+        pm3.rotate_z(0.004);
+
+        // prepare render target, required before drawing
+
+        renderer.prepare_and_clear_target(Color::black());
+
+        // draw the boring layer once
 
         layer.draw().reset();
 
-        pm1 .translate(Vec3(pos1, pos1, 0.0))
-            .rotate_z(0.005)
-            .translate(Vec3(-250.0, -250.0, 0.0));
-
-        pm2 .translate(Vec3(pos2, pos2, 0.0))
-            .rotate_z(0.004)
-            .translate(Vec3(-250.0, -250.0, 0.0));
-
-        pm3 .translate(Vec3(pos3, pos3, 0.0))
-            .rotate_z(0.003)
-            .translate(Vec3(-250.0, -250.0, 0.0));
+        // draw the persistent layer 3 times with different model- and view matricies and brightness
 
         persistent_layer
-            .model_matrix
-            .rotate_z(0.01);
-
-        persistent_layer.set_matrix(pm3).set_color(Color::lightness(0.25)).draw();
+            .set_view_matrix(pv3)
+            .set_model_matrix(pm3)
+            .set_color(Color::lightness(0.25))
+            .draw();
 
         persistent_layer
-            .model_matrix
-            .rotate_z(-0.005);
+            .set_view_matrix(pv2)
+            .set_model_matrix(pm2)
+            .set_color(Color::lightness(0.5))
+            .draw();
 
-        persistent_layer.set_matrix(pm2).set_color(Color::lightness(0.5)).draw();
-        persistent_layer.set_matrix(pm1).set_color(Color::lightness(1.0)).draw();
-
-
-        pm1 .translate(Vec3(250.0, 250.0, 0.0))
-            .translate(Vec3(-pos1, -pos1, 0.0));
-
-        pm2 .translate(Vec3(250.0, 250.0, 0.0))
-            .translate(Vec3(-pos2, -pos2, 0.0));
-
-        pm3 .translate(Vec3(250.0, 250.0, 0.0))
-            .translate(Vec3(-pos3, -pos3, 0.0));
+        persistent_layer
+            .set_view_matrix(pv1)
+            .set_model_matrix(pm1)
+            .set_color(Color::lightness(1.0))
+            .draw();
 
         renderer.swap_target();
 
+        // exit on window close
+
         if input.should_close { Action::Stop } else { Action::Continue }
     });
+}
+
+
+
+/* to avoid rand dependency just for this "demo", not suitable for general use */
+fn sinrand(state: &mut f64) -> f32 /* 0..1 */ {
+    let large = (*state as f64).sin() * 100000000.0;
+    *state += 1.0;
+    (large - large.floor())  as f32
 }
 
 pub enum Action {

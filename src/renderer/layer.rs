@@ -12,8 +12,8 @@ use renderer::Sprite;
 use super::Vertex;
 
 pub struct Layer {
-    pub matrix      : Mat4<f32>,
-    pub model_matrix : Mat4<f32>,
+    pub view_matrix : Mat4<f32>,
+    pub model_matrix: Mat4<f32>,
     pub blend       : Blend,
     pub color       : Color,
     renderer        : Renderer,
@@ -36,8 +36,8 @@ impl Layer {
         let vertex_buffer = glium::VertexBuffer::empty_dynamic(&glium.display.handle, renderer.max_sprites as usize * 4).unwrap();
 
         Layer {
-            matrix          : Self::viewport_matrix(width, height),
-            model_matrix     : Mat4::<f32>::new_identity(),
+            view_matrix     : Self::viewport_matrix(width, height),
+            model_matrix    : Mat4::<f32>::new_identity(),
             blend           : Blend::alpha_blending(),
             color           : Color::white(),
             vertex_data     : vec![Vertex::default(); renderer.max_sprites as usize * 4],
@@ -54,23 +54,16 @@ impl Layer {
         self
     }
 
-    /// sets the drawing matrix
-    pub fn set_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
-        self.matrix = matrix.clone();
+    /// sets the view matrix
+    pub fn set_view_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
+        self.view_matrix = matrix.clone();
         self
     }
 
-    fn viewport_matrix(width: u32, height: u32) -> Mat4<f32> {
-        let mut matrix = Mat4::<f32>::new_identity();
-        *matrix
-            .translate(Vec3(-1.0, 1.0, 0.0))
-            .scale(Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0))
-    }
-
-    pub fn matrix_reset(&mut self) {
-        let glium = self.renderer.glium.lock().unwrap(); // !todo expensive...
-        let (width, height) = glium.display.handle.get_framebuffer_dimensions();
-        self.matrix = Self::viewport_matrix(width, height);
+    /// sets the model matrix
+    pub fn set_model_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
+        self.model_matrix = matrix.clone();
+        self
     }
 
     /// sets the blend function for the layer (standard alpha blending)
@@ -261,14 +254,14 @@ impl Layer {
             }
 
             let uniforms = uniform! {
-                matrix      : self.matrix,
-                model_matrix : self.model_matrix,
-                tex0        : arrays[0],
-                tex1        : arrays[1],
-                tex2        : arrays[2],
-                tex3        : arrays[3],
-                tex4        : arrays[4],
-                global_color: self.color,
+                view_matrix     : self.view_matrix,
+                model_matrix    : self.model_matrix,
+                global_color    : self.color,
+                tex0            : arrays[0],
+                tex1            : arrays[1],
+                tex2            : arrays[2],
+                tex3            : arrays[3],
+                tex4            : arrays[4],
             };
 
             // set up draw parameters for given blend options
@@ -303,5 +296,13 @@ impl Layer {
     pub fn reset(self: &mut Self) -> &mut Self {
         self.sprite_id.store(0, Ordering::Relaxed);
         self
+    }
+
+    // compute the default view matrix
+    fn viewport_matrix(width: u32, height: u32) -> Mat4<f32> {
+        let mut matrix = Mat4::<f32>::new_identity();
+        *matrix
+            .translate(Vec3(-1.0, 1.0, 0.0))
+            .scale(Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0))
     }
 }
