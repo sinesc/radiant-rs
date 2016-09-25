@@ -1,26 +1,34 @@
-use glium;
 use glium::draw_parameters::*;
-use glium::Surface;
-use std::ops::{Deref, DerefMut};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
-
+use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::RwLock;
 use maths::*;
 use color::Color;
 use renderer::Renderer;
 use renderer::Sprite;
-use super::Vertex;
 
+#[derive(Copy, Clone, Default)]
+pub struct Vertex {
+    position    : [f32; 2],
+    offset      : [f32; 2],
+    rotation    : f32,
+    color       : Color,
+    bucket_id   : u32,
+    texture_id  : u32,
+    texture_uv  : [f32; 2],
+}
+implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv);
+
+static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub struct Layer {
     pub view_matrix : Mat4<f32>,
     pub model_matrix: Mat4<f32>,
     pub blend       : Blend,
     pub color       : Color,
-    renderer        : Renderer,
-    vertex_data     : Vec<Vertex>,
-    sprite_id       : AtomicUsize,
-    dirty           : AtomicBool,
-    vertex_buffer   : Arc<Mutex<glium::VertexBuffer<Vertex>>>,
+    pub gid         : usize,
+    pub lid         : AtomicUsize,
+    pub renderer    : Renderer,
+    pub vertex_data : Vec<Vertex>,
+    pub sprite_id   : RwLock<AtomicUsize>,
 }
 
 unsafe impl Sync for Layer { }
@@ -29,22 +37,23 @@ unsafe impl Send for Layer { }
 impl Layer {
 
     /// creates a new layer for the given renderer. use Renderer::layer() instead.
-    pub fn new(renderer: Renderer) -> Self {
+    pub fn new(renderer: &Renderer) -> Self {
 
         let glium = renderer.glium.lock().unwrap();
         let (width, height) = glium.display.handle.get_framebuffer_dimensions();
-        let vertex_buffer = glium::VertexBuffer::empty_dynamic(&glium.display.handle, renderer.max_sprites as usize * 4).unwrap();
+
+        let gid = LAYER_COUNTER.fetch_add(1, Ordering::Relaxed);
 
         Layer {
             view_matrix     : Self::viewport_matrix(width, height),
             model_matrix    : Mat4::<f32>::new_identity(),
             blend           : Blend::alpha_blending(),
             color           : Color::white(),
+            gid             : gid,
+            lid             : ATOMIC_USIZE_INIT,
+            sprite_id       : RwLock::new(AtomicUsize::new(0)),
             vertex_data     : vec![Vertex::default(); renderer.max_sprites as usize * 4],
-            sprite_id       : AtomicUsize::new(0),
-            dirty           : AtomicBool::new(true),
             renderer        : renderer.clone(),
-            vertex_buffer   : Arc::new(Mutex::new(vertex_buffer)),
         }
     }
 
@@ -63,6 +72,110 @@ impl Layer {
     /// sets the model matrix
     pub fn set_model_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
         self.model_matrix = matrix.clone();
+        self
+    }
+
+    pub fn draw(&self) {
+        self.renderer.draw_layer(self);
+    }
+
+    /// adds a sprite to the draw queue
+    pub fn sprite(&mut self, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &mut Self {
+
+        // increase local part of hash to mark this layer as modified against cached state in Renderer
+        self.lid.fetch_add(1, Ordering::Relaxed);
+
+        {
+            // a bit wonky, idea is: adding sprites in parallel is fine due to the atomic insert position. deleting sprites is not, so there we need a write()
+            let spriteguard = self.sprite_id.read().unwrap();
+
+            // atomics can be modified without mut
+            let sprite_id = spriteguard.fetch_add(1, Ordering::Relaxed);
+
+            assert!((sprite_id as u32) < self.renderer.max_sprites);
+
+            let texture_id = sprite.texture_id(frame_id);
+            let bucket_id = sprite.bucket_id();
+            let vertex_id = sprite_id as usize * 4;
+
+            {
+                let vertex = &mut self.vertex_data;
+
+                // corner positions relative to x/y
+
+                let x = x as f32;
+                let y = y as f32;
+                let anchor_x = sprite.anchor_x * sprite.width() as f32;
+                let anchor_y = sprite.anchor_y * sprite.height() as f32;
+
+                let offset_x0 = -anchor_x * scale_x;
+                let offset_x1 = (sprite.width() as f32 - anchor_x) * scale_x;
+                let offset_y0 = -anchor_y * scale_y;
+                let offset_y1 = (sprite.height() as f32 - anchor_y) * scale_y;
+
+                // fill vertex array
+
+                vertex[vertex_id].position[0] = x;
+                vertex[vertex_id].position[1] = y;
+                vertex[vertex_id].offset[0] = offset_x0;
+                vertex[vertex_id].offset[1] = offset_y0;
+                vertex[vertex_id].rotation = rotation;
+                vertex[vertex_id].bucket_id = bucket_id;
+                vertex[vertex_id].texture_id = texture_id;
+                vertex[vertex_id].color = color;
+                vertex[vertex_id].texture_uv[0] = 0.0;
+                vertex[vertex_id].texture_uv[1] = 0.0;
+
+                vertex[vertex_id+1].position[0] = x;
+                vertex[vertex_id+1].position[1] = y;
+                vertex[vertex_id+1].offset[0] = offset_x1;
+                vertex[vertex_id+1].offset[1] = offset_y0;
+                vertex[vertex_id+1].rotation = rotation;
+                vertex[vertex_id+1].bucket_id = bucket_id;
+                vertex[vertex_id+1].texture_id = texture_id;
+                vertex[vertex_id+1].color = color;
+                vertex[vertex_id+1].texture_uv[0] = sprite.u_max();
+                vertex[vertex_id+1].texture_uv[1] = 0.0;
+
+                vertex[vertex_id+2].position[0] = x;
+                vertex[vertex_id+2].position[1] = y;
+                vertex[vertex_id+2].offset[0] = offset_x0;
+                vertex[vertex_id+2].offset[1] = offset_y1;
+                vertex[vertex_id+2].rotation = rotation;
+                vertex[vertex_id+2].bucket_id = bucket_id;
+                vertex[vertex_id+2].texture_id = texture_id;
+                vertex[vertex_id+2].color = color;
+                vertex[vertex_id+2].texture_uv[0] = 0.0;
+                vertex[vertex_id+2].texture_uv[1] = sprite.v_max();
+
+                vertex[vertex_id+3].position[0] = x;
+                vertex[vertex_id+3].position[1] = y;
+                vertex[vertex_id+3].offset[0] = offset_x1;
+                vertex[vertex_id+3].offset[1] = offset_y1;
+                vertex[vertex_id+3].rotation = rotation;
+                vertex[vertex_id+3].bucket_id = bucket_id;
+                vertex[vertex_id+3].texture_id = texture_id;
+                vertex[vertex_id+3].color = color;
+                vertex[vertex_id+3].texture_uv[0] = sprite.u_max();
+                vertex[vertex_id+3].texture_uv[1] = sprite.v_max();
+            }
+        }
+
+        self
+    }
+
+    /// removes previously added sprites from the drawing queue. typically invoked after draw()
+    pub fn reset(self: &mut Self) -> &mut Self {
+
+        // increase local part of hash to mark this layer as modified against cached state in Renderer
+        self.lid.fetch_add(1, Ordering::Relaxed);
+
+        {
+            // get writelock on the sprite id before resetting it
+            let spriteguard = self.sprite_id.write().unwrap();
+            spriteguard.store(0, Ordering::Relaxed);
+        }
+
         self
     }
 
@@ -149,152 +262,6 @@ impl Layer {
             },
             .. Default::default()
         };
-        self
-    }
-
-    /// adds a sprite to the draw queue
-    pub fn sprite(&mut self, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &mut Self {
-
-        self.dirty.store(true, Ordering::Relaxed);
-        let sprite_id = self.sprite_id.fetch_add(1, Ordering::Relaxed);
-
-        assert!((sprite_id as u32) < self.renderer.max_sprites);
-
-        let texture_id = sprite.texture_id(frame_id);
-        let bucket_id = sprite.bucket_id();
-        let vertex_id = sprite_id as usize * 4;
-
-        {
-            let vertex = &mut self.vertex_data;
-
-            // corner positions relative to x/y
-
-            let x = x as f32;
-            let y = y as f32;
-            let anchor_x = sprite.anchor_x * sprite.width() as f32;
-            let anchor_y = sprite.anchor_y * sprite.height() as f32;
-
-            let offset_x0 = -anchor_x * scale_x;
-            let offset_x1 = (sprite.width() as f32 - anchor_x) * scale_x;
-            let offset_y0 = -anchor_y * scale_y;
-            let offset_y1 = (sprite.height() as f32 - anchor_y) * scale_y;
-
-            // fill vertex array
-
-            vertex[vertex_id].position[0] = x;
-            vertex[vertex_id].position[1] = y;
-            vertex[vertex_id].offset[0] = offset_x0;
-            vertex[vertex_id].offset[1] = offset_y0;
-            vertex[vertex_id].rotation = rotation;
-            vertex[vertex_id].bucket_id = bucket_id;
-            vertex[vertex_id].texture_id = texture_id;
-            vertex[vertex_id].color = color;
-            vertex[vertex_id].texture_uv[0] = 0.0;
-            vertex[vertex_id].texture_uv[1] = 0.0;
-
-            vertex[vertex_id+1].position[0] = x;
-            vertex[vertex_id+1].position[1] = y;
-            vertex[vertex_id+1].offset[0] = offset_x1;
-            vertex[vertex_id+1].offset[1] = offset_y0;
-            vertex[vertex_id+1].rotation = rotation;
-            vertex[vertex_id+1].bucket_id = bucket_id;
-            vertex[vertex_id+1].texture_id = texture_id;
-            vertex[vertex_id+1].color = color;
-            vertex[vertex_id+1].texture_uv[0] = sprite.u_max();
-            vertex[vertex_id+1].texture_uv[1] = 0.0;
-
-            vertex[vertex_id+2].position[0] = x;
-            vertex[vertex_id+2].position[1] = y;
-            vertex[vertex_id+2].offset[0] = offset_x0;
-            vertex[vertex_id+2].offset[1] = offset_y1;
-            vertex[vertex_id+2].rotation = rotation;
-            vertex[vertex_id+2].bucket_id = bucket_id;
-            vertex[vertex_id+2].texture_id = texture_id;
-            vertex[vertex_id+2].color = color;
-            vertex[vertex_id+2].texture_uv[0] = 0.0;
-            vertex[vertex_id+2].texture_uv[1] = sprite.v_max();
-
-            vertex[vertex_id+3].position[0] = x;
-            vertex[vertex_id+3].position[1] = y;
-            vertex[vertex_id+3].offset[0] = offset_x1;
-            vertex[vertex_id+3].offset[1] = offset_y1;
-            vertex[vertex_id+3].rotation = rotation;
-            vertex[vertex_id+3].bucket_id = bucket_id;
-            vertex[vertex_id+3].texture_id = texture_id;
-            vertex[vertex_id+3].color = color;
-            vertex[vertex_id+3].texture_uv[0] = sprite.u_max();
-            vertex[vertex_id+3].texture_uv[1] = sprite.v_max();
-        }
-
-        self
-    }
-
-    /// draws all previously added sprites. does not clear sprites.
-    pub fn draw(&mut self) -> &mut Self {
-
-        // make sure texture arrays have been generated from raw images
-
-        self.renderer.create_texture_arrays();
-
-        {
-            // prepare texture array uniforms
-
-            let mut glium_mutexguard = self.renderer.glium.lock().unwrap();
-            let mut glium = glium_mutexguard.deref_mut();
-
-            let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
-            let mut arrays = Vec::<&glium::texture::Texture2dArray>::new();
-
-            for i in 0..5 {
-                arrays.push(if glium.tex_array.len() > i && glium.tex_array[i].is_some() {
-                    glium.tex_array[i].as_ref().unwrap()
-                } else {
-                    empty
-                });
-            }
-
-            let uniforms = uniform! {
-                view_matrix     : self.view_matrix,
-                model_matrix    : self.model_matrix,
-                global_color    : self.color,
-                tex0            : arrays[0],
-                tex1            : arrays[1],
-                tex2            : arrays[2],
-                tex3            : arrays[3],
-                tex4            : arrays[4],
-            };
-
-            // set up draw parameters for given blend options
-
-            let draw_parameters = glium::draw_parameters::DrawParameters {
-                backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-                blend: self.blend,
-                .. Default::default()
-            };
-
-            // draw up to sprite_id !todo: vertex_data may still be written at this time, maybe lock/unlock with layer.begin/end ? ugly though.
-
-            let dirty = self.dirty.swap(false, Ordering::Relaxed);
-            let sprite_id = self.sprite_id.load(Ordering::Relaxed);
-
-            let vertex_buffer_mutexguard = self.vertex_buffer.lock().unwrap();
-            let vertex_buffer = vertex_buffer_mutexguard.deref();
-            if dirty {
-                let size = sprite_id as usize * 4;
-                let vb_slice = vertex_buffer.slice(0 .. size).unwrap();
-                vb_slice.write(&self.vertex_data[0 .. size]);
-            }
-
-            let ib_slice = glium.index_buffer.slice(0 .. sprite_id as usize * 6).unwrap();
-            glium.target.as_mut().unwrap().draw(vertex_buffer, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
-        }
-
-        self
-    }
-
-    /// removes previously added sprites from the drawing queue. typically invoked after draw()
-    pub fn reset(self: &mut Self) -> &mut Self {
-        self.sprite_id.store(0, Ordering::Relaxed);
         self
     }
 

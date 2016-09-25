@@ -9,6 +9,7 @@ mod input;
 mod renderer;
 mod maths;
 mod color;
+mod scene;
 
 pub use input::Input;
 pub use color::Color;
@@ -19,6 +20,7 @@ pub use maths::{Mat4, Vec2, Vec3, Dir1};
 //pub use display::Display;
 pub use display::Descriptor;
 pub use display::Monitor;
+pub use scene::Scene;
 
 // this is only here so handle doesn't have to be public. need better solution
 #[derive(Clone)]

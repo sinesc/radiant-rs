@@ -9,7 +9,7 @@ fn main() {
     // initialize a display, and input source and a renderer
 
     let max_sprites = 1500;
-    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: true, ..Descriptor::default() });
+    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: false, ..Descriptor::default() });
     let mut input = Input::new(&display);
     let renderer = Renderer::new(&display, max_sprites);
 
@@ -32,7 +32,7 @@ fn main() {
     let mut rand_state = 0.0;
     let radius = 600.0;
 
-    for i in 0..max_sprites {
+    for i in 0..1000 {
         let l = sinrand(&mut rand_state);
         let r = l * radius / 2.0;
         let a = sinrand(&mut rand_state) * 2.0 * 3.14157;
@@ -73,9 +73,9 @@ fn main() {
 
         input.poll();
 
-        if input.alt_left {
+/*        if input.alt_left {
             println!("hello!");
-        }
+        }*/
 
         // add some sprites to render
 
@@ -100,27 +100,38 @@ fn main() {
 
         // draw the boring layer once
 
-        layer.draw().reset();
+        layer.draw();
+        layer.reset();
 
         // draw the persistent layer 3 times with different model- and view matricies and brightness
 
         persistent_layer
             .set_view_matrix(pv3)
             .set_model_matrix(pm3)
-            .set_color(Color::lightness(0.25))
-            .draw();
+            .set_color(Color::lightness(0.25));
+
+        persistent_layer.draw();
 
         persistent_layer
             .set_view_matrix(pv2)
             .set_model_matrix(pm2)
-            .set_color(Color::lightness(0.5))
-            .draw();
+            .set_color(Color::lightness(0.5));
+
+        persistent_layer.draw();
 
         persistent_layer
             .set_view_matrix(pv1)
             .set_model_matrix(pm1)
-            .set_color(Color::lightness(1.0))
-            .draw();
+            .set_color(Color::lightness(1.0));
+
+        persistent_layer.draw();
+
+        persistent_layer
+            .set_view_matrix(pv1)
+            .set_model_matrix(pm1)
+            .set_color(Color::lightness(1.0));
+
+        persistent_layer.draw();
 
         renderer.swap_target();
 

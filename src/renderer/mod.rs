@@ -7,6 +7,9 @@ use std::mem;
 use std::path::Path;
 use std::cmp;
 use std::sync::{Arc, Mutex};
+use std::ops::{DerefMut};
+use std::sync::atomic::{Ordering};
+use std::collections::HashMap;
 use glium;
 use glium::Surface;
 use image;
@@ -14,18 +17,7 @@ use image::GenericImage;
 use regex::Regex;
 use color::Color;
 use display::Display;
-
-#[derive(Copy, Clone, Default)]
-struct Vertex {
-    position    : [f32; 2],
-    offset      : [f32; 2],
-    rotation    : f32,
-    color       : Color,
-    bucket_id   : u32,
-    texture_id  : u32,
-    texture_uv  : [f32; 2],
-}
-implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv);
+use self::layer::Vertex;
 
 #[derive(Copy, Clone, PartialEq)]
 enum SpriteLayout {
@@ -35,6 +27,10 @@ enum SpriteLayout {
 
 struct FrameParameters (u32, u32, u32, SpriteLayout);
 type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
+struct VertexBufferContainer {
+    lid     : usize,
+    buffer  : glium::VertexBuffer<Vertex>,
+}
 
 struct GliumState {
     index_buffer    : glium::IndexBuffer<u32>,
@@ -43,6 +39,7 @@ struct GliumState {
     raw_tex_data    : Vec<Vec<RawFrame>>,
     target          : Option<glium::Frame>,
     display         : Display,
+    vertex_buffers  : HashMap<usize, VertexBufferContainer>,
 }
 
 #[derive(Clone)]
@@ -67,6 +64,7 @@ impl Renderer {
             raw_tex_data    : Vec::new(),
             target          : Option::None,
             display         : display.clone(),
+            vertex_buffers  : HashMap::new(),
         };
         Renderer {
             max_sprites     : max_sprites,
@@ -78,7 +76,7 @@ impl Renderer {
     ///
     /// layers have a matrix and a blendmode that applies to all sprites on the layer
     pub fn layer(&self) -> Layer {
-        Layer::new(self.clone())
+        Layer::new(self)
     }
 
     /// registers a sprite texture for drawing
@@ -148,6 +146,87 @@ impl Renderer {
     pub fn take_target(&self) -> glium::Frame {
         let mut glium = self.glium.lock().unwrap();
         glium.target.take().unwrap()
+    }
+
+    /// draws all previously added sprites. does not clear sprites.
+    fn draw_layer(&self, layer: &Layer) -> &Self {
+
+        // make sure texture arrays have been generated from raw images
+
+        self.create_texture_arrays();
+
+        // load layer local id, guard against writes to vertex_data
+
+        let lid = layer.lid.load(Ordering::Relaxed);
+        let writeguard = layer.sprite_id.write().unwrap();
+
+        {
+            let num_sprites = writeguard.load(Ordering::Relaxed);
+
+            if num_sprites == 0 {
+                return self;
+            }
+
+            // prepare texture array uniforms
+
+            let mut glium_mutexguard = self.glium.lock().unwrap();
+            let mut glium = glium_mutexguard.deref_mut();
+
+            let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
+            let mut arrays = Vec::<&glium::texture::Texture2dArray>::new();
+
+            for i in 0..5 {
+                arrays.push(if glium.tex_array.len() > i && glium.tex_array[i].is_some() {
+                    glium.tex_array[i].as_ref().unwrap()
+                } else {
+                    empty
+                });
+            }
+
+            let uniforms = uniform! {
+                view_matrix     : layer.view_matrix,
+                model_matrix    : layer.model_matrix,
+                global_color    : layer.color,
+                tex0            : arrays[0],
+                tex1            : arrays[1],
+                tex2            : arrays[2],
+                tex3            : arrays[3],
+                tex4            : arrays[4],
+            };
+
+            // set up draw parameters for given blend options
+
+            let draw_parameters = glium::draw_parameters::DrawParameters {
+                backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
+                blend: layer.blend,
+                .. Default::default()
+            };
+
+            // copy layer data to vertexbuffer
+
+            if glium.vertex_buffers.contains_key(&layer.gid) == false {
+                glium.vertex_buffers.insert(layer.gid, VertexBufferContainer {
+                    lid     : 0,
+                    buffer  : glium::VertexBuffer::empty_dynamic(&glium.display.handle, self.max_sprites as usize * 4).unwrap()
+                });
+            }
+
+            let container = glium.vertex_buffers.get_mut(&layer.gid).unwrap();
+
+            if container.lid != lid {
+                let size = num_sprites as usize * 4;
+                let vb_slice = container.buffer.slice(0 .. size).unwrap();
+                vb_slice.write(&layer.vertex_data[0 .. size]);
+                container.lid = lid;
+            }
+
+            // draw up to num_sprites
+
+            let ib_slice = glium.index_buffer.slice(0 .. num_sprites as usize * 6).unwrap();
+            glium.target.as_mut().unwrap().draw(&container.buffer, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
+        }
+
+        self
     }
 
     /// parses sprite-sheet filename for dimensions and frame count
