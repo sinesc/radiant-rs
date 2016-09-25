@@ -16,14 +16,17 @@ pub use color::Color;
 pub use renderer::Renderer;
 pub use renderer::Sprite;
 pub use renderer::Layer;
+pub use renderer::blendmodes;
 pub use maths::{Mat4, Vec2, Vec3, Dir1};
-//pub use display::Display;
 pub use display::Descriptor;
 pub use display::Monitor;
 pub use scene::Scene;
 
-// this is only here so handle doesn't have to be public. need better solution
+// this is here so the struct members don't have to be public - could need a better solution
 #[derive(Clone)]
 pub struct Display {
     handle: glium::Display,
 }
+
+#[derive(Copy, Clone)]
+pub struct BlendMode (glium::draw_parameters::Blend);

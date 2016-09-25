@@ -16,7 +16,7 @@ impl<T: Copy + fmt::Display + Float> Vec3<T> {
 }
 
 impl<T: Copy + fmt::Display + Float> VecType<T> for Vec3<T> {
-    fn as_vec3(&self) -> Vec3<T> {
+    fn as_vec3(&self, _: T) -> Vec3<T> {
         *self
     }
 }

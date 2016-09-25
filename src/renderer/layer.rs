@@ -1,10 +1,12 @@
-use glium::draw_parameters::*;
+//use glium::draw_parameters::*;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::RwLock;
 use maths::*;
 use color::Color;
 use renderer::Renderer;
 use renderer::Sprite;
+use renderer::blendmodes;
+use BlendMode;
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
@@ -22,7 +24,7 @@ static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub struct Layer {
     pub view_matrix : Mat4<f32>,
     pub model_matrix: Mat4<f32>,
-    pub blend       : Blend,
+    pub blend       : BlendMode,
     pub color       : Color,
     pub gid         : usize,
     pub lid         : AtomicUsize,
@@ -46,8 +48,8 @@ impl Layer {
 
         Layer {
             view_matrix     : Self::viewport_matrix(width, height),
-            model_matrix    : Mat4::<f32>::new_identity(),
-            blend           : Blend::alpha_blending(),
+            model_matrix    : Mat4::<f32>::identity(),
+            blend           : blendmodes::ALPHA,
             color           : Color::white(),
             gid             : gid,
             lid             : ATOMIC_USIZE_INIT,
@@ -72,6 +74,11 @@ impl Layer {
     /// sets the model matrix
     pub fn set_model_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
         self.model_matrix = matrix.clone();
+        self
+    }
+
+    pub fn set_blendmode(&mut self, blendmode: BlendMode) -> &mut Self {
+        self.blend = blendmode;
         self
     }
 
@@ -179,95 +186,9 @@ impl Layer {
         self
     }
 
-    /// sets the blend function for the layer (standard alpha blending)
-    pub fn blend_alpha(&mut self) -> &mut Self {
-        self.blend = Blend {
-             color: BlendingFunction::Addition {
-                 source: LinearBlendingFactor::One,
-                 destination: LinearBlendingFactor::OneMinusSourceAlpha,
-             },
-             alpha: BlendingFunction::Addition {
-                 source: LinearBlendingFactor::One,
-                 destination: LinearBlendingFactor::OneMinusSourceAlpha,
-             },
-             constant_value: (0.0, 0.0, 0.0, 0.0)
-         };
-        self
-    }
-
-    /// sets the blend function for the layer (like alpha, but adds brightness value)
-    pub fn blend_alpha_const(&mut self, brightness: u8) -> &mut Self {
-       self.blend = Blend {
-            color: BlendingFunction::Addition {
-                source: LinearBlendingFactor::ConstantAlpha,
-                destination: LinearBlendingFactor::OneMinusSourceAlpha,
-            },
-            alpha: BlendingFunction::Addition {
-                source: LinearBlendingFactor::One,
-                destination: LinearBlendingFactor::OneMinusSourceAlpha,
-            },
-            constant_value: (0.0, 0.0, 0.0, brightness as f32 / 255.0)
-        };
-        self
-    }
-
-    /// sets the blend function for the layer
-    pub fn blend_max(&mut self) -> &mut Self {
-        self.blend = Blend {
-            color: BlendingFunction::Max,
-            alpha: BlendingFunction::Max,
-            .. Default::default()
-        };
-        self
-    }
-
-    /// sets the blend function for the layer
-    pub fn blend_min(&mut self) -> &mut Self {
-        self.blend = Blend {
-            color: BlendingFunction::Min,
-            alpha: BlendingFunction::Min,
-            .. Default::default()
-        };
-        self
-    }
-
-// !todo set up some nice blend modes
-
-    /// sets the blend function for the layer
-    pub fn blend_lighten(&mut self) -> &mut Self {
-        self.blend = Blend {
-            color: BlendingFunction::Addition {
-                source: LinearBlendingFactor::SourceAlpha,
-                destination: LinearBlendingFactor::One,
-            },
-            alpha: BlendingFunction::Addition {
-                source: LinearBlendingFactor::One,
-                destination: LinearBlendingFactor::One,
-            },
-            .. Default::default()
-        };
-        self
-    }
-
-    /// sets the blend function for the layer
-    pub fn blend_overlay(&mut self) -> &mut Self {
-        self.blend = Blend {
-            color: BlendingFunction::Addition {
-                source: LinearBlendingFactor::SourceAlpha,
-                destination: LinearBlendingFactor::SourceAlpha,
-            },
-            alpha: BlendingFunction::Addition {
-                source: LinearBlendingFactor::One,
-                destination: LinearBlendingFactor::One,
-            },
-            .. Default::default()
-        };
-        self
-    }
-
     // compute the default view matrix
     fn viewport_matrix(width: u32, height: u32) -> Mat4<f32> {
-        let mut matrix = Mat4::<f32>::new_identity();
+        let mut matrix = Mat4::<f32>::identity();
         *matrix
             .translate(Vec3(-1.0, 1.0, 0.0))
             .scale(Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0))

@@ -2,14 +2,14 @@ extern crate radiant_rs;
 
 //use std::thread;
 use std::time::{Duration, Instant};
-use radiant_rs::{Input, Color, Renderer, Descriptor, Display};
+use radiant_rs::{Input, Color, Renderer, Descriptor, Display, blendmodes};
 
 fn main() {
 
     // initialize a display, and input source and a renderer
 
     let max_sprites = 1500;
-    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: false, ..Descriptor::default() });
+    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: true, ..Descriptor::default() });
     let mut input = Input::new(&display);
     let renderer = Renderer::new(&display, max_sprites);
 
@@ -21,18 +21,17 @@ fn main() {
     let sparkles = renderer.texture(r"res/sparkles_64x64x1.png");
     let spark = renderer.texture(r"res/basic_64x64x1.png");
 
-    // set up two rendering layers, switch to lighten blend mode for one
+    // set up two rendering layers
 
     let mut layer = renderer.layer();
     let mut persistent_layer = renderer.layer();
-    persistent_layer.blend_lighten();
 
     // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 
     let mut rand_state = 0.0;
     let radius = 600.0;
 
-    for i in 0..1000 {
+    for i in 0..max_sprites {
         let l = sinrand(&mut rand_state);
         let r = l * radius / 2.0;
         let a = sinrand(&mut rand_state) * 2.0 * 3.14157;
@@ -40,7 +39,7 @@ fn main() {
         let y = (radius / 2.0) + a.cos() * r;
         let s = sinrand(&mut rand_state);
         if sinrand(&mut rand_state) > 0.90 {
-            let temperature = sinrand(&mut rand_state) * (40000.0 - 2000.0) + 2000.0;
+            let temperature = sinrand(&mut rand_state) * (20000.0 - 2000.0) + 2000.0;
             persistent_layer.sprite(spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
         } else {
             let temperature = sinrand(&mut rand_state) * (15000.0 - 2000.0) + 2000.0;
@@ -48,6 +47,7 @@ fn main() {
         }
     }
 
+    persistent_layer.set_blendmode(blendmodes::LIGHTEN);
     persistent_layer.view_matrix.translate((150.0, 100.0));
 
     // clone a couple of view matricies
@@ -67,7 +67,7 @@ fn main() {
     let mut pm3 = persistent_layer.model_matrix.clone();
 
     // the main loop
-    start_loop(|| {
+    start_loop(|delta| {
 
         // basic input
 
@@ -85,14 +85,14 @@ fn main() {
 
         // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
 
-        layer.view_matrix.rotate_z_at((650.0, 650.0), 0.005);
+        layer.view_matrix.rotate_z_at((650.0, 650.0), 0.3 * delta);
 
-        pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.0009);
-        pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.0007);
-        pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.0004);
-        pm1.rotate_z(-0.005);
-        pm2.rotate_z(0.004);
-        pm3.rotate_z(0.003);
+        pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.054 * delta);
+        pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.042 * delta);
+        pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.024 * delta);
+        pm1.rotate_z(-0.03 * delta);
+        pm2.rotate_z(0.024 * delta);
+        pm3.rotate_z(0.018 * delta);
 
         // prepare render target, required before drawing
 
@@ -108,30 +108,20 @@ fn main() {
         persistent_layer
             .set_view_matrix(pv3)
             .set_model_matrix(pm3)
-            .set_color(Color::lightness(0.25));
-
-        persistent_layer.draw();
+            .set_color(Color::lightness(0.25))
+            .draw();
 
         persistent_layer
             .set_view_matrix(pv2)
             .set_model_matrix(pm2)
-            .set_color(Color::lightness(0.5));
-
-        persistent_layer.draw();
-
-        persistent_layer
-            .set_view_matrix(pv1)
-            .set_model_matrix(pm1)
-            .set_color(Color::lightness(1.0));
-
-        persistent_layer.draw();
+            .set_color(Color::lightness(0.5))
+            .draw();
 
         persistent_layer
             .set_view_matrix(pv1)
             .set_model_matrix(pm1)
-            .set_color(Color::lightness(1.0));
-
-        persistent_layer.draw();
+            .set_color(Color::lightness(1.0))
+            .draw();
 
         renderer.swap_target();
 
@@ -155,7 +145,7 @@ pub enum Action {
     Continue,
 }
 
-pub fn start_loop<F>(mut callback: F) where F: FnMut() -> Action {
+pub fn start_loop<F>(mut callback: F) where F: FnMut(f32) -> Action {
     let mut accumulator = Duration::new(0, 0);
     let mut previous_clock = Instant::now();
 
@@ -166,15 +156,17 @@ pub fn start_loop<F>(mut callback: F) where F: FnMut() -> Action {
     let mut frames_elapsed = 0;
 
     loop {
-        match callback() {
+
+        let now = Instant::now();
+        let frame_delta = now - previous_clock;
+
+        match callback(frame_delta.as_secs() as f32 + (frame_delta.subsec_nanos() as f64 / 1000000000.0) as f32) {
             Action::Stop => break,
             Action::Continue => ()
         };
 
-        let now = Instant::now();
-
         // determine thread sleep to maintain X FPS
-        accumulator += now - previous_clock;
+        accumulator += frame_delta;
 
         while accumulator >= frame_interval {
             accumulator -= frame_interval;

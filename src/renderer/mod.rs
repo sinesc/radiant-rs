@@ -1,5 +1,6 @@
 mod layer;
 mod sprite;
+pub mod blendmodes;
 pub use self::layer::Layer;
 pub use self::sprite::Sprite;
 
@@ -148,7 +149,7 @@ impl Renderer {
         glium.target.take().unwrap()
     }
 
-    /// draws all previously added sprites. does not clear sprites.
+    /// draws all sprites on given layer
     fn draw_layer(&self, layer: &Layer) -> &Self {
 
         // make sure texture arrays have been generated from raw images
@@ -198,7 +199,7 @@ impl Renderer {
 
             let draw_parameters = glium::draw_parameters::DrawParameters {
                 backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-                blend: layer.blend,
+                blend: layer.blend.0,
                 .. Default::default()
             };
 

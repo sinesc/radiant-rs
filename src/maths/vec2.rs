@@ -16,8 +16,8 @@ impl<T: Copy + fmt::Display + Float> Vec2<T> {
 }
 
 impl<T: Copy + fmt::Display + Float> VecType<T> for Vec2<T> {
-    fn as_vec3(&self) -> Vec3<T> {
-        Vec3::<T>(self.0, self.1, T::zero())
+    fn as_vec3(&self, neutral: T) -> Vec3<T> {
+        Vec3::<T>(self.0, self.1, neutral)
     }
 }
 

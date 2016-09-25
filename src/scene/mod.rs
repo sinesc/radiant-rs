@@ -2,6 +2,7 @@
 use color::Color;
 use maths::Mat4;
 use renderer::{Renderer, Layer};
+use BlendMode;
 
 #[derive(Copy, Clone)]
 pub struct OperationId(usize);
@@ -14,7 +15,7 @@ pub enum Operation {
     SetColor(LayerId, Color),
     SetViewMatrix(LayerId, Mat4<f32>),
     SetModelMatrix(LayerId, Mat4<f32>),
-    //SetBlend(), !todo
+    SetBlendmode(LayerId, BlendMode),
     Draw(LayerId),
     Reset(LayerId),
 }
@@ -81,6 +82,9 @@ impl Scene {
                 }
                 Operation::SetModelMatrix(layer_id, matrix) => {
                     self.layers[layer_id.0 as usize].set_model_matrix(matrix);
+                }
+                Operation::SetBlendmode(layer_id, blendmode) => {
+                    self.layers[layer_id.0 as usize].set_blendmode(blendmode);
                 }
                 Operation::Draw(layer_id) => {
                     self.layers[layer_id.0 as usize].draw();

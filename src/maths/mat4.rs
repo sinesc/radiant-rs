@@ -17,7 +17,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         }
     }
 
-    pub fn new_identity() -> Mat4<T> {
+    pub fn identity() -> Mat4<T> {
         Mat4::<T> {
             d: [
                 T::one(),
@@ -40,31 +40,9 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         }
     }
 
-    pub fn identity(&mut self) -> &mut Self {
-
-        self.d[0] = T::one();
-        self.d[1] = T::zero();
-        self.d[2] = T::zero();
-        self.d[3] = T::zero();
-        self.d[4] = T::zero();
-        self.d[5] = T::one();
-        self.d[6] = T::zero();
-        self.d[7] = T::zero();
-        self.d[8] = T::zero();
-        self.d[9] = T::zero();
-        self.d[10] = T::one();
-        self.d[11] = T::zero();
-        self.d[12] = T::zero();
-        self.d[13] = T::zero();
-        self.d[14] = T::zero();
-        self.d[15] = T::one();
-
-        self
-    }
-
     pub fn translate<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
 
-        let Vec3::<T>(x, y, z) = v.as_vec3();
+        let Vec3::<T>(x, y, z) = v.as_vec3(T::zero());
 
         self.d[12] = self.d[0] * x + self.d[4] * y + self.d[8] * z + self.d[12];
         self.d[13] = self.d[1] * x + self.d[5] * y + self.d[9] * z + self.d[13];
@@ -76,7 +54,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
 
     pub fn scale<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
 
-        let Vec3::<T>(x, y, z) = v.as_vec3();
+        let Vec3::<T>(x, y, z) = v.as_vec3(T::one());
 
         self.d[0]  = self.d[0]  * x;
         self.d[1]  = self.d[1]  * x;
@@ -96,11 +74,11 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
 
     pub fn rotate<Vector: VecType<T>>(&mut self, rad: T, axis: Vector) -> &mut Self {
 
-        let Vec3::<T>(mut x, mut y, mut z) = axis.as_vec3();
+        let Vec3::<T>(mut x, mut y, mut z) = axis.as_vec3(T::zero());
 
         let mut len: T = (x * x + y * y + z * z).sqrt();
 
-        if len.is_normal() {
+        if len.is_normal() == false {
             return self;
         }
 
@@ -181,7 +159,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
     }
 
     pub fn rotate_z_at<Vector: VecType<T>>(&mut self, v: Vector, rad: T) -> &mut Self {
-        let v3 = v.as_vec3();
+        let v3 = v.as_vec3(T::zero());
         self.translate(v3)
             .rotate_z(rad)
             .translate(-v3);
