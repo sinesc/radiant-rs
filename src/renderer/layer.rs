@@ -1,12 +1,12 @@
 //use glium::draw_parameters::*;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-use std::sync::RwLock;
 use maths::*;
 use color::Color;
 use renderer::Renderer;
 use renderer::Sprite;
 use renderer::blendmodes;
 use BlendMode;
+use avec::AVec;
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
@@ -29,12 +29,8 @@ pub struct Layer {
     pub gid         : usize,
     pub lid         : AtomicUsize,
     pub renderer    : Renderer,
-    pub vertex_data : Vec<Vertex>,
-    pub sprite_id   : RwLock<AtomicUsize>,
+	pub vertex_data : AVec<Vertex>,
 }
-
-unsafe impl Sync for Layer { }
-unsafe impl Send for Layer { }
 
 impl Layer {
 
@@ -53,8 +49,7 @@ impl Layer {
             color           : Color::white(),
             gid             : gid,
             lid             : ATOMIC_USIZE_INIT,
-            sprite_id       : RwLock::new(AtomicUsize::new(0)),
-            vertex_data     : vec![Vertex::default(); renderer.max_sprites as usize * 4],
+            vertex_data     : AVec::new(renderer.max_sprites * 4),
             renderer        : renderer.clone(),
         }
     }
@@ -93,21 +88,10 @@ impl Layer {
         self.lid.fetch_add(1, Ordering::Relaxed);
 
         {
-            // a bit wonky, idea is: adding sprites in parallel is fine due to the atomic insert position. deleting sprites is not, so there we need a write()
-            let spriteguard = self.sprite_id.read().unwrap();
-
-            // atomics can be modified without mut
-            let sprite_id = spriteguard.fetch_add(1, Ordering::Relaxed);
-
-            assert!((sprite_id as u32) < self.renderer.max_sprites);
-
             let texture_id = sprite.texture_id(frame_id);
             let bucket_id = sprite.bucket_id();
-            let vertex_id = sprite_id as usize * 4;
 
             {
-                let vertex = &mut self.vertex_data;
-
                 // corner positions relative to x/y
 
                 let x = x as f32;
@@ -120,51 +104,53 @@ impl Layer {
                 let offset_y0 = -anchor_y * scale_y;
                 let offset_y1 = (sprite.height() as f32 - anchor_y) * scale_y;
 
+                let mut vertex = self.vertex_data.map(4);
+
                 // fill vertex array
 
-                vertex[vertex_id].position[0] = x;
-                vertex[vertex_id].position[1] = y;
-                vertex[vertex_id].offset[0] = offset_x0;
-                vertex[vertex_id].offset[1] = offset_y0;
-                vertex[vertex_id].rotation = rotation;
-                vertex[vertex_id].bucket_id = bucket_id;
-                vertex[vertex_id].texture_id = texture_id;
-                vertex[vertex_id].color = color;
-                vertex[vertex_id].texture_uv[0] = 0.0;
-                vertex[vertex_id].texture_uv[1] = 0.0;
+                vertex[0].position[0] = x;
+                vertex[0].position[1] = y;
+                vertex[0].offset[0] = offset_x0;
+                vertex[0].offset[1] = offset_y0;
+                vertex[0].rotation = rotation;
+                vertex[0].bucket_id = bucket_id;
+                vertex[0].texture_id = texture_id;
+                vertex[0].color = color;
+                vertex[0].texture_uv[0] = 0.0;
+                vertex[0].texture_uv[1] = 0.0;
 
-                vertex[vertex_id+1].position[0] = x;
-                vertex[vertex_id+1].position[1] = y;
-                vertex[vertex_id+1].offset[0] = offset_x1;
-                vertex[vertex_id+1].offset[1] = offset_y0;
-                vertex[vertex_id+1].rotation = rotation;
-                vertex[vertex_id+1].bucket_id = bucket_id;
-                vertex[vertex_id+1].texture_id = texture_id;
-                vertex[vertex_id+1].color = color;
-                vertex[vertex_id+1].texture_uv[0] = sprite.u_max();
-                vertex[vertex_id+1].texture_uv[1] = 0.0;
+                vertex[1].position[0] = x;
+                vertex[1].position[1] = y;
+                vertex[1].offset[0] = offset_x1;
+                vertex[1].offset[1] = offset_y0;
+                vertex[1].rotation = rotation;
+                vertex[1].bucket_id = bucket_id;
+                vertex[1].texture_id = texture_id;
+                vertex[1].color = color;
+                vertex[1].texture_uv[0] = sprite.u_max();
+                vertex[1].texture_uv[1] = 0.0;
 
-                vertex[vertex_id+2].position[0] = x;
-                vertex[vertex_id+2].position[1] = y;
-                vertex[vertex_id+2].offset[0] = offset_x0;
-                vertex[vertex_id+2].offset[1] = offset_y1;
-                vertex[vertex_id+2].rotation = rotation;
-                vertex[vertex_id+2].bucket_id = bucket_id;
-                vertex[vertex_id+2].texture_id = texture_id;
-                vertex[vertex_id+2].color = color;
-                vertex[vertex_id+2].texture_uv[0] = 0.0;
-                vertex[vertex_id+2].texture_uv[1] = sprite.v_max();
+                vertex[2].position[0] = x;
+                vertex[2].position[1] = y;
+                vertex[2].offset[0] = offset_x0;
+                vertex[2].offset[1] = offset_y1;
+                vertex[2].rotation = rotation;
+                vertex[2].bucket_id = bucket_id;
+                vertex[2].texture_id = texture_id;
+                vertex[2].color = color;
+                vertex[2].texture_uv[0] = 0.0;
+                vertex[2].texture_uv[1] = sprite.v_max();
 
-                vertex[vertex_id+3].position[0] = x;
-                vertex[vertex_id+3].position[1] = y;
-                vertex[vertex_id+3].offset[0] = offset_x1;
-                vertex[vertex_id+3].offset[1] = offset_y1;
-                vertex[vertex_id+3].rotation = rotation;
-                vertex[vertex_id+3].bucket_id = bucket_id;
-                vertex[vertex_id+3].texture_id = texture_id;
-                vertex[vertex_id+3].color = color;
-                vertex[vertex_id+3].texture_uv[0] = sprite.u_max();
-                vertex[vertex_id+3].texture_uv[1] = sprite.v_max();
+                vertex[3].position[0] = x;
+                vertex[3].position[1] = y;
+                vertex[3].offset[0] = offset_x1;
+                vertex[3].offset[1] = offset_y1;
+                vertex[3].rotation = rotation;
+                vertex[3].bucket_id = bucket_id;
+                vertex[3].texture_id = texture_id;
+                vertex[3].color = color;
+                vertex[3].texture_uv[0] = sprite.u_max();
+                vertex[3].texture_uv[1] = sprite.v_max();
             }
         }
 
@@ -176,13 +162,7 @@ impl Layer {
 
         // increase local part of hash to mark this layer as modified against cached state in Renderer
         self.lid.fetch_add(1, Ordering::Relaxed);
-
-        {
-            // get writelock on the sprite id before resetting it
-            let spriteguard = self.sprite_id.write().unwrap();
-            spriteguard.store(0, Ordering::Relaxed);
-        }
-
+        self.vertex_data.clear();
         self
     }
 

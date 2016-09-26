@@ -1,8 +1,10 @@
-mod layer;
-mod sprite;
+
 pub mod blendmodes;
 pub use self::layer::Layer;
 pub use self::sprite::Sprite;
+
+mod layer;
+mod sprite;
 
 use std::mem;
 use std::path::Path;
@@ -19,6 +21,7 @@ use regex::Regex;
 use color::Color;
 use display::Display;
 use self::layer::Vertex;
+use scene::Scene;
 
 #[derive(Copy, Clone, PartialEq)]
 enum SpriteLayout {
@@ -30,6 +33,7 @@ struct FrameParameters (u32, u32, u32, SpriteLayout);
 type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
 struct VertexBufferContainer {
     lid     : usize,
+    size    : usize,
     buffer  : glium::VertexBuffer<Vertex>,
 }
 
@@ -48,9 +52,6 @@ pub struct Renderer {
     max_sprites     : u32,
     glium           : Arc<Mutex<GliumState>>,
 }
-
-unsafe impl Sync for Renderer { }
-unsafe impl Send for Renderer { }
 
 impl Renderer {
 
@@ -73,11 +74,18 @@ impl Renderer {
         }
     }
 
-    /// returns a layer to draw on
+    /// returns a new layer
     ///
-    /// layers have a matrix and a blendmode that applies to all sprites on the layer
+    /// layers have properties that apply to all sprites on the layer and can be drawn multiple times
     pub fn layer(&self) -> Layer {
         Layer::new(self)
+    }
+
+    /// returns a new scene
+    ///
+    /// scenes simplify layer management, especially in a multithreaded environment
+    pub fn scene(&self) -> Scene {
+        Scene::new(self)
     }
 
     /// registers a sprite texture for drawing
@@ -159,15 +167,8 @@ impl Renderer {
         // load layer local id, guard against writes to vertex_data
 
         let lid = layer.lid.load(Ordering::Relaxed);
-        let writeguard = layer.sprite_id.write().unwrap();
 
         {
-            let num_sprites = writeguard.load(Ordering::Relaxed);
-
-            if num_sprites == 0 {
-                return self;
-            }
-
             // prepare texture array uniforms
 
             let mut glium_mutexguard = self.glium.lock().unwrap();
@@ -208,6 +209,7 @@ impl Renderer {
             if glium.vertex_buffers.contains_key(&layer.gid) == false {
                 glium.vertex_buffers.insert(layer.gid, VertexBufferContainer {
                     lid     : 0,
+                    size    : 0,
                     buffer  : glium::VertexBuffer::empty_dynamic(&glium.display.handle, self.max_sprites as usize * 4).unwrap()
                 });
             }
@@ -215,16 +217,20 @@ impl Renderer {
             let container = glium.vertex_buffers.get_mut(&layer.gid).unwrap();
 
             if container.lid != lid {
-                let size = num_sprites as usize * 4;
-                let vb_slice = container.buffer.slice(0 .. size).unwrap();
-                vb_slice.write(&layer.vertex_data[0 .. size]);
+                let vertex_data = layer.vertex_data.get();
+                container.size = vertex_data.len() / 4;
+                let num_vertices = container.size as usize * 4;
+                let vb_slice = container.buffer.slice(0 .. num_vertices).unwrap();
+                vb_slice.write(&vertex_data[0 .. num_vertices]);
                 container.lid = lid;
             }
 
-            // draw up to num_sprites
+            // draw up to container.size (!todo try to check this earlier)
 
-            let ib_slice = glium.index_buffer.slice(0 .. num_sprites as usize * 6).unwrap();
-            glium.target.as_mut().unwrap().draw(&container.buffer, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
+            if container.size > 0 {
+                let ib_slice = glium.index_buffer.slice(0 .. container.size as usize * 6).unwrap();
+                glium.target.as_mut().unwrap().draw(&container.buffer, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
+            }
         }
 
         self

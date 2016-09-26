@@ -10,6 +10,7 @@ mod renderer;
 mod maths;
 mod color;
 mod scene;
+mod avec;
 
 pub use input::Input;
 pub use color::Color;
