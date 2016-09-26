@@ -4,18 +4,21 @@ use std::ops::{Deref, DerefMut};
 use std::cell::UnsafeCell;
 
 /// read guard
+#[allow(dead_code)]
 pub struct AVecReadGuard<'a, T: 'a> {
     lock: RwLockWriteGuard<'a , AtomicUsize>,
     data: &'a mut Vec<T>,
     size: usize,
+    readers: &'a AtomicUsize,
 }
 
 impl<'a, T> AVecReadGuard<'a, T> {
-    unsafe fn new(lock: RwLockWriteGuard<'a, AtomicUsize>, data: &'a UnsafeCell<Vec<T>>, size: usize) -> AVecReadGuard<'a, T> {
+    unsafe fn new(lock: RwLockWriteGuard<'a, AtomicUsize>, data: &'a UnsafeCell<Vec<T>>, size: usize, readers: &'a AtomicUsize) -> AVecReadGuard<'a, T> {
         AVecReadGuard {
             lock: lock,
             data: &mut *data.get(),
             size: size,
+            readers: readers,
         }
     }
 }
@@ -27,7 +30,15 @@ impl<'a, T> Deref for AVecReadGuard<'a, T> {
     }
 }
 
+impl<'a, T> Drop for AVecReadGuard<'a, T> {
+    fn drop(&mut self) {
+        self.readers.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+
+
 /// map guard
+#[allow(dead_code)]
 pub struct AVecMapGuard<'a, T: 'a> {
     lock: RwLockReadGuard<'a, AtomicUsize>,
     data: &'a mut Vec<T>,
@@ -63,6 +74,7 @@ impl<'a, T> Deref for AVecMapGuard<'a, T> {
 pub struct AVec<T> {
     data    : UnsafeCell<Vec<T>>,
     insert  : Arc<RwLock<AtomicUsize>>,
+    readers : AtomicUsize,
     capacity: usize,
 }
 
@@ -75,12 +87,13 @@ impl<T> AVec<T> where T: Default {
     pub fn new(capacity: u32) -> AVec<T> {
         let capacity = capacity as usize;
         let mut data = Vec::with_capacity(capacity);
-        for i in 0..capacity {
+        for _ in 0..capacity {
             data.push(T::default());
         }
         AVec::<T> {
             data    : UnsafeCell::new(data),
             insert  : Arc::new(RwLock::new(ATOMIC_USIZE_INIT)),
+            readers : ATOMIC_USIZE_INIT,
             capacity: capacity,
         }
     }
@@ -89,6 +102,9 @@ impl<T> AVec<T> where T: Default {
     pub fn push(&self, value: T) {
         let guard = self.insert.read().unwrap();
         let insert_pos = guard.fetch_add(1, Ordering::Relaxed);
+        if insert_pos >= self.capacity {
+            panic!("AVec::push: index {} out of range for AVec of capacity {}", insert_pos as u32, self.capacity);
+        }
         unsafe {
             let data = self.data.get();
             (*data)[insert_pos] = value;
@@ -100,6 +116,9 @@ impl<T> AVec<T> where T: Default {
     pub fn map<'a>(&'a self, size: u32) -> AVecMapGuard<'a, T>  {
         let guard = self.insert.read().unwrap();
         let insert_pos = guard.fetch_add(size as usize, Ordering::Relaxed);
+        if insert_pos + size as usize > self.capacity {
+            panic!("AVec::map: range({},{}) out of range for AVec of capacity {}", insert_pos as u32, insert_pos as u32 + size, self.capacity);
+        }
         unsafe { AVecMapGuard::new(guard, &self.data, insert_pos, size as usize) }
     }
 
@@ -111,8 +130,11 @@ impl<T> AVec<T> where T: Default {
 
     // returns a wrapped slice. this blocks reads and writes until the reference goes out of scope
     pub fn get<'a>(&'a self) -> AVecReadGuard<'a, T> {
+        if self.readers.fetch_add(1, Ordering::Relaxed) > 0 {
+            panic!("AVec::get: instance already exclusively borrowed");
+        }
         let guard = self.insert.write().unwrap();
         let size = guard.load(Ordering::Relaxed);
-        unsafe { AVecReadGuard::new(guard, &self.data, size) }
+        unsafe { AVecReadGuard::new(guard, &self.data, size, &self.readers) }
     }
 }
