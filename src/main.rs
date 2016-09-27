@@ -5,7 +5,7 @@ extern crate radiant_rs;
 
 //use std::thread;
 use std::time::{Duration, Instant};
-use radiant_rs::{Input, Color, Renderer, Descriptor, Display, Scene, blendmodes};
+use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, blendmodes};
 
 //use radiant_rs::avec::AVec;
 use std::thread;
@@ -64,14 +64,14 @@ fn main() {
 
     // create a scene
 
-    let mut scene = Scene::new(&renderer);
+    let mut scene = Scene::new(&renderer, display.dimensions());
     let logo = scene.add_layer();
     let galaxy = scene.add_layer();
 
     // set up two rendering layers
 
-    let mut layer = renderer.layer();
-    let mut persistent_layer = renderer.layer();
+    let mut layer = Layer::new(&renderer, display.dimensions());
+    let mut persistent_layer = Layer::new(&renderer, display.dimensions());
 
     // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 

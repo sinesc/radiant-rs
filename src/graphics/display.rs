@@ -75,6 +75,10 @@ impl Display {
         }
     }
 
+    pub fn dimensions(self: &Self) -> (u32, u32) {
+        self.handle.get_framebuffer_dimensions()
+    }
+
     pub fn monitor(index: u32) -> Option<Monitor> {
         let mut iter = glium::glutin::get_available_monitors();
         let result = iter.nth(index as usize);

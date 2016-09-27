@@ -15,15 +15,12 @@ pub use Layer;
 impl Layer {
 
     /// creates a new layer for the given renderer. use Renderer::layer() instead.
-    pub fn new(renderer: &Renderer) -> Self {
-
-        let glium = renderer.glium.lock().unwrap();
-        let (width, height) = glium.display.handle.get_framebuffer_dimensions();
+    pub fn new(renderer: &Renderer, dimensions: (u32, u32)) -> Self {
 
         let gid = LAYER_COUNTER.fetch_add(1, Ordering::Relaxed);
 
         Layer {
-            view_matrix     : Mutex::new(Self::viewport_matrix(width, height)),
+            view_matrix     : Mutex::new(Self::viewport_matrix(dimensions.0, dimensions.1)),
             model_matrix    : Mutex::new(Mat4::<f32>::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),

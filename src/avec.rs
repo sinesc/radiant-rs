@@ -81,6 +81,7 @@ pub struct AVec<T> {
 unsafe impl<T> Sync for AVec<T> { }
 unsafe impl<T> Send for AVec<T> { }
 
+#[allow(dead_code)]
 impl<T> AVec<T> where T: Default {
 
     /// creates a new instance with given maximum capacity

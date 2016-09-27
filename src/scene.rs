@@ -29,15 +29,17 @@ pub struct Scene {
     renderer        : Renderer,
     operations      : Vec<Operation>,
     layers          : Vec<Layer>,
+    dimensions      : (u32, u32),
 }
 
 impl Scene {
     /// create a new scene instance
-    pub fn new(renderer: &Renderer) -> Scene {
+    pub fn new(renderer: &Renderer, dimensions: (u32, u32)) -> Scene {
         Scene {
             renderer    : renderer.clone(),
             operations  : Vec::new(),
             layers      : Vec::new(),
+            dimensions  : dimensions,
         }
     }
 
@@ -66,7 +68,7 @@ impl Scene {
     /// create and add a layer to the scene
     pub fn add_layer(&mut self) -> LayerId {
         let insert_position = self.layers.len();
-        self.layers.push(Layer::new(&self.renderer));
+        self.layers.push(Layer::new(&self.renderer, self.dimensions));
         LayerId(insert_position)
     }
 

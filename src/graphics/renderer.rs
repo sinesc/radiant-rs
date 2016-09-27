@@ -11,7 +11,6 @@ use glium;
 use glium::Surface;
 use regex::Regex;
 use color::Color;
-use scene::Scene;
 use graphics::{GliumState, Display, Layer, Renderer, Sprite, VertexBufferContainer, RawFrame, blendmode};
 
 #[derive(Copy, Clone, PartialEq)]
@@ -36,6 +35,7 @@ impl Renderer {
     ///
     /// display is a glium Display obtained by i.e. glium::glutin::WindowBuilder::new().with_depth_buffer(24).build_glium().unwrap()
     pub fn new(display: &Display, max_sprites: u32) -> Self {
+
         let glium = GliumState {
             index_buffer    : Self::create_index_buffer(&display.handle, max_sprites),
             program         : Self::create_program(&display.handle),
@@ -50,21 +50,7 @@ impl Renderer {
             glium           : Arc::new(Mutex::new(glium)),
         }
     }
-
-    /// returns a new layer
-    ///
-    /// layers have properties that apply to all sprites on the layer and can be drawn multiple times
-    pub fn layer(&self) -> Layer {
-        Layer::new(self)
-    }
-
-    /// returns a new scene
-    ///
-    /// scenes simplify layer management, especially in a multithreaded environment
-    pub fn scene(&self) -> Scene {
-        Scene::new(self)
-    }
-
+    
     /// registers a sprite texture for drawing
     ///
     /// must be done before first draw, calling  this function after draw will reset existing
