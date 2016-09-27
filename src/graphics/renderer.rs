@@ -1,27 +1,18 @@
-
-pub mod blendmodes;
-pub use self::layer::Layer;
-pub use self::sprite::Sprite;
-
-mod layer;
-mod sprite;
-
 use std::mem;
-use std::path::Path;
 use std::cmp;
-use std::sync::{Arc, Mutex};
-use std::ops::{DerefMut};
-use std::sync::atomic::{Ordering};
+use std::ops::DerefMut;
+use std::sync::atomic::Ordering;
 use std::collections::HashMap;
-use glium;
-use glium::Surface;
+use std::sync::{Arc, Mutex};
+use std::path::Path;
 use image;
 use image::GenericImage;
+use glium;
+use glium::Surface;
 use regex::Regex;
 use color::Color;
-use display::Display;
-use self::layer::Vertex;
 use scene::Scene;
+use graphics::{GliumState, Display, Layer, Renderer, Sprite, VertexBufferContainer, RawFrame, blendmode};
 
 #[derive(Copy, Clone, PartialEq)]
 enum SpriteLayout {
@@ -30,27 +21,13 @@ enum SpriteLayout {
 }
 
 struct FrameParameters (u32, u32, u32, SpriteLayout);
-type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
-struct VertexBufferContainer {
-    lid     : usize,
-    size    : usize,
-    buffer  : glium::VertexBuffer<Vertex>,
+
+pub fn draw_layer(renderer: &Renderer, layer: &Layer) {
+    renderer.draw_layer(layer);
 }
 
-struct GliumState {
-    index_buffer    : glium::IndexBuffer<u32>,
-    program         : glium::Program,
-    tex_array       : Vec<Option<glium::texture::Texture2dArray>>,
-    raw_tex_data    : Vec<Vec<RawFrame>>,
-    target          : Option<glium::Frame>,
-    display         : Display,
-    vertex_buffers  : HashMap<usize, VertexBufferContainer>,
-}
-
-#[derive(Clone)]
-pub struct Renderer {
-    max_sprites     : u32,
-    glium           : Arc<Mutex<GliumState>>,
+pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
+    Renderer::bucket_info(width, height)
 }
 
 impl Renderer {
@@ -186,9 +163,9 @@ impl Renderer {
             }
 
             let uniforms = uniform! {
-                view_matrix     : layer.view_matrix,
-                model_matrix    : layer.model_matrix,
-                global_color    : layer.color,
+                view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
+                model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
+                global_color    : *layer.color.lock().unwrap().deref_mut(),
                 tex0            : arrays[0],
                 tex1            : arrays[1],
                 tex2            : arrays[2],
@@ -200,7 +177,7 @@ impl Renderer {
 
             let draw_parameters = glium::draw_parameters::DrawParameters {
                 backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-                blend: layer.blend.0,
+                blend           : blendmode::access_blendmode(layer.blend.lock().unwrap().deref_mut()),
                 .. Default::default()
             };
 
@@ -219,10 +196,12 @@ impl Renderer {
             if container.lid != lid {
                 let vertex_data = layer.vertex_data.get();
                 container.size = vertex_data.len() / 4;
-                let num_vertices = container.size as usize * 4;
-                let vb_slice = container.buffer.slice(0 .. num_vertices).unwrap();
-                vb_slice.write(&vertex_data[0 .. num_vertices]);
-                container.lid = lid;
+                if container.size > 0 {
+                    let num_vertices = container.size as usize * 4;
+                    let vb_slice = container.buffer.slice(0 .. num_vertices).unwrap();
+                    vb_slice.write(&vertex_data[0 .. num_vertices]);
+                    container.lid = lid;
+                }
             }
 
             // draw up to container.size (!todo try to check this earlier)

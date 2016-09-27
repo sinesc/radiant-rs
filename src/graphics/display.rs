@@ -3,8 +3,6 @@ use glium;
 use glium::{DisplayBuild};
 use glium::glutin::WindowBuilder;
 
-pub use super::Display;
-
 pub struct Monitor {
     id: glium::glutin::MonitorId,
 }
@@ -51,6 +49,7 @@ impl Default for Descriptor {
    }
 }
 
+use graphics::Display;
 impl Display {
     pub fn new(descriptor: Descriptor) -> Display {
 

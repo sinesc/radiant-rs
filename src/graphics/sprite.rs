@@ -1,4 +1,4 @@
-use renderer::Renderer;
+use graphics;
 
 #[derive(Copy, Clone)]
 pub struct Sprite {
@@ -16,7 +16,7 @@ pub struct Sprite {
 impl Sprite {
     pub fn new(width: u32, height: u32, frames: u32, bucket_pos: u32) -> Self {
 
-        let (bucket_id, tex_size) = Renderer::bucket_info(width, height);
+        let (bucket_id, tex_size) = graphics::renderer::bucket_info(width, height);
 
         Sprite {
             width       : width,

@@ -1,15 +1,56 @@
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 extern crate radiant_rs;
 
 //use std::thread;
 use std::time::{Duration, Instant};
-use radiant_rs::{Input, Color, Renderer, Descriptor, Display, blendmodes};
+use radiant_rs::{Input, Color, Renderer, Descriptor, Display, Scene, blendmodes};
+
+//use radiant_rs::avec::AVec;
+use std::thread;
+use std::sync::Arc;
 
 fn main() {
+/*
+    let myvec = Arc::new(AVec::<u32>::new(100));
+
+    for i in 0..8 {
+        let local_vec = myvec.clone();
+        let thread_id = i;
+        thread::spawn(move || {
+            let mut vec = local_vec.map(thread_id);
+            for n in 0..thread_id {
+                thread::sleep(Duration::new(0, 16666667));
+                vec[n as usize] = thread_id;
+            }
+        });
+    }
+
+    for _ in 0..10 {
+
+        let vector = myvec.get();
+        for i in 0..vector.len() {
+            print!("{} ", vector[i]);
+        }
+
+        thread::sleep(Duration::new(0, 16666667));
+
+        println!("--");
+    }
+
+    let another = myvec.get();
+    for i in 0..another.len() {
+        print!("x{} ", another[i]);
+    }
+
+    println!("--");
+*/
 
     // initialize a display, and input source and a renderer
 
     let max_sprites = 1500;
-    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: true, ..Descriptor::default() });
+    let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: false, ..Descriptor::default() });
     let mut input = Input::new(&display);
     let renderer = Renderer::new(&display, max_sprites);
 
@@ -20,6 +61,12 @@ fn main() {
     let test3 = renderer.texture(r"res/test_59x30x1.png");
     let sparkles = renderer.texture(r"res/sparkles_64x64x1.png");
     let spark = renderer.texture(r"res/basic_64x64x1.png");
+
+    // create a scene
+
+    let mut scene = Scene::new(&renderer);
+    let logo = scene.add_layer();
+    let galaxy = scene.add_layer();
 
     // set up two rendering layers
 
@@ -39,22 +86,22 @@ fn main() {
         let y = (radius / 2.0) + a.cos() * r;
         let s = sinrand(&mut rand_state);
         if sinrand(&mut rand_state) > 0.90 {
-            let temperature = sinrand(&mut rand_state) * (20000.0 - 2000.0) + 2000.0;
+            let temperature = sinrand(&mut rand_state) * (10000.0 - 2000.0) + 2000.0;
             persistent_layer.sprite(spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
         } else {
-            let temperature = sinrand(&mut rand_state) * (15000.0 - 2000.0) + 2000.0;
+            let temperature = sinrand(&mut rand_state) * (10000.0 - 2000.0) + 2000.0;
             persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
         }
     }
 
-    persistent_layer.set_blendmode(blendmodes::LIGHTEN);
-    persistent_layer.view_matrix.translate((150.0, 100.0));
+    persistent_layer.set_blendmode(blendmodes::OVERLAY);
+    persistent_layer.view_matrix().translate((150.0, 100.0));
 
     // clone a couple of view matricies
 
-    let mut pv1 = persistent_layer.view_matrix.clone();
-    let mut pv2 = persistent_layer.view_matrix.clone();
-    let mut pv3 = persistent_layer.view_matrix.clone();
+    let mut pv1 = persistent_layer.view_matrix().clone();
+    let mut pv2 = persistent_layer.view_matrix().clone();
+    let mut pv3 = persistent_layer.view_matrix().clone();
     pv1.rotate_z_at((radius / 2.0, radius / 2.0), 1.0);
     pv2.rotate_z_at((radius / 2.0, radius / 2.0), 2.0);
     pv3.rotate_z_at((radius / 2.0, radius / 2.0), 3.0);
@@ -62,9 +109,9 @@ fn main() {
 
     // model matricies as well
 
-    let mut pm1 = persistent_layer.model_matrix.clone();
-    let mut pm2 = persistent_layer.model_matrix.clone();
-    let mut pm3 = persistent_layer.model_matrix.clone();
+    let mut pm1 = persistent_layer.model_matrix().clone();
+    let mut pm2 = persistent_layer.model_matrix().clone();
+    let mut pm3 = persistent_layer.model_matrix().clone();
 
     // the main loop
     start_loop(|delta| {
@@ -85,14 +132,14 @@ fn main() {
 
         // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
 
-        layer.view_matrix.rotate_z_at((650.0, 650.0), 0.3 * delta);
+        layer.view_matrix().rotate_z_at((650.0, 650.0), 0.3 * delta);
 
         pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.054 * delta);
         pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.042 * delta);
         pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.024 * delta);
-        pm1.rotate_z(-0.03 * delta);
-        pm2.rotate_z(0.024 * delta);
-        pm3.rotate_z(0.018 * delta);
+        pm1.rotate_z(-0.15 * delta);
+        pm2.rotate_z(0.12 * delta);
+        pm3.rotate_z(0.09 * delta);
 
         // prepare render target, required before drawing
 
@@ -125,6 +172,7 @@ fn main() {
 
         renderer.swap_target();
 
+        //thread::sleep(Duration::new(5, 16666667));
         // exit on window close
 
         if input.should_close { Action::Stop } else { Action::Continue }

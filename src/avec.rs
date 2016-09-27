@@ -122,6 +122,11 @@ impl<T> AVec<T> where T: Default {
         unsafe { AVecMapGuard::new(guard, &self.data, insert_pos, size as usize) }
     }
 
+    /// returns the current length of the vector. this blocks reads
+    pub fn len(&self) -> u32 {
+        self.insert.read().unwrap().load(Ordering::Relaxed) as u32
+    }
+
     // clear the vector. this blocks reads and writes
     pub fn clear(&self) {
         let guard = self.insert.write().unwrap();

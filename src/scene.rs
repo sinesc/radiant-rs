@@ -1,7 +1,12 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+#![allow(unused_variables)]
 
+use std::cell::RefCell;
+use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use color::Color;
 use maths::Mat4;
-use renderer::{Renderer, Layer};
+use graphics::{Renderer, Layer};
 use BlendMode;
 
 #[derive(Copy, Clone)]
@@ -21,18 +26,18 @@ pub enum Operation {
 }
 
 pub struct Scene {
-    renderer: Renderer,
-    operations: Vec<Operation>,
-    layers: Vec<Layer>,
+    renderer        : Renderer,
+    operations      : Vec<Operation>,
+    layers          : Vec<Layer>,
 }
 
 impl Scene {
     /// create a new scene instance
     pub fn new(renderer: &Renderer) -> Scene {
         Scene {
-            renderer: renderer.clone(),
-            operations: Vec::<Operation>::new(),
-            layers: Vec::<Layer>::new(),
+            renderer    : renderer.clone(),
+            operations  : Vec::new(),
+            layers      : Vec::new(),
         }
     }
 

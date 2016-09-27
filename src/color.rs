@@ -6,7 +6,6 @@ use glium::vertex::{Attribute, AttributeType};
 #[derive(Copy, Clone, Default)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
-// !todo use f32's so that both attribute and uniform use result in the same gl representation
 impl Color {
 
     //const RED: Color = Color(1.0, 0, 0, 1.0);
@@ -77,6 +76,13 @@ impl Color {
 
     pub fn a(&self) -> f32 {
         self.3
+    }
+
+    pub fn set(&mut self, value: Color) {
+        self.0 = value.0;
+        self.1 = value.1;
+        self.2 = value.2;
+        self.3 = value.3;
     }
 
     pub fn set_r(&mut self, value: f32) -> Color {

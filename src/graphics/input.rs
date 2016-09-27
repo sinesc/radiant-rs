@@ -1,5 +1,5 @@
 use glium::glutin::{Event, ElementState, MouseButton/*, VirtualKeyCode*/};
-use display::Display;
+use graphics;
 
 pub struct MouseCoordinate {
     pub x: u32,
@@ -18,12 +18,12 @@ pub struct Input {
     pub shift_right : bool,
     pub escape      : bool,
     pub should_close: bool,
-    display         : Display,
+    display         : graphics::Display,
 }
 
 impl Input {
 
-    pub fn new(display: &Display) -> Self {
+    pub fn new(display: &graphics::Display) -> Self {
         Input {
             mouse       : MouseCoordinate { x: 0, y: 0 },
             button      : (false, false, false),

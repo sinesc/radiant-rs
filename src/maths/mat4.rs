@@ -11,12 +11,14 @@ pub struct Mat4<T: Copy + fmt::Display + Float> {
 
 impl<T: Copy + fmt::Display + Float> Mat4<T> {
 
+    /// creates a zero matrix
     pub fn new() -> Mat4<T> {
         Mat4::<T> {
             d: [ T::zero(); 16 ]
         }
     }
 
+    /// creates an identity matrix
     pub fn identity() -> Mat4<T> {
         Mat4::<T> {
             d: [
@@ -40,6 +42,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         }
     }
 
+    /// translate matrix by given vector
     pub fn translate<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
 
         let Vec3::<T>(x, y, z) = v.as_vec3(T::zero());
@@ -52,6 +55,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
+    /// scale matrix by given vector
     pub fn scale<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
 
         let Vec3::<T>(x, y, z) = v.as_vec3(T::one());
@@ -72,6 +76,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
+    /// rotate origin around given vector
     pub fn rotate<Vector: VecType<T>>(&mut self, rad: T, axis: Vector) -> &mut Self {
 
         let Vec3::<T>(mut x, mut y, mut z) = axis.as_vec3(T::zero());
@@ -132,6 +137,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
+    /// rotate origin around z
     pub fn rotate_z(&mut self, rad: T) -> &mut Self {
 
         let s = rad.sin();
@@ -158,6 +164,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         self
     }
 
+    /// rotate around z at given position
     pub fn rotate_z_at<Vector: VecType<T>>(&mut self, v: Vector, rad: T) -> &mut Self {
         let v3 = v.as_vec3(T::zero());
         self.translate(v3)
@@ -165,6 +172,13 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
             .translate(-v3);
 
         self
+    }
+
+    /// set matrix value from another matrix
+    pub fn set(&mut self, other: Mat4<T>) {
+        for (k, v) in other.d.iter().enumerate() {
+            self.d[k] = *v;
+        }
     }
 }
 
