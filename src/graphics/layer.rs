@@ -23,7 +23,7 @@ impl Layer {
     }
 
     /// sets global color multiplicator
-    pub fn set_color(&mut self, color: Color) -> &mut Self {
+    pub fn set_color(&self, color: Color) -> &Self {
         self.color().set(color);
         self
     }
@@ -34,7 +34,7 @@ impl Layer {
     }
 
     /// sets the view matrix
-    pub fn set_view_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
+    pub fn set_view_matrix(&self, matrix: Mat4<f32>) -> &Self {
         self.view_matrix().set(matrix);
         self
     }
@@ -45,7 +45,7 @@ impl Layer {
     }
 
     /// sets the model matrix
-    pub fn set_model_matrix(&mut self, matrix: Mat4<f32>) -> &mut Self {
+    pub fn set_model_matrix(&self, matrix: Mat4<f32>) -> &Self {
         self.model_matrix().set(matrix);
         self
     }
@@ -56,7 +56,7 @@ impl Layer {
     }
 
     /// sets the blendmode
-    pub fn set_blendmode(&mut self, blendmode: BlendMode) -> &mut Self {
+    pub fn set_blendmode(&self, blendmode: BlendMode) -> &Self {
         self.blendmode().set(blendmode);
         self
     }
@@ -66,8 +66,8 @@ impl Layer {
         self.blend.lock().unwrap()
     }
 
-    /// adds a sprite to the draw queue
-    pub fn sprite(&mut self, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &mut Self {
+    /// adds a sprite to the layer
+    pub fn sprite(&self, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
 
         // increase local part of hash to mark this layer as modified against cached state in Renderer
         self.lid.fetch_add(1, Ordering::Relaxed);
@@ -141,7 +141,7 @@ impl Layer {
     }
 
     /// removes previously added sprites from the drawing queue. typically invoked after draw()
-    pub fn reset(self: &mut Self) -> &mut Self {
+    pub fn reset(self: &Self) -> &Self {
 
         // increase local part of hash to mark this layer as modified against cached state in Renderer
         self.lid.fetch_add(1, Ordering::Relaxed);

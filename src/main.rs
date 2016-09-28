@@ -64,14 +64,24 @@ fn main() {
 
     // create a scene
 
-    let mut scene = Scene::new(max_sprites, display.dimensions());
+    let scene = Scene::new(max_sprites, display.dimensions());
     let logo = scene.add_layer();
     let galaxy = scene.add_layer();
 
     // set up two rendering layers
 
-    let mut layer = Layer::new(max_sprites, display.dimensions());
-    let mut persistent_layer = Layer::new(max_sprites, display.dimensions());
+    let layer = Layer::new(max_sprites, display.dimensions());
+    let persistent_layer = Layer::new(max_sprites, display.dimensions());
+
+    let shared_layer = Arc::new(Layer::new(max_sprites, display.dimensions()));
+    let shared_scene = Arc::new(Scene::new(max_sprites, display.dimensions()));
+
+    let thread_layer = shared_layer.clone();
+    let thread_scene = shared_scene.clone();
+    thread::spawn(move || {
+        shared_layer.view_matrix().scale((1.1, 1.1, 1.1));
+        shared_scene.add_layer();
+    });
 
     // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 

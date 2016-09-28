@@ -35,7 +35,6 @@ impl<'a, T> Drop for AVecReadGuard<'a, T> {
     }
 }
 
-
 /// map guard
 pub struct AVecMapGuard<'a, T: 'a> {
     lock: RwLockReadGuard<'a, AtomicUsize>,

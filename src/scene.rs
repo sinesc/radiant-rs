@@ -3,6 +3,7 @@
 #![allow(unused_variables)]
 
 use prelude::*;
+use std::cell::UnsafeCell;
 use avec::AVec;
 use color::Color;
 use maths::Mat4;
@@ -33,19 +34,22 @@ impl Default for Operation {
 
 pub struct Scene {
     operations      : AVec<Operation>,
-    layers          : Vec<Layer>,
-    layer_id        : Mutex<usize>,
+    layers          : UnsafeCell<Vec<Layer>>,
+    layer_id        : Mutex<AtomicUsize>,
     dimensions      : (u32, u32),
     max_sprites     : u32,
 }
+
+unsafe impl Send for Scene { }
+unsafe impl Sync for Scene { }
 
 impl Scene {
     /// create a new scene instance
     pub fn new(max_sprites: u32, dimensions: (u32, u32)) -> Scene {
         Scene {
             operations  : AVec::new(1024),  // !todo
-            layers      : Vec::new(),
-            layer_id    : Mutex::new(0),
+            layers      : UnsafeCell::new(Vec::new()),
+            layer_id    : Mutex::new(AtomicUsize::new(0)),
             dimensions  : dimensions,
             max_sprites : max_sprites,
         }
@@ -64,22 +68,24 @@ impl Scene {
     }
 
     /// create and add a layer to the scene
-    pub fn add_layer(&mut self) -> LayerId {
-        let mut lock = self.layer_id.lock().unwrap();
-        let mut layer_id = lock.deref_mut();
+    pub fn add_layer(&self) -> LayerId {
+        let lock = self.layer_id.lock().unwrap();
+        let layer_id = lock.deref();
 
-        let insert_position = self.layers.len();
-        self.layers.push(Layer::new(self.max_sprites, self.dimensions));
+        let mut layers = unsafe { &mut *self.layers.get() };
+        let insert_position = layers.len();
+        layers.push(Layer::new(self.max_sprites, self.dimensions));
 
-        *layer_id += 1;
-        assert!(*layer_id == self.layers.len());
+        layer_id.fetch_add(1, Ordering::SeqCst);
+        assert!(layer_id.load(Ordering::SeqCst) == layers.len());
 
         LayerId(insert_position)
     }
 
     /// returns an existing layer
-    pub fn layer(&mut self, id: LayerId) -> &mut Layer {
-        &mut self.layers[id.0]
+    pub fn layer(&self, id: LayerId) -> &Layer {
+        let layers = unsafe { &mut *self.layers.get() };
+        &layers[id.0]
     }
 }
 
@@ -88,26 +94,27 @@ impl Scene {
 pub fn draw(this: &mut Scene, renderer: &Renderer) {
     let operations_guard = this.operations.get();
     let operations = operations_guard.deref();
+    let layers = unsafe { &mut *this.layers.get() };
 
     for operation in operations {
         match *operation {
             Operation::SetColor(layer_id, color) => {
-                this.layers[layer_id.0 as usize].set_color(color);
+                layers[layer_id.0 as usize].set_color(color);
             }
             Operation::SetViewMatrix(layer_id, matrix) => {
-                this.layers[layer_id.0 as usize].set_view_matrix(matrix);
+                layers[layer_id.0 as usize].set_view_matrix(matrix);
             }
             Operation::SetModelMatrix(layer_id, matrix) => {
-                this.layers[layer_id.0 as usize].set_model_matrix(matrix);
+                layers[layer_id.0 as usize].set_model_matrix(matrix);
             }
             Operation::SetBlendmode(layer_id, blendmode) => {
-                this.layers[layer_id.0 as usize].set_blendmode(blendmode);
+                layers[layer_id.0 as usize].set_blendmode(blendmode);
             }
             Operation::Draw(layer_id) => {
-                renderer.draw_layer(&this.layers[layer_id.0 as usize]);
+                renderer.draw_layer(&layers[layer_id.0 as usize]);
             }
             Operation::Reset(layer_id) => {
-                this.layers[layer_id.0 as usize].reset();
+                layers[layer_id.0 as usize].reset();
             }
             _ => ()
         }
