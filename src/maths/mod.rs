@@ -8,8 +8,7 @@ pub use maths::vec2::Vec2;
 pub use maths::vec3::Vec3;
 pub use maths::dir1::Dir1;
 
-use num::traits::Float;
-use std::fmt;
+use prelude::*;
 
 pub trait VecType<T: Copy + fmt::Display + Float> {
     fn as_vec3(&self, neutral: T) -> Vec3<T>;

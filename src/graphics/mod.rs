@@ -1,4 +1,3 @@
-
 mod blendmode;
 mod display;
 mod input;
@@ -12,9 +11,7 @@ pub use self::input::Input;
 pub use self::display::{Descriptor, Monitor};
 pub use self::sprite::Sprite;
 
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::AtomicUsize;
-use std::collections::HashMap;
+use prelude::*;
 use glium;
 use color::Color;
 use maths::Mat4;

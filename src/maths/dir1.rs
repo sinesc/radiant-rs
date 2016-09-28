@@ -1,7 +1,4 @@
-use std::fmt;
-use std::{f32, f64};
-use num::traits::Float;
-//use glium::uniforms::{AsUniformValue, UniformValue};
+use prelude::*;
 use maths::Vec2;
 
 const RAD_TO_DEG32: f32 = 180.0 / f32::consts::PI;

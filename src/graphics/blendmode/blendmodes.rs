@@ -1,4 +1,3 @@
-
 use glium::draw_parameters::*;
 use BlendMode;
 

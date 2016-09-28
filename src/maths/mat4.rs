@@ -1,5 +1,4 @@
-use num::traits::Float;
-use std::fmt;
+use prelude::*;
 use maths::vec3::Vec3;
 use maths::VecType;
 use glium::uniforms::{AsUniformValue, UniformValue};

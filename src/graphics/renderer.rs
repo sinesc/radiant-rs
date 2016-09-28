@@ -1,10 +1,4 @@
-use std::mem;
-use std::cmp;
-use std::ops::DerefMut;
-use std::sync::atomic::Ordering;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::path::Path;
+use prelude::*;
 use image;
 use image::GenericImage;
 use glium;
@@ -50,7 +44,7 @@ impl Renderer {
             glium           : Arc::new(Mutex::new(glium)),
         }
     }
-    
+
     /// registers a sprite texture for drawing
     ///
     /// must be done before first draw, calling  this function after draw will reset existing

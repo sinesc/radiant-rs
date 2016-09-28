@@ -1,5 +1,4 @@
-use std::fmt;
-use std::cmp::{min, max};
+use prelude::*;
 use glium::uniforms::{AsUniformValue, UniformValue};
 use glium::vertex::{Attribute, AttributeType};
 
@@ -143,9 +142,9 @@ impl Color {
         }
 
         Color(
-            max(0, min(255, red)) as f32 / 255.0,
-            max(0, min(255, green)) as f32 / 255.0,
-            max(0, min(255, blue)) as f32 / 255.0,
+            cmp::max(0, cmp::min(255, red)) as f32 / 255.0,
+            cmp::max(0, cmp::min(255, green)) as f32 / 255.0,
+            cmp::max(0, cmp::min(255, blue)) as f32 / 255.0,
             alpha
         )
     }

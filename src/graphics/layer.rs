@@ -1,13 +1,9 @@
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-use std::sync::{Mutex, MutexGuard};
+use prelude::*;
 use avec::AVec;
-use maths::*;
+use maths::{Vec3, Mat4};
 use color::Color;
 use graphics;
-use graphics::Renderer;
-use graphics::Sprite;
-use graphics::blendmodes;
-use graphics::BlendMode;
+use graphics::{Renderer, Sprite, blendmodes, BlendMode};
 
 static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub use Layer;
@@ -16,15 +12,12 @@ impl Layer {
 
     /// creates a new layer for the given renderer. use Renderer::layer() instead.
     pub fn new(renderer: &Renderer, dimensions: (u32, u32)) -> Self {
-
-        let gid = LAYER_COUNTER.fetch_add(1, Ordering::Relaxed);
-
         Layer {
             view_matrix     : Mutex::new(Self::viewport_matrix(dimensions.0, dimensions.1)),
             model_matrix    : Mutex::new(Mat4::<f32>::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
-            gid             : gid,
+            gid             : LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
             lid             : ATOMIC_USIZE_INIT,
             vertex_data     : AVec::new(renderer.max_sprites * 4),
             renderer        : renderer.clone(),

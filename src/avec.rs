@@ -1,6 +1,4 @@
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-use std::sync::{Arc, RwLock, RwLockWriteGuard, RwLockReadGuard};
-use std::ops::{Deref, DerefMut};
+use prelude::*;
 use std::cell::UnsafeCell;
 
 /// read guard
@@ -55,6 +53,9 @@ impl<'a, T> AVecMapGuard<'a, T> {
             size: size,
         }
     }
+    pub fn mapped_range(self: &Self) -> (u32, u32) {
+        (self.start as u32, self.start as u32 + self.size as u32)
+    }
 }
 
 impl<'a, T> DerefMut for AVecMapGuard<'a, T> {
@@ -100,7 +101,7 @@ impl<T> AVec<T> where T: Default {
     }
 
     /// add an element to the vector. this blocks reads
-    pub fn push(&self, value: T) {
+    pub fn push(&self, value: T) -> u32 {
         let guard = self.insert.read().unwrap();
         let insert_pos = guard.fetch_add(1, Ordering::Relaxed);
         if insert_pos >= self.capacity {
@@ -110,6 +111,7 @@ impl<T> AVec<T> where T: Default {
             let data = self.data.get();
             (*data)[insert_pos] = value;
         }
+        insert_pos as u32
     }
 
     /// maps a slice of the vector for rw access. this blocks reads until the slice goes out of scope

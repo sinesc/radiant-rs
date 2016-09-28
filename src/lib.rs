@@ -4,6 +4,7 @@ extern crate image;
 extern crate regex;
 extern crate num;
 
+mod prelude;
 mod avec;
 mod color;
 mod graphics;

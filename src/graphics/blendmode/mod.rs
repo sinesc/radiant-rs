@@ -1,4 +1,3 @@
-
 pub mod blendmodes;
 
 use glium;

@@ -1,6 +1,5 @@
-
 use glium;
-use glium::{DisplayBuild};
+use glium::DisplayBuild;
 use glium::glutin::WindowBuilder;
 
 pub struct Monitor {
