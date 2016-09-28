@@ -29,7 +29,6 @@ pub struct Layer {
     color       : Mutex<Color>,
     gid         : usize,
     lid         : AtomicUsize,
-    renderer    : Renderer,
 	vertex_data : AVec<Vertex>,
 }
 

@@ -64,14 +64,14 @@ fn main() {
 
     // create a scene
 
-    let mut scene = Scene::new(&renderer, display.dimensions());
+    let mut scene = Scene::new(max_sprites, display.dimensions());
     let logo = scene.add_layer();
     let galaxy = scene.add_layer();
 
     // set up two rendering layers
 
-    let mut layer = Layer::new(&renderer, display.dimensions());
-    let mut persistent_layer = Layer::new(&renderer, display.dimensions());
+    let mut layer = Layer::new(max_sprites, display.dimensions());
+    let mut persistent_layer = Layer::new(max_sprites, display.dimensions());
 
     // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 
@@ -147,7 +147,7 @@ fn main() {
 
         // draw the boring layer once
 
-        layer.draw();
+        renderer.draw_layer(&layer);
         layer.reset();
 
         // draw the persistent layer 3 times with different model- and view matricies and brightness
@@ -155,20 +155,20 @@ fn main() {
         persistent_layer
             .set_view_matrix(pv3)
             .set_model_matrix(pm3)
-            .set_color(Color::lightness(0.25))
-            .draw();
+            .set_color(Color::lightness(0.25));
+        renderer.draw_layer(&persistent_layer);
 
         persistent_layer
             .set_view_matrix(pv2)
             .set_model_matrix(pm2)
-            .set_color(Color::lightness(0.5))
-            .draw();
+            .set_color(Color::lightness(0.5));
+        renderer.draw_layer(&persistent_layer);
 
         persistent_layer
             .set_view_matrix(pv1)
             .set_model_matrix(pm1)
-            .set_color(Color::lightness(1.0))
-            .draw();
+            .set_color(Color::lightness(1.0));
+        renderer.draw_layer(&persistent_layer);
 
         renderer.swap_target();
 

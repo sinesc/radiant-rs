@@ -2,16 +2,15 @@ use prelude::*;
 use avec::AVec;
 use maths::{Vec3, Mat4};
 use color::Color;
-use graphics;
-use graphics::{Renderer, Sprite, blendmodes, BlendMode};
+use graphics::{Sprite, blendmodes, BlendMode};
 
 static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub use Layer;
 
 impl Layer {
 
-    /// creates a new layer for the given renderer. use Renderer::layer() instead.
-    pub fn new(renderer: &Renderer, dimensions: (u32, u32)) -> Self {
+    /// creates a new layer with given dimensions and sprite limit
+    pub fn new(max_sprites: u32, dimensions: (u32, u32)) -> Self {
         Layer {
             view_matrix     : Mutex::new(Self::viewport_matrix(dimensions.0, dimensions.1)),
             model_matrix    : Mutex::new(Mat4::<f32>::identity()),
@@ -19,8 +18,7 @@ impl Layer {
             color           : Mutex::new(Color::white()),
             gid             : LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
             lid             : ATOMIC_USIZE_INIT,
-            vertex_data     : AVec::new(renderer.max_sprites * 4),
-            renderer        : renderer.clone(),
+            vertex_data     : AVec::new(max_sprites * 4),
         }
     }
 
@@ -139,12 +137,6 @@ impl Layer {
             vertex[3].texture_uv[1] = sprite.v_max();
         }
 
-        self
-    }
-
-    /// draws the layer
-    pub fn draw(self: &mut Self) -> &mut Self {
-        graphics::renderer::draw_layer(&self.renderer, self);
         self
     }
 

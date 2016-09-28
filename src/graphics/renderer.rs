@@ -6,6 +6,7 @@ use glium::Surface;
 use regex::Regex;
 use color::Color;
 use graphics::{GliumState, Display, Layer, Renderer, Sprite, VertexBufferContainer, RawFrame, blendmode};
+use scene;
 
 #[derive(Copy, Clone, PartialEq)]
 enum SpriteLayout {
@@ -14,10 +15,6 @@ enum SpriteLayout {
 }
 
 struct FrameParameters (u32, u32, u32, SpriteLayout);
-
-pub fn draw_layer(renderer: &Renderer, layer: &Layer) {
-    renderer.draw_layer(layer);
-}
 
 pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     Renderer::bucket_info(width, height)
@@ -114,8 +111,14 @@ impl Renderer {
         glium.target.take().unwrap()
     }
 
+    /// draws given scene
+    pub fn draw_scene(&self, scene: &mut scene::Scene) -> &Self {
+        scene::draw(scene, self);
+        self
+    }
+
     /// draws all sprites on given layer
-    fn draw_layer(&self, layer: &Layer) -> &Self {
+    pub fn draw_layer(&self, layer: &Layer) -> &Self {
 
         // make sure texture arrays have been generated from raw images
 

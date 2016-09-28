@@ -32,27 +32,27 @@ impl Default for Operation {
 }
 
 pub struct Scene {
-    renderer        : Renderer,
     operations      : AVec<Operation>,
     layers          : Vec<Layer>,
     layer_id        : Mutex<usize>,
     dimensions      : (u32, u32),
+    max_sprites     : u32,
 }
 
 impl Scene {
     /// create a new scene instance
-    pub fn new(renderer: &Renderer, dimensions: (u32, u32)) -> Scene {
+    pub fn new(max_sprites: u32, dimensions: (u32, u32)) -> Scene {
         Scene {
-            renderer    : renderer.clone(),
             operations  : AVec::new(1024),  // !todo
             layers      : Vec::new(),
             layer_id    : Mutex::new(0),
             dimensions  : dimensions,
+            max_sprites : max_sprites,
         }
     }
 
     /// push a layer operation on the scene operation stack
-    pub fn push(&mut self, op: Operation) -> OperationId {
+    pub fn add(&mut self, op: Operation) -> OperationId {
         let insert_position = self.operations.len();
         self.operations.push(op);
         OperationId(insert_position)
@@ -69,7 +69,7 @@ impl Scene {
         let mut layer_id = lock.deref_mut();
 
         let insert_position = self.layers.len();
-        self.layers.push(Layer::new(&self.renderer, self.dimensions));
+        self.layers.push(Layer::new(self.max_sprites, self.dimensions));
 
         *layer_id += 1;
         assert!(*layer_id == self.layers.len());
@@ -81,34 +81,35 @@ impl Scene {
     pub fn layer(&mut self, id: LayerId) -> &mut Layer {
         &mut self.layers[id.0]
     }
+}
 
-    // draw entire scene. required to be called from the thread that created this instance
-    pub fn draw(&mut self) {
-        let operations_guard = self.operations.get();
-        let operations = operations_guard.deref();
+/// draw entire scene. as this function is required to be called from the thread that created this
+/// instance, it's not available in the implementation. instead use renderer::draw_scene()
+pub fn draw(this: &mut Scene, renderer: &Renderer) {
+    let operations_guard = this.operations.get();
+    let operations = operations_guard.deref();
 
-        for operation in operations {
-            match *operation {
-                Operation::SetColor(layer_id, color) => {
-                    self.layers[layer_id.0 as usize].set_color(color);
-                }
-                Operation::SetViewMatrix(layer_id, matrix) => {
-                    self.layers[layer_id.0 as usize].set_view_matrix(matrix);
-                }
-                Operation::SetModelMatrix(layer_id, matrix) => {
-                    self.layers[layer_id.0 as usize].set_model_matrix(matrix);
-                }
-                Operation::SetBlendmode(layer_id, blendmode) => {
-                    self.layers[layer_id.0 as usize].set_blendmode(blendmode);
-                }
-                Operation::Draw(layer_id) => {
-                    self.layers[layer_id.0 as usize].draw();
-                }
-                Operation::Reset(layer_id) => {
-                    self.layers[layer_id.0 as usize].reset();
-                }
-                _ => ()
+    for operation in operations {
+        match *operation {
+            Operation::SetColor(layer_id, color) => {
+                this.layers[layer_id.0 as usize].set_color(color);
             }
+            Operation::SetViewMatrix(layer_id, matrix) => {
+                this.layers[layer_id.0 as usize].set_view_matrix(matrix);
+            }
+            Operation::SetModelMatrix(layer_id, matrix) => {
+                this.layers[layer_id.0 as usize].set_model_matrix(matrix);
+            }
+            Operation::SetBlendmode(layer_id, blendmode) => {
+                this.layers[layer_id.0 as usize].set_blendmode(blendmode);
+            }
+            Operation::Draw(layer_id) => {
+                renderer.draw_layer(&this.layers[layer_id.0 as usize]);
+            }
+            Operation::Reset(layer_id) => {
+                this.layers[layer_id.0 as usize].reset();
+            }
+            _ => ()
         }
     }
 }
