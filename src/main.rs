@@ -5,7 +5,7 @@ extern crate radiant_rs;
 
 //use std::thread;
 use std::time::{Duration, Instant};
-use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, blendmodes};
+use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, blendmodes, utils};
 
 //use radiant_rs::avec::AVec;
 use std::thread;
@@ -72,7 +72,7 @@ fn main() {
 
     let layer = Layer::new(max_sprites, display.dimensions());
     let persistent_layer = Layer::new(max_sprites, display.dimensions());
-
+/*
     let shared_layer = Arc::new(Layer::new(max_sprites, display.dimensions()));
     let shared_scene = Arc::new(Scene::new(max_sprites, display.dimensions()));
 
@@ -82,24 +82,24 @@ fn main() {
         shared_layer.view_matrix().scale((1.1, 1.1, 1.1));
         shared_scene.add_layer();
     });
-
+*/
     // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 
-    let mut rand_state = 0.0;
+    let mut rng = utils::Rng::new(0.0);
     let radius = 600.0;
 
     for i in 0..max_sprites {
-        let l = sinrand(&mut rand_state);
+        let l = rng.get::<f32>();
         let r = l * radius / 2.0;
-        let a = sinrand(&mut rand_state) * 2.0 * 3.14157;
+        let a = rng.range(0.0f32, 2.0 * 3.14157);
         let x = (radius / 2.0) + a.sin() * r;
         let y = (radius / 2.0) + a.cos() * r;
-        let s = sinrand(&mut rand_state);
-        if sinrand(&mut rand_state) > 0.90 {
-            let temperature = sinrand(&mut rand_state) * (10000.0 - 2000.0) + 2000.0;
+        let s = rng.get::<f32>();
+        if rng.get::<f32>() > 0.90 {
+            let temperature = rng.range(4000.0f32, 10000.0);
             persistent_layer.sprite(spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
         } else {
-            let temperature = sinrand(&mut rand_state) * (10000.0 - 2000.0) + 2000.0;
+            let temperature = rng.range(4000.0f32, 10000.0);
             persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
         }
     }
@@ -124,7 +124,7 @@ fn main() {
     let mut pm3 = persistent_layer.model_matrix().clone();
 
     // the main loop
-    start_loop(|delta| {
+    utils::mainloop(Duration::new(0, 16666667), |delta| {
 
         // basic input
 
@@ -182,65 +182,6 @@ fn main() {
 
         renderer.swap_target();
 
-        //thread::sleep(Duration::new(5, 16666667));
-        // exit on window close
-
-        if input.should_close { Action::Stop } else { Action::Continue }
+        !input.should_close
     });
-}
-
-
-
-/* to avoid rand dependency just for this "demo", not suitable for general use */
-fn sinrand(state: &mut f64) -> f32 /* 0..1 */ {
-    let large = (*state as f64).sin() * 100000000.0;
-    *state += 1.0;
-    (large - large.floor())  as f32
-}
-
-pub enum Action {
-    Stop,
-    Continue,
-}
-
-pub fn start_loop<F>(mut callback: F) where F: FnMut(f32) -> Action {
-    let mut accumulator = Duration::new(0, 0);
-    let mut previous_clock = Instant::now();
-
-    let frame_interval = Duration::new(0, 16666667);
-
-    let second = Duration::new(1, 0);
-    let mut second_elapsed = Duration::new(0, 0);
-    let mut frames_elapsed = 0;
-
-    loop {
-
-        let now = Instant::now();
-        let frame_delta = now - previous_clock;
-
-        match callback(frame_delta.as_secs() as f32 + (frame_delta.subsec_nanos() as f64 / 1000000000.0) as f32) {
-            Action::Stop => break,
-            Action::Continue => ()
-        };
-
-        // determine thread sleep to maintain X FPS
-        accumulator += frame_delta;
-
-        while accumulator >= frame_interval {
-            accumulator -= frame_interval;
-            // if you have a game, update the state here
-        }
-
-        // framerate print
-        second_elapsed += now - previous_clock;
-        frames_elapsed += 1;
-        if second_elapsed >= second {
-            println!("Frames rendered: {}", frames_elapsed);
-            second_elapsed -= second;
-            frames_elapsed = 0;
-        }
-
-        previous_clock = now;
-        //thread::sleep(frame_interval - accumulator);
-    }
 }

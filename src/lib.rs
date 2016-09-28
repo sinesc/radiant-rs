@@ -15,3 +15,5 @@ pub use graphics::{BlendMode, blendmodes, Display, Descriptor, Monitor, Layer, R
 pub use maths::{Mat4, Vec2, Vec3, Dir1};
 pub use color::Color;
 pub use scene::Scene;
+
+pub mod utils;

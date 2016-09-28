@@ -1,9 +1,8 @@
-#![allow(dead_code)]
-
 use prelude::*;
 use std::cell::UnsafeCell;
 
 /// read guard
+#[allow(dead_code)]
 pub struct AVecReadGuard<'a, T: 'a> {
     lock: RwLockWriteGuard<'a , AtomicUsize>,
     data: &'a mut Vec<T>,
@@ -36,6 +35,7 @@ impl<'a, T> Drop for AVecReadGuard<'a, T> {
 }
 
 /// map guard
+#[allow(dead_code)]
 pub struct AVecMapGuard<'a, T: 'a> {
     lock: RwLockReadGuard<'a, AtomicUsize>,
     data: &'a mut Vec<T>,

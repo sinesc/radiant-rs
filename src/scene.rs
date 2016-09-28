@@ -1,7 +1,3 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use prelude::*;
 use std::cell::UnsafeCell;
 use avec::AVec;
