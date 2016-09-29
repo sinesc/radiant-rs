@@ -124,7 +124,8 @@ fn main() {
     let mut pm3 = persistent_layer.model_matrix().clone();
 
     // the main loop
-    utils::mainloop(Duration::new(0, 16666667), |delta| {
+
+    utils::mainloop(Duration::new(0, 16666667), |state| { true }, |state| {
 
         // basic input
 
@@ -142,14 +143,14 @@ fn main() {
 
         // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
 
-        layer.view_matrix().rotate_z_at((650.0, 650.0), 0.3 * delta);
+        layer.view_matrix().rotate_z_at((650.0, 650.0), 0.3 * state.delta_f32);
 
-        pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.054 * delta);
-        pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.042 * delta);
-        pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.024 * delta);
-        pm1.rotate_z(-0.15 * delta);
-        pm2.rotate_z(0.12 * delta);
-        pm3.rotate_z(0.09 * delta);
+        pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.054 * state.delta_f32);
+        pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.042 * state.delta_f32);
+        pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.024 * state.delta_f32);
+        pm1.rotate_z(-0.15 * state.delta_f32);
+        pm2.rotate_z(0.12 * state.delta_f32);
+        pm3.rotate_z(0.09 * state.delta_f32);
 
         // prepare render target, required before drawing
 

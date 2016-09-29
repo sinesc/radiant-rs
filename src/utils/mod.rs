@@ -32,8 +32,16 @@ impl Rng {
     }
 }
 
+#[derive(Copy, Clone)]
+pub struct MainloopState {
+    pub delta       : Duration,
+    pub delta_f32   : f32,
+    pub fps         : u32,
+    pub state_id    : u32,
+}
+
 #[allow(unused_variables)]
-pub fn mainloop<F>(interval: Duration, mut callback: F) where F: FnMut(f32) -> bool {
+pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_callback: G) where F: FnMut(MainloopState) -> bool, G: FnMut(MainloopState) -> bool {
 
     let mut accumulator = Duration::new(0, 0);
     let mut previous_clock = Instant::now();
@@ -41,14 +49,21 @@ pub fn mainloop<F>(interval: Duration, mut callback: F) where F: FnMut(f32) -> b
     let second = Duration::new(1, 0);
     let mut second_elapsed = Duration::new(0, 0);
     let mut frames_elapsed = 0;
+    let mut fps = 0;
 
     loop {
 
         let now = Instant::now();
         let delta = now - previous_clock;
-        let delta_f32 = delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32;
 
-        if callback(delta_f32) == false {
+        let mut state_info = MainloopState {
+            delta       : delta,
+            delta_f32   : delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32,
+            fps         : fps,
+            state_id    : 0,
+        };
+
+        if render_callback(state_info) == false {
             break;
         }
 
@@ -57,7 +72,10 @@ pub fn mainloop<F>(interval: Duration, mut callback: F) where F: FnMut(f32) -> b
 
         while accumulator >= interval {
             accumulator -= interval;
-            // if you have a game, update the state here
+            if state_callback(state_info) == false {
+                break;
+            }
+            state_info.state_id += 1;
         }
 
         // framerate print
@@ -65,7 +83,7 @@ pub fn mainloop<F>(interval: Duration, mut callback: F) where F: FnMut(f32) -> b
         frames_elapsed += 1;
 
         if second_elapsed >= second {
-            //println!("Frames rendered: {}", frames_elapsed);
+            fps = frames_elapsed;
             second_elapsed -= second;
             frames_elapsed = 0;
         }
