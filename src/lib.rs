@@ -14,6 +14,6 @@ mod scene;
 pub use graphics::{BlendMode, blendmodes, Display, Descriptor, Monitor, Layer, Renderer, Sprite, Input};
 pub use maths::{Mat4, Vec2, Vec3, Dir1};
 pub use color::Color;
-pub use scene::Scene;
+pub use scene::{Scene, Operation};
 
 pub mod utils;

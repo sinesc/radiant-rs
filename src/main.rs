@@ -5,7 +5,8 @@ extern crate radiant_rs;
 
 //use std::thread;
 use std::time::{Duration, Instant};
-use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, blendmodes, utils};
+use std::ops::Deref;
+use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, Operation, blendmodes, utils};
 
 //use radiant_rs::avec::AVec;
 use std::thread;
@@ -64,64 +65,101 @@ fn main() {
 
     // create a scene
 
-    let scene = Scene::new(max_sprites, display.dimensions());
-    let logo = scene.add_layer();
-    let galaxy = scene.add_layer();
+    let main_scene = Arc::new(Scene::new(max_sprites, display.dimensions()));
 
-    // set up two rendering layers
-
-    let layer = Layer::new(max_sprites, display.dimensions());
-    let persistent_layer = Layer::new(max_sprites, display.dimensions());
-/*
-    let shared_layer = Arc::new(Layer::new(max_sprites, display.dimensions()));
-    let shared_scene = Arc::new(Scene::new(max_sprites, display.dimensions()));
-
-    let thread_layer = shared_layer.clone();
-    let thread_scene = shared_scene.clone();
+    let scene = main_scene.clone();
     thread::spawn(move || {
-        shared_layer.view_matrix().scale((1.1, 1.1, 1.1));
-        shared_scene.add_layer();
-    });
-*/
-    // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 
-    let mut rng = utils::Rng::new(0.0);
-    let radius = 600.0;
+        let logo = scene.add_layer();
+        let galaxy = scene.add_layer();
 
-    for i in 0..max_sprites {
-        let l = rng.get::<f32>();
-        let r = l * radius / 2.0;
-        let a = rng.range(0.0f32, 2.0 * 3.14157);
-        let x = (radius / 2.0) + a.sin() * r;
-        let y = (radius / 2.0) + a.cos() * r;
-        let s = rng.get::<f32>();
-        if rng.get::<f32>() > 0.90 {
-            let temperature = rng.range(4000.0f32, 10000.0);
-            persistent_layer.sprite(spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
-        } else {
-            let temperature = rng.range(4000.0f32, 10000.0);
-            persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
+let layer = scene.layer(logo);
+let persistent_layer = scene.layer(galaxy);
+
+
+        // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
+
+        let mut rng = utils::Rng::new(0.0);
+        let radius = 600.0;
+
+        for i in 0..max_sprites {
+            let l = rng.get::<f32>();
+            let r = l * radius / 2.0;
+            let a = rng.range(0.0f32, 2.0 * 3.14157);
+            let x = (radius / 2.0) + a.sin() * r;
+            let y = (radius / 2.0) + a.cos() * r;
+            let s = rng.get::<f32>();
+            if rng.get::<f32>() > 0.90 {
+                let temperature = rng.range(4000.0f32, 10000.0);
+                persistent_layer.sprite(spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
+            } else {
+                let temperature = rng.range(4000.0f32, 10000.0);
+                persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
+            }
         }
-    }
 
-    persistent_layer.set_blendmode(blendmodes::OVERLAY);
-    persistent_layer.view_matrix().translate((150.0, 100.0));
+        persistent_layer.set_blendmode(blendmodes::OVERLAY);
+        persistent_layer.view_matrix().translate((150.0, 100.0));
 
-    // clone a couple of view matricies
+        // clone a couple of view matricies
 
-    let mut pv1 = persistent_layer.view_matrix().clone();
-    let mut pv2 = persistent_layer.view_matrix().clone();
-    let mut pv3 = persistent_layer.view_matrix().clone();
-    pv1.rotate_z_at((radius / 2.0, radius / 2.0), 1.0);
-    pv2.rotate_z_at((radius / 2.0, radius / 2.0), 2.0);
-    pv3.rotate_z_at((radius / 2.0, radius / 2.0), 3.0);
-    pv1.scale((0.9, 0.9)).translate((15.0, 10.0));
+        let mut pv1 = persistent_layer.view_matrix().clone();
+        let mut pv2 = persistent_layer.view_matrix().clone();
+        let mut pv3 = persistent_layer.view_matrix().clone();
+        pv1.rotate_z_at((radius / 2.0, radius / 2.0), 1.0);
+        pv2.rotate_z_at((radius / 2.0, radius / 2.0), 2.0);
+        pv3.rotate_z_at((radius / 2.0, radius / 2.0), 3.0);
+        pv1.scale((0.9, 0.9)).translate((15.0, 10.0));
 
-    // model matricies as well
+        // model matricies as well
 
-    let mut pm1 = persistent_layer.model_matrix().clone();
-    let mut pm2 = persistent_layer.model_matrix().clone();
-    let mut pm3 = persistent_layer.model_matrix().clone();
+        let mut pm1 = persistent_layer.model_matrix().clone();
+        let mut pm2 = persistent_layer.model_matrix().clone();
+        let mut pm3 = persistent_layer.model_matrix().clone();
+
+        utils::mainloop(Duration::new(0, 16666667), |state| { true }, |state| {
+
+            // add some sprites to render
+
+            layer.reset();
+            layer.sprite(test1, 50, 600, 600, Color::white(), 0.0, 1.0, 1.0);
+            layer.sprite(test2, 50, 650, 650, Color::white(), 0.0, 1.0, 1.0);
+            layer.sprite(test3, 50, 700, 700, Color::white(), 0.0, 1.0, 1.0);
+
+            // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
+
+            layer.view_matrix().rotate_z_at((650.0, 650.0), 0.3 * state.delta_f32);
+
+            pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.054 * state.delta_f32);
+            pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.042 * state.delta_f32);
+            pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.024 * state.delta_f32);
+            pm1.rotate_z(-0.15 * state.delta_f32);
+            pm2.rotate_z(0.12 * state.delta_f32);
+            pm3.rotate_z(0.09 * state.delta_f32);
+
+            scene.clear().ops(&[
+                Operation::Draw(logo),
+
+                Operation::SetViewMatrix(galaxy, pv3),
+                Operation::SetModelMatrix(galaxy, pm3),
+                Operation::SetColor(galaxy, Color::lightness(0.25)),
+                Operation::Draw(galaxy),
+
+                Operation::SetViewMatrix(galaxy, pv2),
+                Operation::SetModelMatrix(galaxy, pm2),
+                Operation::SetColor(galaxy, Color::lightness(0.5)),
+                Operation::Draw(galaxy),
+
+                Operation::SetViewMatrix(galaxy, pv1),
+                Operation::SetModelMatrix(galaxy, pm1),
+                Operation::SetColor(galaxy, Color::lightness(1.0)),
+                Operation::Draw(galaxy),
+            ]);
+
+            true
+        });
+    });
+
 
     // the main loop
 
@@ -131,56 +169,14 @@ fn main() {
 
         input.poll();
 
-/*        if input.alt_left {
+        if input.alt_left {
             println!("hello!");
-        }*/
-
-        // add some sprites to render
-
-        layer.sprite(test1, 50, 600, 600, Color::white(), 0.0, 1.0, 1.0);
-        layer.sprite(test2, 50, 650, 650, Color::white(), 0.0, 1.0, 1.0);
-        layer.sprite(test3, 50, 700, 700, Color::white(), 0.0, 1.0, 1.0);
-
-        // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
-
-        layer.view_matrix().rotate_z_at((650.0, 650.0), 0.3 * state.delta_f32);
-
-        pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.054 * state.delta_f32);
-        pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.042 * state.delta_f32);
-        pv3.rotate_z_at((radius / 2.0, radius / 2.0), 0.024 * state.delta_f32);
-        pm1.rotate_z(-0.15 * state.delta_f32);
-        pm2.rotate_z(0.12 * state.delta_f32);
-        pm3.rotate_z(0.09 * state.delta_f32);
+        }
 
         // prepare render target, required before drawing
 
         renderer.prepare_and_clear_target(Color::black());
-
-        // draw the boring layer once
-
-        renderer.draw_layer(&layer);
-        layer.reset();
-
-        // draw the persistent layer 3 times with different model- and view matricies and brightness
-
-        persistent_layer
-            .set_view_matrix(pv3)
-            .set_model_matrix(pm3)
-            .set_color(Color::lightness(0.25));
-        renderer.draw_layer(&persistent_layer);
-
-        persistent_layer
-            .set_view_matrix(pv2)
-            .set_model_matrix(pm2)
-            .set_color(Color::lightness(0.5));
-        renderer.draw_layer(&persistent_layer);
-
-        persistent_layer
-            .set_view_matrix(pv1)
-            .set_model_matrix(pm1)
-            .set_color(Color::lightness(1.0));
-        renderer.draw_layer(&persistent_layer);
-
+        renderer.draw_scene(main_scene.deref());
         renderer.swap_target();
 
         !input.should_close

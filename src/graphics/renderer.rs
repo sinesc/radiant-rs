@@ -112,7 +112,7 @@ impl Renderer {
     }
 
     /// draws given scene
-    pub fn draw_scene(&self, scene: &mut scene::Scene) -> &Self {
+    pub fn draw_scene(&self, scene: &scene::Scene) -> &Self {
         scene::draw(scene, self);
         self
     }

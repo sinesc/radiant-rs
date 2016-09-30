@@ -12,6 +12,7 @@ pub struct OperationId(u32);
 #[derive(Copy, Clone)]
 pub struct LayerId(usize);
 
+#[derive(Copy, Clone)]
 pub enum Operation {
     None,
     SetColor(LayerId, Color),
@@ -52,15 +53,22 @@ impl Scene {
     }
 
     /// push a layer operation on the scene operation stack
-    pub fn add(&mut self, op: Operation) -> OperationId {
-        let insert_position = self.operations.len();
-        self.operations.push(op);
+    pub fn op(&self, op: Operation) -> OperationId {
+        let insert_position = self.operations.push(op);
         OperationId(insert_position)
     }
 
+    pub fn ops(&self, ops: &[Operation]) -> &Self {
+        for op in ops {
+            self.op(*op);
+        }
+        self
+    }
+
     /// clear operation stack
-    pub fn clear(&mut self) {
+    pub fn clear(&self) -> &Self {
         self.operations.clear();
+        self
     }
 
     /// create and add a layer to the scene
@@ -68,7 +76,7 @@ impl Scene {
         let lock = self.layer_id.lock().unwrap();
         let layer_id = lock.deref();
 
-        let mut layers = unsafe { &mut *self.layers.get() };
+        let mut layers = self.get_layers();
         let insert_position = layers.len();
         layers.push(Layer::new(self.max_sprites, self.dimensions));
 
@@ -80,14 +88,19 @@ impl Scene {
 
     /// returns an existing layer
     pub fn layer(&self, id: LayerId) -> &Layer {
-        let layers = unsafe { &mut *self.layers.get() };
+        let layers = self.get_layers();
         &layers[id.0]
+    }
+
+    /// returns mut reference to the layers vector
+    fn get_layers(&self) -> &mut Vec<Layer> {
+        unsafe { &mut *self.layers.get() }
     }
 }
 
 /// draw entire scene. as this function is required to be called from the thread that created this
 /// instance, it's not available in the implementation. instead use renderer::draw_scene()
-pub fn draw(this: &mut Scene, renderer: &Renderer) {
+pub fn draw(this: &Scene, renderer: &Renderer) {
     let operations_guard = this.operations.get();
     let operations = operations_guard.deref();
     let layers = unsafe { &mut *this.layers.get() };
