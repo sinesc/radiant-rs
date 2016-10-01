@@ -3,7 +3,7 @@ use std::cell::UnsafeCell;
 use avec::AVec;
 use color::Color;
 use maths::Mat4;
-use graphics::{Renderer, Layer};
+use graphics::{Renderer, Layer, Sprite};
 use BlendMode;
 
 #[derive(Copy, Clone)]
@@ -71,12 +71,17 @@ impl Scene {
         self
     }
 
+    /// draws a sprite onto given layer
+    pub fn sprite(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
+        self.layer(layer_id).sprite(sprite, frame_id, x, y, color, rotation, scale_x, scale_y);
+    }
+
     /// create and add a layer to the scene
     pub fn add_layer(&self) -> LayerId {
         let lock = self.layer_id.lock().unwrap();
         let layer_id = lock.deref();
 
-        let mut layers = self.get_layers();
+        let mut layers = self.layers();
         let insert_position = layers.len();
         layers.push(Layer::new(self.max_sprites, self.dimensions));
 
@@ -88,12 +93,12 @@ impl Scene {
 
     /// returns an existing layer
     pub fn layer(&self, id: LayerId) -> &Layer {
-        let layers = self.get_layers();
+        let layers = self.layers();
         &layers[id.0]
     }
 
     /// returns mut reference to the layers vector
-    fn get_layers(&self) -> &mut Vec<Layer> {
+    fn layers(&self) -> &mut Vec<Layer> {
         unsafe { &mut *self.layers.get() }
     }
 }

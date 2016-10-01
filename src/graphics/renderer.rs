@@ -5,7 +5,7 @@ use glium;
 use glium::Surface;
 use regex::Regex;
 use color::Color;
-use graphics::{GliumState, Display, Layer, Renderer, Sprite, VertexBufferContainer, RawFrame, blendmode};
+use graphics::{Display, Layer, Sprite, Vertex, blendmode};
 use scene;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -15,9 +15,28 @@ enum SpriteLayout {
 }
 
 struct FrameParameters (u32, u32, u32, SpriteLayout);
+type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
 
-pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
-    Renderer::bucket_info(width, height)
+struct VertexBufferContainer {
+    lid     : usize,
+    size    : usize,
+    buffer  : glium::VertexBuffer<Vertex>,
+}
+
+struct GliumState {
+    index_buffer    : glium::IndexBuffer<u32>,
+    program         : glium::Program,
+    tex_array       : Vec<Option<glium::texture::Texture2dArray>>,
+    raw_tex_data    : Vec<Vec<RawFrame>>,
+    target          : Option<glium::Frame>,
+    display         : Display,
+    vertex_buffers  : HashMap<usize, VertexBufferContainer>,
+}
+
+#[derive(Clone)]
+pub struct Renderer {
+    max_sprites     : u32,
+    glium           : Rc<RefCell<GliumState>>,
 }
 
 impl Renderer {
@@ -38,7 +57,7 @@ impl Renderer {
         };
         Renderer {
             max_sprites     : max_sprites,
-            glium           : Arc::new(Mutex::new(glium)),
+            glium           : Rc::new(RefCell::new(glium)),
         }
     }
 
@@ -49,7 +68,7 @@ impl Renderer {
     /// filename is epected to end on _<width>x<height>x<frames>.<extension>, i.e. asteroid_64x64x24.png
     pub fn texture(&self, file: &str) -> Sprite {
 
-        let mut glium = self.glium.lock().unwrap();
+        let mut glium = self.glium.borrow_mut();
         let path = Path::new(file);
         let mut image = image::open(&path).unwrap();
         let image_dimensions = image.to_rgba().dimensions(); // todo how much does this cost?
@@ -59,7 +78,7 @@ impl Renderer {
 
         // identify bucket_id (which texture array) and texture index in the array
 
-        let (bucket_id, pad_size) = Self::bucket_info(frame_width, frame_height);
+        let (bucket_id, pad_size) = bucket_info(frame_width, frame_height);
 
         while glium.raw_tex_data.len() <= bucket_id as usize {
             glium.raw_tex_data.push(Vec::new());
@@ -79,20 +98,20 @@ impl Renderer {
 
     /// prepares a new target for drawing
     pub fn prepare_target(&self) {
-        let mut glium = self.glium.lock().unwrap();
+        let mut glium = self.glium.borrow_mut();
         glium.target = Some(glium.display.handle.draw());
     }
 
     /// clears the prepared target with given color
     pub fn clear_target(&self, color: Color) {
-        let mut glium = self.glium.lock().unwrap();
+        let mut glium = self.glium.borrow_mut();
         let (r, g, b, a) = color.as_tuple();
         glium.target.as_mut().unwrap().clear_color(r, g, b, a);
     }
 
     /// prepares a new target and clears it with given color
     pub fn prepare_and_clear_target(&self, color: Color) {
-        let mut glium = self.glium.lock().unwrap();
+        let mut glium = self.glium.borrow_mut();
         let (r, g, b, a) = color.as_tuple();
         let mut target = glium.display.handle.draw();
         target.clear_color(r, g, b, a);
@@ -101,13 +120,13 @@ impl Renderer {
 
     /// finishes drawing and swaps the drawing target to front
     pub fn swap_target(&self) {
-        let mut glium = self.glium.lock().unwrap();
+        let mut glium = self.glium.borrow_mut();
         glium.target.take().unwrap().finish().unwrap();
     }
 
     /// takes the target frame from radiant-rs
     pub fn take_target(&self) -> glium::Frame {
-        let mut glium = self.glium.lock().unwrap();
+        let mut glium = self.glium.borrow_mut();
         glium.target.take().unwrap()
     }
 
@@ -131,7 +150,7 @@ impl Renderer {
         {
             // prepare texture array uniforms
 
-            let mut glium_mutexguard = self.glium.lock().unwrap();
+            let mut glium_mutexguard = self.glium.borrow_mut();
             let mut glium = glium_mutexguard.deref_mut();
 
             let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
@@ -260,15 +279,6 @@ impl Renderer {
         }
     }
 
-    /// returns the appropriate bucket_id for the given texture size
-    fn bucket_info(width: u32, height: u32) -> (u32, u32) {
-        let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
-        let size = 2u32.pow(ln2);
-        // skip sizes 1x1 to 16x16
-        let bucket_id = cmp::max(0, ln2 - 4);
-        (bucket_id, size)
-    }
-
     // creates a vector of vectors from given RgbaImage !todo lots of extra work for nothing, is this really required?
     fn create_raw_frame(from: image::RgbaImage) -> RawFrame {
 
@@ -293,7 +303,7 @@ impl Renderer {
     /// creates texture arrays from registered textures
     fn create_texture_arrays(&self) {
 
-        let mut glium = self.glium.lock().unwrap();
+        let mut glium = self.glium.borrow_mut();
 
         if glium.tex_array.len() == 0 {
 
@@ -336,5 +346,13 @@ impl Renderer {
             }
         ).unwrap()
     }
+}
 
+/// returns the appropriate bucket_id for the given texture size
+pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
+    let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
+    let size = 2u32.pow(ln2);
+    // skip sizes 1x1 to 16x16
+    let bucket_id = cmp::max(0, ln2 - 4);
+    (bucket_id, size)
 }

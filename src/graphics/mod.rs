@@ -10,6 +10,7 @@ pub use self::blendmode::blendmodes;
 pub use self::input::Input;
 pub use self::display::{Descriptor, Monitor};
 pub use self::sprite::Sprite;
+pub use self::renderer::Renderer;
 
 use prelude::*;
 use glium;
@@ -43,27 +44,3 @@ struct Vertex {
     texture_uv  : [f32; 2],
 }
 implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv);
-
-type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
-
-struct VertexBufferContainer {
-    lid     : usize,
-    size    : usize,
-    buffer  : glium::VertexBuffer<Vertex>,
-}
-
-struct GliumState {
-    index_buffer    : glium::IndexBuffer<u32>,
-    program         : glium::Program,
-    tex_array       : Vec<Option<glium::texture::Texture2dArray>>,
-    raw_tex_data    : Vec<Vec<RawFrame>>,
-    target          : Option<glium::Frame>,
-    display         : Display,
-    vertex_buffers  : HashMap<usize, VertexBufferContainer>,
-}
-
-#[derive(Clone)]
-pub struct Renderer {
-    max_sprites     : u32,
-    glium           : Arc<Mutex<GliumState>>,
-}

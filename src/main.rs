@@ -6,6 +6,7 @@ extern crate radiant_rs;
 //use std::thread;
 use std::time::{Duration, Instant};
 use std::ops::Deref;
+use std::sync::mpsc::sync_channel;
 use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, Operation, blendmodes, utils};
 
 //use radiant_rs::avec::AVec;
@@ -63,6 +64,8 @@ fn main() {
     let sparkles = renderer.texture(r"res/sparkles_64x64x1.png");
     let spark = renderer.texture(r"res/basic_64x64x1.png");
 
+    let (tx, rx) = sync_channel(1);
+
     // create a scene
 
     let main_scene = Arc::new(Scene::new(max_sprites, display.dimensions()));
@@ -72,10 +75,6 @@ fn main() {
 
         let logo = scene.add_layer();
         let galaxy = scene.add_layer();
-
-let layer = scene.layer(logo);
-let persistent_layer = scene.layer(galaxy);
-
 
         // put some random sparkles on the persistent_layer (we'll draw to it only once, hence the name)
 
@@ -91,13 +90,15 @@ let persistent_layer = scene.layer(galaxy);
             let s = rng.get::<f32>();
             if rng.get::<f32>() > 0.90 {
                 let temperature = rng.range(4000.0f32, 10000.0);
-                persistent_layer.sprite(spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
+                scene.sprite(galaxy, spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
             } else {
                 let temperature = rng.range(4000.0f32, 10000.0);
-                persistent_layer.sprite(sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
+                scene.sprite(galaxy, sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
             }
         }
-
+let persistent_layer = scene.layer(galaxy);
+let layer = scene.layer(logo);
+// !todo
         persistent_layer.set_blendmode(blendmodes::OVERLAY);
         persistent_layer.view_matrix().translate((150.0, 100.0));
 
@@ -117,7 +118,7 @@ let persistent_layer = scene.layer(galaxy);
         let mut pm2 = persistent_layer.model_matrix().clone();
         let mut pm3 = persistent_layer.model_matrix().clone();
 
-        utils::mainloop(Duration::new(0, 16666667), |state| { true }, |state| {
+        utils::mainloop(Duration::new(0, 1666), |state| { true }, |state| {
 
             // add some sprites to render
 
@@ -156,6 +157,10 @@ let persistent_layer = scene.layer(galaxy);
                 Operation::Draw(galaxy),
             ]);
 
+            // this will panic when the main thread exists
+            tx.send(1).unwrap(); // start drawing
+            tx.send(1).unwrap(); // drawing finished
+
             true
         });
     });
@@ -163,7 +168,7 @@ let persistent_layer = scene.layer(galaxy);
 
     // the main loop
 
-    utils::mainloop(Duration::new(0, 16666667), |state| { true }, |state| {
+    utils::mainloop(Duration::new(0, 1666), |state| { true }, |state| {
 
         // basic input
 
@@ -175,9 +180,11 @@ let persistent_layer = scene.layer(galaxy);
 
         // prepare render target, required before drawing
 
+        rx.recv();
         renderer.prepare_and_clear_target(Color::black());
         renderer.draw_scene(main_scene.deref());
         renderer.swap_target();
+        rx.recv();
 
         !input.should_close
     });
