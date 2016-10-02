@@ -33,6 +33,8 @@ pub struct Layer {
 	vertex_data : AVec<Vertex>,
 }
 
+pub type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
+
 #[derive(Copy, Clone, Default)]
 struct Vertex {
     position    : [f32; 2],

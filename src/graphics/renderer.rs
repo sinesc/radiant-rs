@@ -1,21 +1,9 @@
 use prelude::*;
-use image;
-use image::GenericImage;
 use glium;
 use glium::Surface;
-use regex::Regex;
 use color::Color;
-use graphics::{Display, Layer, Sprite, Vertex, blendmode};
+use graphics::{Display, Layer, sprite, Sprite, RawFrame, Vertex, blendmode};
 use scene;
-
-#[derive(Copy, Clone, PartialEq)]
-enum SpriteLayout {
-    VERTICAL,
-    HORIZONTAL,
-}
-
-struct FrameParameters (u32, u32, u32, SpriteLayout);
-type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
 
 struct VertexBufferContainer {
     lid     : usize,
@@ -66,19 +54,17 @@ impl Renderer {
     /// must be done before first draw, calling  this function after draw will reset existing
     /// sprites and register new ones
     /// filename is epected to end on _<width>x<height>x<frames>.<extension>, i.e. asteroid_64x64x24.png
-    pub fn texture(&self, file: &str) -> Sprite {
+    pub fn create_sprite(&self, file: &str) -> Sprite {
 
         let mut glium = self.glium.borrow_mut();
-        let path = Path::new(file);
-        let mut image = image::open(&path).unwrap();
-        let image_dimensions = image.to_rgba().dimensions(); // todo how much does this cost?
 
-        let frame_parameters = Self::parse_parameters(image_dimensions, path);
-        let FrameParameters(frame_width, frame_height, frame_count, _) = frame_parameters;
+        // load spritesheet into RawFrames
+
+        let (frame_width, frame_height, frames) = sprite::load_spritesheet(file);
 
         // identify bucket_id (which texture array) and texture index in the array
 
-        let (bucket_id, pad_size) = bucket_info(frame_width, frame_height);
+        let (bucket_id, _) = bucket_info(frame_width, frame_height);
 
         while glium.raw_tex_data.len() <= bucket_id as usize {
             glium.raw_tex_data.push(Vec::new());
@@ -88,12 +74,13 @@ impl Renderer {
 
         // append frames to the array
 
-        for frame_id in 0..frame_count {
-            let frame = Self::build_frame_texture(&mut image, image_dimensions, &frame_parameters, frame_id, pad_size);
+        let frame_count = frames.len() as u32;
+
+        for frame in frames {
             glium.raw_tex_data[bucket_id as usize].push(frame);
         }
 
-        Sprite::new(frame_width, frame_height, frame_count, bucket_pos)
+        sprite::create_sprite(frame_width, frame_height, frame_count, bucket_pos)
     }
 
     /// prepares a new target for drawing
@@ -215,89 +202,6 @@ impl Renderer {
         }
 
         self
-    }
-
-    /// parses sprite-sheet filename for dimensions and frame count
-    fn parse_parameters(dimensions: (u32, u32), path: &Path) -> FrameParameters {
-
-        lazy_static! { static ref MATCHER: Regex = Regex::new(r"_(\d+)x(\d+)x(\d+)\.").unwrap(); }
-
-        let filename = path.file_name().unwrap().to_str().unwrap();
-        let captures = MATCHER.captures(filename);
-
-        match captures {
-            Some(captures) => {
-                let frame_width = captures.at(1).unwrap().parse::<u32>().unwrap();
-                let frame_height = captures.at(2).unwrap().parse::<u32>().unwrap();
-                let frame_count = captures.at(3).unwrap().parse::<u32>().unwrap();
-                let frame_layout = if frame_height == dimensions.1 { SpriteLayout::HORIZONTAL } else { SpriteLayout::VERTICAL };
-                assert!(frame_layout == SpriteLayout::VERTICAL || frame_width * frame_count == dimensions.0);
-                assert!(frame_layout == SpriteLayout::HORIZONTAL || frame_height * frame_count == dimensions.1);
-                FrameParameters(frame_width, frame_height, frame_count, frame_layout)
-            }
-            None => FrameParameters(dimensions.0, dimensions.1, 1, SpriteLayout::HORIZONTAL)
-        }
-    }
-
-    /// constructs a RawFrame for a single frame of a spritesheet
-    ///
-    /// if neccessary, pads the image up to the next power of two
-    fn build_frame_texture(image: &mut image::DynamicImage, image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32, pad_size: u32) -> RawFrame {
-
-        let FrameParameters(frame_width, frame_height, _, _) = *frame_parameters;
-        let (x, y) = Self::get_frame_coordinates(image_dimensions, frame_parameters, frame_id);
-        let subimage = image.crop(x, y, frame_width, frame_height);
-
-        if frame_width != pad_size || frame_height != pad_size {
-
-            // pad image if it doesn't match an available texture array size
-            let mut dest = image::DynamicImage::new_rgba8(pad_size, pad_size);
-            dest.copy_from(&subimage, 0, 0);
-            Self::create_raw_frame(dest.to_rgba())
-
-        } else {
-
-            // perfect fit
-            Self::create_raw_frame(subimage.to_rgba())
-        }
-    }
-
-    /// computes top/left frame coordinates for the given frame_id in a sprite-sheet
-    fn get_frame_coordinates(image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32) -> (u32, u32) {
-
-        let (img_width, img_height) = image_dimensions;
-        let FrameParameters(frame_width, frame_height, frame_count, frame_layout) = *frame_parameters;
-
-        assert!(frame_id < frame_count);
-
-        if frame_layout == SpriteLayout::HORIZONTAL {
-            let spl = img_width / frame_width;
-            ((frame_id % spl) * frame_width, (frame_id / spl) * frame_height)
-        } else {
-            let spl = img_height / frame_height;
-            ((frame_id / spl) * frame_width, (frame_id % spl) * frame_height)
-        }
-    }
-
-    // creates a vector of vectors from given RgbaImage !todo lots of extra work for nothing, is this really required?
-    fn create_raw_frame(from: image::RgbaImage) -> RawFrame {
-
-        let height = from.height();
-        let width = from.width();
-        let raw = from.into_raw();
-        let mut data: RawFrame = vec!();
-        let mut pos: u32 = 0;
-
-        for _ in 0..height {
-            let mut line = Vec::<(u8, u8, u8, u8)>::new();
-            for _ in 0..width {
-                line.push((raw[pos as usize], raw[pos as usize + 1], raw[pos as usize + 2], raw[pos as usize + 3]));
-                pos += 4;
-            }
-            data.push(line);
-        }
-
-        data
     }
 
     /// creates texture arrays from registered textures

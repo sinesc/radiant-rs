@@ -58,11 +58,11 @@ fn main() {
 
     // load some textures
 
-    let test1 = renderer.texture(r"res/test_64x32x1.png");
-    let test2 = renderer.texture(r"res/test_32x64x1.png");
-    let test3 = renderer.texture(r"res/test_59x30x1.png");
-    let sparkles = renderer.texture(r"res/sparkles_64x64x1.png");
-    let spark = renderer.texture(r"res/basic_64x64x1.png");
+    let test1 = renderer.create_sprite(r"res/test_64x32x1.png");
+    let test2 = renderer.create_sprite(r"res/test_32x64x1.png");
+    let test3 = renderer.create_sprite(r"res/test_59x30x1.png");
+    let sparkles = renderer.create_sprite(r"res/sparkles_64x64x1.png");
+    let spark = renderer.create_sprite(r"res/basic_64x64x1.png");
 
     let (tx, rx) = sync_channel(1);
 
@@ -118,7 +118,7 @@ let layer = scene.layer(logo);
         let mut pm2 = persistent_layer.model_matrix().clone();
         let mut pm3 = persistent_layer.model_matrix().clone();
 
-        utils::mainloop(Duration::new(0, 1666), |state| { true }, |state| {
+        utils::mainloop(Duration::new(0, 16666666), |state| { true }, |state| {
 
             // add some sprites to render
 
@@ -168,7 +168,7 @@ let layer = scene.layer(logo);
 
     // the main loop
 
-    utils::mainloop(Duration::new(0, 1666), |state| { true }, |state| {
+    utils::mainloop(Duration::new(0, 16666666), |state| { true }, |state| {
 
         // basic input
 
