@@ -72,7 +72,7 @@ impl Scene {
     }
 
     /// draws a sprite onto given layer
-    pub fn sprite(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
+    pub fn sprite(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
         self.layer(layer_id).sprite(sprite, frame_id, x, y, color, rotation, scale_x, scale_y);
     }
 

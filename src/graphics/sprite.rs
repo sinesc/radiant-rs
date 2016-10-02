@@ -1,5 +1,6 @@
 use prelude::*;
-use graphics::{RawFrame, renderer};
+use graphics::{RawFrame, Vertex, renderer};
+use Color;
 use image;
 use image::GenericImage;
 use regex::Regex;
@@ -26,27 +27,89 @@ enum SpriteLayout {
 struct FrameParameters (u32, u32, u32, SpriteLayout);
 
 impl Sprite {
-    pub fn width(&self) -> u32 {
+    pub fn width(self: &Self) -> u32 {
         self.width
     }
-    pub fn height(&self) -> u32 {
+    pub fn height(self: &Self) -> u32 {
         self.height
     }
-    pub fn frames(&self) -> u32 {
+    pub fn frames(self: &Self) -> u32 {
         self.frames
     }
-    pub fn bucket_id(&self) -> u32 {
+    pub fn bucket_id(self: &Self) -> u32 {
         self.bucket_id
     }
-    pub fn texture_id(&self, frame_id: u32) -> u32 {
+    pub fn texture_id(self: &Self, frame_id: u32) -> u32 {
         self.bucket_pos + (frame_id % self.frames)
     }
-    pub fn u_max(&self) -> f32 {
+    pub fn u_max(self: &Self) -> f32 {
         self.u_max
     }
-    pub fn v_max(&self) -> f32 {
+    pub fn v_max(self: &Self) -> f32 {
         self.v_max
     }
+}
+
+pub fn draw_sprite(sprite: &Sprite, vertex: &mut [Vertex], frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
+
+    let texture_id = sprite.texture_id(frame_id);
+    let bucket_id = sprite.bucket_id;
+
+    // corner positions relative to x/y
+
+    let anchor_x = sprite.anchor_x * sprite.width as f32;
+    let anchor_y = sprite.anchor_y * sprite.height as f32;
+
+    let offset_x0 = -anchor_x * scale_x;
+    let offset_x1 = (sprite.width as f32 - anchor_x) * scale_x;
+    let offset_y0 = -anchor_y * scale_y;
+    let offset_y1 = (sprite.height as f32 - anchor_y) * scale_y;
+
+    // fill vertex array
+
+    vertex[0].position[0] = x;
+    vertex[0].position[1] = y;
+    vertex[0].offset[0] = offset_x0;
+    vertex[0].offset[1] = offset_y0;
+    vertex[0].rotation = rotation;
+    vertex[0].bucket_id = bucket_id;
+    vertex[0].texture_id = texture_id;
+    vertex[0].color = color;
+    vertex[0].texture_uv[0] = 0.0;
+    vertex[0].texture_uv[1] = 0.0;
+
+    vertex[1].position[0] = x;
+    vertex[1].position[1] = y;
+    vertex[1].offset[0] = offset_x1;
+    vertex[1].offset[1] = offset_y0;
+    vertex[1].rotation = rotation;
+    vertex[1].bucket_id = bucket_id;
+    vertex[1].texture_id = texture_id;
+    vertex[1].color = color;
+    vertex[1].texture_uv[0] = sprite.u_max;
+    vertex[1].texture_uv[1] = 0.0;
+
+    vertex[2].position[0] = x;
+    vertex[2].position[1] = y;
+    vertex[2].offset[0] = offset_x0;
+    vertex[2].offset[1] = offset_y1;
+    vertex[2].rotation = rotation;
+    vertex[2].bucket_id = bucket_id;
+    vertex[2].texture_id = texture_id;
+    vertex[2].color = color;
+    vertex[2].texture_uv[0] = 0.0;
+    vertex[2].texture_uv[1] = sprite.v_max;
+
+    vertex[3].position[0] = x;
+    vertex[3].position[1] = y;
+    vertex[3].offset[0] = offset_x1;
+    vertex[3].offset[1] = offset_y1;
+    vertex[3].rotation = rotation;
+    vertex[3].bucket_id = bucket_id;
+    vertex[3].texture_id = texture_id;
+    vertex[3].color = color;
+    vertex[3].texture_uv[0] = sprite.u_max;
+    vertex[3].texture_uv[1] = sprite.v_max;
 }
 
 /// creates a new sprite instance. a sprite instance contains only meta information about a

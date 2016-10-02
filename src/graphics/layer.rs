@@ -2,7 +2,7 @@ use prelude::*;
 use avec::AVec;
 use maths::{Vec3, Mat4};
 use color::Color;
-use graphics::{Sprite, blendmodes, BlendMode};
+use graphics::{sprite, Sprite, blendmodes, BlendMode};
 
 static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub use Layer;
@@ -67,75 +67,15 @@ impl Layer {
     }
 
     /// adds a sprite to the layer
-    pub fn sprite(&self, sprite: Sprite, frame_id: u32, x: u32, y: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+    pub fn sprite(&self, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
 
         // increase local part of hash to mark this layer as modified against cached state in Renderer
         self.lid.fetch_add(1, Ordering::Relaxed);
 
-        let texture_id = sprite.texture_id(frame_id);
-        let bucket_id = sprite.bucket_id();
-
-        // corner positions relative to x/y
-
-        let x = x as f32;
-        let y = y as f32;
-        let anchor_x = sprite.anchor_x * sprite.width() as f32;
-        let anchor_y = sprite.anchor_y * sprite.height() as f32;
-
-        let offset_x0 = -anchor_x * scale_x;
-        let offset_x1 = (sprite.width() as f32 - anchor_x) * scale_x;
-        let offset_y0 = -anchor_y * scale_y;
-        let offset_y1 = (sprite.height() as f32 - anchor_y) * scale_y;
-
-        {
-            let mut vertex = self.vertex_data.map(4);
-
-            // fill vertex array
-
-            vertex[0].position[0] = x;
-            vertex[0].position[1] = y;
-            vertex[0].offset[0] = offset_x0;
-            vertex[0].offset[1] = offset_y0;
-            vertex[0].rotation = rotation;
-            vertex[0].bucket_id = bucket_id;
-            vertex[0].texture_id = texture_id;
-            vertex[0].color = color;
-            vertex[0].texture_uv[0] = 0.0;
-            vertex[0].texture_uv[1] = 0.0;
-
-            vertex[1].position[0] = x;
-            vertex[1].position[1] = y;
-            vertex[1].offset[0] = offset_x1;
-            vertex[1].offset[1] = offset_y0;
-            vertex[1].rotation = rotation;
-            vertex[1].bucket_id = bucket_id;
-            vertex[1].texture_id = texture_id;
-            vertex[1].color = color;
-            vertex[1].texture_uv[0] = sprite.u_max();
-            vertex[1].texture_uv[1] = 0.0;
-
-            vertex[2].position[0] = x;
-            vertex[2].position[1] = y;
-            vertex[2].offset[0] = offset_x0;
-            vertex[2].offset[1] = offset_y1;
-            vertex[2].rotation = rotation;
-            vertex[2].bucket_id = bucket_id;
-            vertex[2].texture_id = texture_id;
-            vertex[2].color = color;
-            vertex[2].texture_uv[0] = 0.0;
-            vertex[2].texture_uv[1] = sprite.v_max();
-
-            vertex[3].position[0] = x;
-            vertex[3].position[1] = y;
-            vertex[3].offset[0] = offset_x1;
-            vertex[3].offset[1] = offset_y1;
-            vertex[3].rotation = rotation;
-            vertex[3].bucket_id = bucket_id;
-            vertex[3].texture_id = texture_id;
-            vertex[3].color = color;
-            vertex[3].texture_uv[0] = sprite.u_max();
-            vertex[3].texture_uv[1] = sprite.v_max();
-        }
+        // get vertex_data slice and draw into it
+        let mut guard = self.vertex_data.map(4);
+        let mut vertices = guard.deref_mut();
+        sprite::draw_sprite(&sprite, vertices, frame_id, x, y, color, rotation, scale_x, scale_y);
 
         self
     }

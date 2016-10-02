@@ -90,10 +90,10 @@ fn main() {
             let s = rng.get::<f32>();
             if rng.get::<f32>() > 0.90 {
                 let temperature = rng.range(4000.0f32, 10000.0);
-                scene.sprite(galaxy, spark, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
+                scene.sprite(galaxy, spark, i, x, y, Color::temperature(temperature, 1.0).scale(2.0-l), r, 0.2, 0.2);
             } else {
                 let temperature = rng.range(4000.0f32, 10000.0);
-                scene.sprite(galaxy, sparkles, i, x as u32, y as u32, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
+                scene.sprite(galaxy, sparkles, i, x, y, Color::temperature(temperature, 1.0).scale(1.0-l), r, s, s);
             }
         }
 let persistent_layer = scene.layer(galaxy);
@@ -123,9 +123,9 @@ let layer = scene.layer(logo);
             // add some sprites to render
 
             layer.reset();
-            layer.sprite(test1, 50, 600, 600, Color::white(), 0.0, 1.0, 1.0);
-            layer.sprite(test2, 50, 650, 650, Color::white(), 0.0, 1.0, 1.0);
-            layer.sprite(test3, 50, 700, 700, Color::white(), 0.0, 1.0, 1.0);
+            layer.sprite(test1, 50, 600., 600., Color::white(), 0.0, 1.0, 1.0);
+            layer.sprite(test2, 50, 650., 650., Color::white(), 0.0, 1.0, 1.0);
+            layer.sprite(test3, 50, 700., 700., Color::white(), 0.0, 1.0, 1.0);
 
             // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
 

@@ -36,7 +36,7 @@ pub struct Layer {
 pub type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
 
 #[derive(Copy, Clone, Default)]
-struct Vertex {
+pub struct Vertex {
     position    : [f32; 2],
     offset      : [f32; 2],
     rotation    : f32,
