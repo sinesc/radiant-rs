@@ -1,5 +1,5 @@
 use prelude::*;
-use graphics::{RawFrame, Vertex, renderer};
+use graphics::{RawFrame, renderer, layer, Layer, Point};
 use Color;
 use image;
 use image::GenericImage;
@@ -9,8 +9,8 @@ use regex::Regex;
 pub struct Sprite {
     pub anchor_x    : f32,
     pub anchor_y    : f32,
-    width           : u32,
-    height          : u32,
+    width           : f32,
+    height          : f32,
     frames          : u32,
     bucket_id       : u32,
     bucket_pos      : u32,
@@ -27,96 +27,57 @@ enum SpriteLayout {
 struct FrameParameters (u32, u32, u32, SpriteLayout);
 
 impl Sprite {
-    pub fn width(self: &Self) -> u32 {
+
+    /// draws a sprite onto given layer
+    pub fn draw(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+
+        let bucket_id = self.bucket_id;
+        let texture_id = self.texture_id(frame_id);
+        let uv_min = Point::new(0.0, 0.0);
+        let uv_max = Point::new(self.u_max, self.v_max);
+        let anchor = Point::new(self.anchor_x, self.anchor_y);
+        let pos = Point::new(x, y);
+        let dim = Point::new(self.width, self.height);
+        let scale = Point::new(scale_x, scale_y);
+
+        layer::add_rect(layer, bucket_id, texture_id, uv_min, uv_max, pos, anchor, dim, color, rotation, scale);
+        self
+    }
+
+    pub fn width(self: &Self) -> f32 {
         self.width
     }
-    pub fn height(self: &Self) -> u32 {
+
+    pub fn height(self: &Self) -> f32 {
         self.height
     }
+
     pub fn frames(self: &Self) -> u32 {
         self.frames
     }
+
     pub fn bucket_id(self: &Self) -> u32 {
         self.bucket_id
     }
+
     pub fn texture_id(self: &Self, frame_id: u32) -> u32 {
         self.bucket_pos + (frame_id % self.frames)
     }
+
     pub fn u_max(self: &Self) -> f32 {
         self.u_max
     }
+
     pub fn v_max(self: &Self) -> f32 {
         self.v_max
     }
 }
 
-pub fn draw_sprite(sprite: &Sprite, vertex: &mut [Vertex], frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
-
-    let texture_id = sprite.texture_id(frame_id);
-    let bucket_id = sprite.bucket_id;
-
-    // corner positions relative to x/y
-
-    let anchor_x = sprite.anchor_x * sprite.width as f32;
-    let anchor_y = sprite.anchor_y * sprite.height as f32;
-
-    let offset_x0 = -anchor_x * scale_x;
-    let offset_x1 = (sprite.width as f32 - anchor_x) * scale_x;
-    let offset_y0 = -anchor_y * scale_y;
-    let offset_y1 = (sprite.height as f32 - anchor_y) * scale_y;
-
-    // fill vertex array
-
-    vertex[0].position[0] = x;
-    vertex[0].position[1] = y;
-    vertex[0].offset[0] = offset_x0;
-    vertex[0].offset[1] = offset_y0;
-    vertex[0].rotation = rotation;
-    vertex[0].bucket_id = bucket_id;
-    vertex[0].texture_id = texture_id;
-    vertex[0].color = color;
-    vertex[0].texture_uv[0] = 0.0;
-    vertex[0].texture_uv[1] = 0.0;
-
-    vertex[1].position[0] = x;
-    vertex[1].position[1] = y;
-    vertex[1].offset[0] = offset_x1;
-    vertex[1].offset[1] = offset_y0;
-    vertex[1].rotation = rotation;
-    vertex[1].bucket_id = bucket_id;
-    vertex[1].texture_id = texture_id;
-    vertex[1].color = color;
-    vertex[1].texture_uv[0] = sprite.u_max;
-    vertex[1].texture_uv[1] = 0.0;
-
-    vertex[2].position[0] = x;
-    vertex[2].position[1] = y;
-    vertex[2].offset[0] = offset_x0;
-    vertex[2].offset[1] = offset_y1;
-    vertex[2].rotation = rotation;
-    vertex[2].bucket_id = bucket_id;
-    vertex[2].texture_id = texture_id;
-    vertex[2].color = color;
-    vertex[2].texture_uv[0] = 0.0;
-    vertex[2].texture_uv[1] = sprite.v_max;
-
-    vertex[3].position[0] = x;
-    vertex[3].position[1] = y;
-    vertex[3].offset[0] = offset_x1;
-    vertex[3].offset[1] = offset_y1;
-    vertex[3].rotation = rotation;
-    vertex[3].bucket_id = bucket_id;
-    vertex[3].texture_id = texture_id;
-    vertex[3].color = color;
-    vertex[3].texture_uv[0] = sprite.u_max;
-    vertex[3].texture_uv[1] = sprite.v_max;
-}
-
 /// creates a new sprite instance. a sprite instance contains only meta information about a
 /// sprite, the actual texture is kept by the renderer. use renderer::create_sprite() to create a sprite
-pub fn create_sprite(width: u32, height: u32, frames: u32, bucket_pos: u32) -> Sprite {
+pub fn create_sprite(width: f32, height: f32, frames: u32, bucket_pos: u32) -> Sprite {
 
-    let (bucket_id, tex_size) = renderer::bucket_info(width, height);
+    let (bucket_id, tex_size) = renderer::bucket_info(width as u32, height as u32);
 
     Sprite {
         width       : width,

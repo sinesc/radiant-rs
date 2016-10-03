@@ -4,6 +4,7 @@ mod input;
 mod layer;
 mod renderer;
 mod sprite;
+mod font;
 
 pub use self::blendmode::BlendMode;
 pub use self::blendmode::blendmodes;
@@ -11,9 +12,11 @@ pub use self::input::Input;
 pub use self::display::{Descriptor, Monitor};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
+pub use self::font::Font;
 
 use prelude::*;
 use glium;
+use rusttype;
 use color::Color;
 use maths::Mat4;
 use avec::AVec;
@@ -31,7 +34,20 @@ pub struct Layer {
     gid         : usize,
     lid         : AtomicUsize,
 	vertex_data : AVec<Vertex>,
+    font_cache  : Mutex<font::FontCache>,
 }
+
+#[derive(Copy, Clone)]
+pub struct Point {
+    x: f32,
+    y: f32,
+}
+impl Point {
+    pub fn new(x: f32, y: f32) -> Point {
+        Point { x: x, y: y }
+    }
+}
+
 
 pub type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
 

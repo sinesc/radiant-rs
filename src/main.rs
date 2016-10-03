@@ -63,6 +63,7 @@ fn main() {
     let test3 = renderer.create_sprite(r"res/test_59x30x1.png");
     let sparkles = renderer.create_sprite(r"res/sparkles_64x64x1.png");
     let spark = renderer.create_sprite(r"res/basic_64x64x1.png");
+    let font = renderer.create_font("who cares");
 
     let (tx, rx) = sync_channel(1);
 
@@ -81,7 +82,7 @@ fn main() {
         let mut rng = utils::Rng::new(0.0);
         let radius = 600.0;
 
-        for i in 0..max_sprites {
+        for i in 0..max_sprites-100 {
             let l = rng.get::<f32>();
             let r = l * radius / 2.0;
             let a = rng.range(0.0f32, 2.0 * 3.14157);
@@ -118,14 +119,16 @@ let layer = scene.layer(logo);
         let mut pm2 = persistent_layer.model_matrix().clone();
         let mut pm3 = persistent_layer.model_matrix().clone();
 
+        font.write(persistent_layer, "Hello world", 100.0, 100.0, 200, Color::white(), 0.0, 1.0, 1.0);
+
         utils::mainloop(Duration::new(0, 16666666), |state| { true }, |state| {
 
             // add some sprites to render
 
-            layer.reset();
-            layer.sprite(test1, 50, 600., 600., Color::white(), 0.0, 1.0, 1.0);
-            layer.sprite(test2, 50, 650., 650., Color::white(), 0.0, 1.0, 1.0);
-            layer.sprite(test3, 50, 700., 700., Color::white(), 0.0, 1.0, 1.0);
+            layer.clear();
+            test1.draw(layer, 50, 600., 600., Color::white(), 0.0, 1.0, 1.0);
+            test2.draw(layer, 50, 650., 650., Color::white(), 0.0, 1.0, 1.0);
+            test3.draw(layer, 50, 700., 700., Color::white(), 0.0, 1.0, 1.0);
 
             // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
 
@@ -180,11 +183,11 @@ let layer = scene.layer(logo);
 
         // prepare render target, required before drawing
 
-        rx.recv();
+        let x = rx.recv();
         renderer.prepare_and_clear_target(Color::black());
         renderer.draw_scene(main_scene.deref());
         renderer.swap_target();
-        rx.recv();
+        let y = rx.recv();
 
         !input.should_close
     });

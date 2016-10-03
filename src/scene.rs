@@ -73,7 +73,7 @@ impl Scene {
 
     /// draws a sprite onto given layer
     pub fn sprite(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
-        self.layer(layer_id).sprite(sprite, frame_id, x, y, color, rotation, scale_x, scale_y);
+        sprite.draw(self.layer(layer_id), frame_id, x, y, color, rotation, scale_x, scale_y);
     }
 
     /// create and add a layer to the scene
@@ -128,7 +128,7 @@ pub fn draw(this: &Scene, renderer: &Renderer) {
                 renderer.draw_layer(&layers[layer_id.0 as usize]);
             }
             Operation::Reset(layer_id) => {
-                layers[layer_id.0 as usize].reset();
+                layers[layer_id.0 as usize].clear();
             }
             _ => ()
         }

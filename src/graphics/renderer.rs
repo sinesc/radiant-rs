@@ -2,15 +2,17 @@ use prelude::*;
 use glium;
 use glium::Surface;
 use color::Color;
-use graphics::{Display, Layer, sprite, Sprite, RawFrame, Vertex, blendmode};
+use graphics::{Display, Layer, sprite, Sprite, font, Font, RawFrame, Vertex, blendmode};
 use scene;
 
-struct VertexBufferContainer {
+struct LayerBufferContainer {
     lid     : usize,
     size    : usize,
-    buffer  : glium::VertexBuffer<Vertex>,
+    vb      : glium::VertexBuffer<Vertex>,
+    tc      : glium::texture::Texture2d,
 }
 
+// !todo use multiple structs glium (or better something else so it isn't so easy to confuse with glium::...), sprite, font
 struct GliumState {
     index_buffer    : glium::IndexBuffer<u32>,
     program         : glium::Program,
@@ -18,7 +20,7 @@ struct GliumState {
     raw_tex_data    : Vec<Vec<RawFrame>>,
     target          : Option<glium::Frame>,
     display         : Display,
-    vertex_buffers  : HashMap<usize, VertexBufferContainer>,
+    layer_buffers   : HashMap<usize, LayerBufferContainer>,
 }
 
 #[derive(Clone)]
@@ -41,7 +43,7 @@ impl Renderer {
             raw_tex_data    : Vec::new(),
             target          : Option::None,
             display         : display.clone(),
-            vertex_buffers  : HashMap::new(),
+            layer_buffers   : HashMap::new(),
         };
         Renderer {
             max_sprites     : max_sprites,
@@ -80,7 +82,11 @@ impl Renderer {
             glium.raw_tex_data[bucket_id as usize].push(frame);
         }
 
-        sprite::create_sprite(frame_width, frame_height, frame_count, bucket_pos)
+        sprite::create_sprite(frame_width as f32, frame_height as f32, frame_count, bucket_pos)
+    }
+
+    pub fn create_font<'a>(&self, file: &str) -> Font<'a> {
+        font::create_font(/*file*/)
     }
 
     /// prepares a new target for drawing
@@ -138,7 +144,7 @@ impl Renderer {
             // prepare texture array uniforms
 
             let mut glium_mutexguard = self.glium.borrow_mut();
-            let mut glium = glium_mutexguard.deref_mut();
+            let mut glium = glium_mutexguard.deref_mut(); // !todo blah
 
             let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
             let mut arrays = Vec::<&glium::texture::Texture2dArray>::new();
@@ -151,17 +157,6 @@ impl Renderer {
                 });
             }
 
-            let uniforms = uniform! {
-                view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
-                model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
-                global_color    : *layer.color.lock().unwrap().deref_mut(),
-                tex0            : arrays[0],
-                tex1            : arrays[1],
-                tex2            : arrays[2],
-                tex3            : arrays[3],
-                tex4            : arrays[4],
-            };
-
             // set up draw parameters for given blend options
 
             let draw_parameters = glium::draw_parameters::DrawParameters {
@@ -172,32 +167,48 @@ impl Renderer {
 
             // copy layer data to vertexbuffer
 
-            if glium.vertex_buffers.contains_key(&layer.gid) == false {
-                glium.vertex_buffers.insert(layer.gid, VertexBufferContainer {
+            if glium.layer_buffers.contains_key(&layer.gid) == false {
+                glium.layer_buffers.insert(layer.gid, LayerBufferContainer {
                     lid     : 0,
                     size    : 0,
-                    buffer  : glium::VertexBuffer::empty_dynamic(&glium.display.handle, self.max_sprites as usize * 4).unwrap()
+                    vb      : glium::VertexBuffer::empty_dynamic(&glium.display.handle, self.max_sprites as usize * 4).unwrap(),
+                    tc      : font::create_cache_texture(&glium.display.handle, 512, 512), // !todo
                 });
             }
 
-            let container = glium.vertex_buffers.get_mut(&layer.gid).unwrap();
+            let container = glium.layer_buffers.get_mut(&layer.gid).unwrap();
 
             if container.lid != lid {
                 let vertex_data = layer.vertex_data.get();
                 container.size = vertex_data.len() / 4;
                 if container.size > 0 {
                     let num_vertices = container.size as usize * 4;
-                    let vb_slice = container.buffer.slice(0 .. num_vertices).unwrap();
+                    let vb_slice = container.vb.slice(0 .. num_vertices).unwrap();
                     vb_slice.write(&vertex_data[0 .. num_vertices]);
                     container.lid = lid;
                 }
             }
 
+            // update font texture from layer
+
+            font::update_cache_texture(layer, &mut container.tc);
+
+            let uniforms = uniform! {
+                view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
+                model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
+                global_color    : *layer.color.lock().unwrap().deref_mut(),
+                font_cache      : &container.tc,
+                tex1            : arrays[1],
+                tex2            : arrays[2],
+                tex3            : arrays[3],
+                tex4            : arrays[4],
+            };
+
             // draw up to container.size (!todo try to check this earlier)
 
             if container.size > 0 {
                 let ib_slice = glium.index_buffer.slice(0 .. container.size as usize * 6).unwrap();
-                glium.target.as_mut().unwrap().draw(&container.buffer, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
+                glium.target.as_mut().unwrap().draw(&container.vb, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
             }
         }
 
@@ -256,7 +267,7 @@ impl Renderer {
 pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
     let size = 2u32.pow(ln2);
-    // skip sizes 1x1 to 16x16
-    let bucket_id = cmp::max(0, ln2 - 4);
+    // skip first five sizes 1x1 to 16x16, use id 0 for font-cache
+    let bucket_id = cmp::max(0, ln2 - 4 + 1);
     (bucket_id, size)
 }
