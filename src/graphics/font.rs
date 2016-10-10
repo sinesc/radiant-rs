@@ -1,5 +1,5 @@
 use prelude::*;
-use graphics::{layer, Layer, Point};
+use graphics::{layer, Layer, Point, Rect};
 use Color;
 use rusttype;
 use glium;
@@ -53,8 +53,17 @@ impl FontCache {
         self.queue.len() > 0
     }
 
-    pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Result<Option<(rusttype::Rect<f32>, rusttype::Rect<i32>)>, rusttype::gpu_cache::CacheReadErr> {
-        self.cache.rect_for(font_id, glyph)
+    pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point, Point)> {
+        if let Ok(Some((uv_rect, screen_rect))) = self.cache.rect_for(font_id, glyph) {
+            let uv = Rect::new(uv_rect.min.x, uv_rect.min.y, uv_rect.max.x, uv_rect.max.y);
+            let pos = Point::new(screen_rect.min.x as f32, screen_rect.min.y as f32);
+            let dim = Point::new((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
+            Some((uv, pos, dim))
+        } else {
+            None
+        }
+
+        // Result<Option<(rusttype::Rect<f32>, rusttype::Rect<i32>)>, rusttype::gpu_cache::CacheReadErr>
     }
 }
 
@@ -67,25 +76,21 @@ impl<'a> Font<'a> {
 
     pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
 
-        let dpi_factor = 1.0; // !todo stuff
         let font_id = 1;
         let bucket_id = 0;
-        let glyphs = layout_paragraph(&self.font, rusttype::Scale::uniform(24.0 * dpi_factor), max_width, &text);
+        let glyphs = layout_paragraph(&self.font, rusttype::Scale::uniform(24.0), max_width, &text);
         let mut font_cache = layer.font_cache.lock().unwrap();
 
         font_cache.queue(font_id, &glyphs);
 
+        let anchor = Point::new(0.0, 0.0);
+        let scale = Point::new(scale_x, scale_y);
+
         for glyph in &glyphs {
-        println!("not ok?");
-            if let Ok(Some((uv_rect, screen_rect))) = font_cache.rect_for(font_id, glyph) {
-                let uv_min = Point::new(uv_rect.min.x, uv_rect.min.y);
-                let uv_max = Point::new(uv_rect.max.x, uv_rect.max.y);
-                let pos = Point::new(screen_rect.min.x as f32,  screen_rect.min.y as f32);
-                let dim = Point::new(screen_rect.max.x as f32 - screen_rect.min.x as f32, screen_rect.max.y as f32 - screen_rect.min.y as f32);
-                let anchor = Point::new(0.0, 0.0);
-                let scale = Point::new(scale_x, scale_y);
-                layer::add_rect(layer, bucket_id, 0, uv_min, uv_max, pos, anchor, dim, color, rotation, scale);
-                println!("uvs {} {} {} {}", uv_min.x, uv_min.y, uv_max.x, uv_max.y);
+            if let Some((uv, pos, dim)) = font_cache.rect_for(font_id, glyph) {
+                let offset_x = x +   pos.x * scale_x * (rotation).cos() + pos.y * scale_y * (rotation).sin();
+                let offset_y = y +   pos.y * scale_y * (rotation).sin() + pos.x * scale_x * (rotation).cos();
+                layer::add_rect(layer, bucket_id, 0, uv, Point::new(offset_x, offset_y), anchor, dim, color, rotation, scale);
             }
         }
 

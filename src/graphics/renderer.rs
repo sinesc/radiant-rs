@@ -197,7 +197,7 @@ impl Renderer {
                 view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
                 model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
                 global_color    : *layer.color.lock().unwrap().deref_mut(),
-                font_cache      : &container.tc,
+                font_cache      : container.tc.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
                 tex1            : arrays[1],
                 tex2            : arrays[2],
                 tex3            : arrays[3],

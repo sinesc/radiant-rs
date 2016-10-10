@@ -3,7 +3,7 @@ use rusttype;
 use avec::AVec;
 use maths::{Vec3, Mat4};
 use color::Color;
-use graphics::{blendmodes, font, BlendMode, Point};
+use graphics::{blendmodes, font, BlendMode, Point, Rect};
 
 static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub use Layer;
@@ -20,7 +20,7 @@ impl Layer {
             gid             : LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
             lid             : ATOMIC_USIZE_INIT,
             vertex_data     : AVec::new(max_sprites * 4),
-            font_cache      : Mutex::new(font::FontCache::new(512, 512, 0.1, 0.1)),
+            font_cache      : Mutex::new(font::FontCache::new(512, 512, 0.01, 0.01)),
         }
     }
 
@@ -87,7 +87,7 @@ impl Layer {
 }
 
 /// draws a rectangle on given layer
-pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv_min: Point, uv_max: Point, pos: Point, anchor: Point, dim: Point, color: Color, rotation: f32, scale: Point) {
+pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point, anchor: Point, dim: Point, color: Color, rotation: f32, scale: Point) {
 
     // increase local part of hash to mark this layer as modified against cached state in Renderer
 
@@ -110,47 +110,47 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv_min: Point, u
 
     // fill vertex array
 
-    vertex[0].position[0] = pos.x;
-    vertex[0].position[1] = pos.y;
-    vertex[0].offset[0] = offset_x0;
-    vertex[0].offset[1] = offset_y0;
-    vertex[0].rotation = rotation;
-    vertex[0].bucket_id = bucket_id;
-    vertex[0].texture_id = texture_id;
-    vertex[0].color = color;
-    vertex[0].texture_uv[0] = uv_min.x;
-    vertex[0].texture_uv[1] = uv_min.y;
+    vertex[0].position[0]   = pos.x;
+    vertex[0].position[1]   = pos.y;
+    vertex[0].offset[0]     = offset_x0;
+    vertex[0].offset[1]     = offset_y0;
+    vertex[0].rotation      = rotation;
+    vertex[0].bucket_id     = bucket_id;
+    vertex[0].texture_id    = texture_id;
+    vertex[0].color         = color;
+    vertex[0].texture_uv[0] = uv.0.x;
+    vertex[0].texture_uv[1] = uv.0.y;
 
-    vertex[1].position[0] = pos.x;
-    vertex[1].position[1] = pos.y;
-    vertex[1].offset[0] = offset_x1;
-    vertex[1].offset[1] = offset_y0;
-    vertex[1].rotation = rotation;
-    vertex[1].bucket_id = bucket_id;
-    vertex[1].texture_id = texture_id;
-    vertex[1].color = color;
-    vertex[1].texture_uv[0] = uv_max.x;
-    vertex[1].texture_uv[1] = uv_min.y;
+    vertex[1].position[0]   = pos.x;
+    vertex[1].position[1]   = pos.y;
+    vertex[1].offset[0]     = offset_x1;
+    vertex[1].offset[1]     = offset_y0;
+    vertex[1].rotation      = rotation;
+    vertex[1].bucket_id     = bucket_id;
+    vertex[1].texture_id    = texture_id;
+    vertex[1].color         = color;
+    vertex[1].texture_uv[0] = uv.1.x;
+    vertex[1].texture_uv[1] = uv.0.y;
 
-    vertex[2].position[0] = pos.x;
-    vertex[2].position[1] = pos.y;
-    vertex[2].offset[0] = offset_x0;
-    vertex[2].offset[1] = offset_y1;
-    vertex[2].rotation = rotation;
-    vertex[2].bucket_id = bucket_id;
-    vertex[2].texture_id = texture_id;
-    vertex[2].color = color;
-    vertex[2].texture_uv[0] = uv_min.x;
-    vertex[2].texture_uv[1] = uv_max.y;
+    vertex[2].position[0]   = pos.x;
+    vertex[2].position[1]   = pos.y;
+    vertex[2].offset[0]     = offset_x0;
+    vertex[2].offset[1]     = offset_y1;
+    vertex[2].rotation      = rotation;
+    vertex[2].bucket_id     = bucket_id;
+    vertex[2].texture_id    = texture_id;
+    vertex[2].color         = color;
+    vertex[2].texture_uv[0] = uv.0.x;
+    vertex[2].texture_uv[1] = uv.1.y;
 
-    vertex[3].position[0] = pos.x;
-    vertex[3].position[1] = pos.y;
-    vertex[3].offset[0] = offset_x1;
-    vertex[3].offset[1] = offset_y1;
-    vertex[3].rotation = rotation;
-    vertex[3].bucket_id = bucket_id;
-    vertex[3].texture_id = texture_id;
-    vertex[3].color = color;
-    vertex[3].texture_uv[0] = uv_max.x;
-    vertex[3].texture_uv[1] = uv_max.y;
+    vertex[3].position[0]   = pos.x;
+    vertex[3].position[1]   = pos.y;
+    vertex[3].offset[0]     = offset_x1;
+    vertex[3].offset[1]     = offset_y1;
+    vertex[3].rotation      = rotation;
+    vertex[3].bucket_id     = bucket_id;
+    vertex[3].texture_id    = texture_id;
+    vertex[3].color         = color;
+    vertex[3].texture_uv[0] = uv.1.x;
+    vertex[3].texture_uv[1] = uv.1.y;
 }

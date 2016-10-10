@@ -21,7 +21,9 @@ void main() {
     vec4 color = v_color * global_color;
 
     if (v_bucket_id == 0u) {
-        f_color = texture(font_cache, v_tex_coords) * color;
+        float grey = texture(font_cache, v_tex_coords).r;
+        f_color = vec4(grey, grey, grey, 255.0 - grey) * color;
+        //f_color = vec4(1.0, 1.0, 1.0, texture(font_cache, v_tex_coords).r) * color;
     } else if (v_bucket_id == 1u) {
         f_color = texture(tex1, vec3(v_tex_coords, float(v_texture_id))) * color;
     } else if (v_bucket_id == 2u) {

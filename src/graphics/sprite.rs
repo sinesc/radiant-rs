@@ -1,5 +1,5 @@
 use prelude::*;
-use graphics::{RawFrame, renderer, layer, Layer, Point};
+use graphics::{RawFrame, renderer, layer, Layer, Point, Rect};
 use Color;
 use image;
 use image::GenericImage;
@@ -33,14 +33,13 @@ impl Sprite {
 
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
-        let uv_min = Point::new(0.0, 0.0);
-        let uv_max = Point::new(self.u_max, self.v_max);
+        let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
         let anchor = Point::new(self.anchor_x, self.anchor_y);
         let pos = Point::new(x, y);
         let dim = Point::new(self.width, self.height);
         let scale = Point::new(scale_x, scale_y);
 
-        layer::add_rect(layer, bucket_id, texture_id, uv_min, uv_max, pos, anchor, dim, color, rotation, scale);
+        layer::add_rect(layer, bucket_id, texture_id, uv, pos, anchor, dim, color, rotation, scale);
         self
     }
 

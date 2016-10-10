@@ -51,7 +51,7 @@ fn main() {
 
     // initialize a display, and input source and a renderer
 
-    let max_sprites = 1500;
+    let max_sprites = 15000;
     let display = Display::new(Descriptor { /*monitor: 0,*/ width: 1024, height: 768, vsync: false, ..Descriptor::default() });
     let mut input = Input::new(&display);
     let renderer = Renderer::new(&display, max_sprites);
@@ -82,7 +82,7 @@ fn main() {
         let mut rng = utils::Rng::new(0.0);
         let radius = 600.0;
 
-        for i in 0..max_sprites-100 {
+        for i in 0..1500 {
             let l = rng.get::<f32>();
             let r = l * radius / 2.0;
             let a = rng.range(0.0f32, 2.0 * 3.14157);
@@ -119,7 +119,7 @@ let layer = scene.layer(logo);
         let mut pm2 = persistent_layer.model_matrix().clone();
         let mut pm3 = persistent_layer.model_matrix().clone();
 
-        font.write(persistent_layer, "Hello world", 100.0, 100.0, 200, Color::white(), 0.0, 1.0, 1.0);
+        font.write(persistent_layer, "Hello world how are you", 100.0, 100.0, 200, Color::white(), 1.0, 1.0, 1.0);
 
         utils::mainloop(Duration::new(0, 16666666), |state| { true }, |state| {
 
@@ -143,7 +143,7 @@ let layer = scene.layer(logo);
 
             scene.clear().ops(&[
                 Operation::Draw(logo),
-
+/*
                 Operation::SetViewMatrix(galaxy, pv3),
                 Operation::SetModelMatrix(galaxy, pm3),
                 Operation::SetColor(galaxy, Color::lightness(0.25)),
@@ -153,11 +153,12 @@ let layer = scene.layer(logo);
                 Operation::SetModelMatrix(galaxy, pm2),
                 Operation::SetColor(galaxy, Color::lightness(0.5)),
                 Operation::Draw(galaxy),
-
-                Operation::SetViewMatrix(galaxy, pv1),
-                Operation::SetModelMatrix(galaxy, pm1),
+*/
+                //Operation::SetViewMatrix(galaxy, pv1),
+                //Operation::SetModelMatrix(galaxy, pm1),
                 Operation::SetColor(galaxy, Color::lightness(1.0)),
                 Operation::Draw(galaxy),
+
             ]);
 
             // this will panic when the main thread exists
