@@ -2,16 +2,19 @@
 #![allow(unused_variables)]
 
 extern crate radiant_rs;
+extern crate font_loader;
 
 //use std::thread;
 use std::time::{Duration, Instant};
 use std::ops::Deref;
 use std::sync::mpsc::sync_channel;
-use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, Operation, blendmodes, utils};
+use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, Operation, blendmodes, utils, FontInfo};
 
 //use radiant_rs::avec::AVec;
 use std::thread;
 use std::sync::Arc;
+
+use font_loader::system_fonts;
 
 fn main() {
 /*
@@ -48,7 +51,10 @@ fn main() {
 
     println!("--");
 */
-
+    let sysfonts = system_fonts::query_all();
+    for string in &sysfonts {
+        println!("{}", string);
+    }
     // initialize a display, and input source and a renderer
 
     let max_sprites = 15000;
@@ -63,7 +69,7 @@ fn main() {
     let test3 = renderer.create_sprite(r"res/test_59x30x1.png");
     let sparkles = renderer.create_sprite(r"res/sparkles_64x64x1.png");
     let spark = renderer.create_sprite(r"res/basic_64x64x1.png");
-    let font = renderer.create_font("who cares");
+    let font = renderer.create_font_from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default()});
 
     let (tx, rx) = sync_channel(1);
 
@@ -118,21 +124,23 @@ let layer = scene.layer(logo);
         let mut pm1 = persistent_layer.model_matrix().clone();
         let mut pm2 = persistent_layer.model_matrix().clone();
         let mut pm3 = persistent_layer.model_matrix().clone();
-
-        font.write(persistent_layer, "Hello world how are you", 100.0, 100.0, 200, Color::white(), 1.0, 1.0, 1.0);
-
+let mut rot = 0.0;
         utils::mainloop(Duration::new(0, 16666666), |state| { true }, |state| {
 
             // add some sprites to render
 
             layer.clear();
+
+        font.write(layer, "Hello World, how's it going?", 350.0, 350.0, 24.0, 200.0, Color::purple(), rot, 1.0, 1.0);
+        rot += state.delta_f32 / 5.0;
+
             test1.draw(layer, 50, 600., 600., Color::white(), 0.0, 1.0, 1.0);
             test2.draw(layer, 50, 650., 650., Color::white(), 0.0, 1.0, 1.0);
             test3.draw(layer, 50, 700., 700., Color::white(), 0.0, 1.0, 1.0);
 
             // some matrix games: prepare 3 view and model matricies to rotate the entire layer and each sprite per layer
 
-            layer.view_matrix().rotate_z_at((650.0, 650.0), 0.3 * state.delta_f32);
+            //layer.view_matrix().rotate_z_at((650.0, 650.0), 0.3 * state.delta_f32);
 
             pv1.rotate_z_at((radius / 2.0, radius / 2.0), 0.054 * state.delta_f32);
             pv2.rotate_z_at((radius / 2.0, radius / 2.0), 0.042 * state.delta_f32);
@@ -157,7 +165,7 @@ let layer = scene.layer(logo);
                 //Operation::SetViewMatrix(galaxy, pv1),
                 //Operation::SetModelMatrix(galaxy, pm1),
                 Operation::SetColor(galaxy, Color::lightness(1.0)),
-                Operation::Draw(galaxy),
+                //Operation::Draw(galaxy),
 
             ]);
 

@@ -1,5 +1,4 @@
 use prelude::*;
-use rusttype;
 use avec::AVec;
 use maths::{Vec3, Mat4};
 use color::Color;

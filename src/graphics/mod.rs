@@ -12,11 +12,10 @@ pub use self::input::Input;
 pub use self::display::{Descriptor, Monitor};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
-pub use self::font::Font;
+pub use self::font::{Font, FontInfo};
 
 use prelude::*;
 use glium;
-use rusttype;
 use color::Color;
 use maths::Mat4;
 use avec::AVec;

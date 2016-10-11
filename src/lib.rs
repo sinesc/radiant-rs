@@ -5,6 +5,7 @@ extern crate regex;
 extern crate num;
 extern crate rusttype;
 extern crate unicode_normalization;
+extern crate font_loader;
 
 mod prelude;
 mod avec;
@@ -13,7 +14,7 @@ mod graphics;
 mod maths;
 mod scene;
 
-pub use graphics::{BlendMode, blendmodes, Display, Descriptor, Monitor, Layer, Renderer, Sprite, Font, Input};
+pub use graphics::{BlendMode, blendmodes, Display, Descriptor, Monitor, Layer, Renderer, Sprite, Font, FontInfo, Input};
 pub use maths::{Mat4, Vec2, Vec3, Dir1};
 pub use color::Color;
 pub use scene::{Scene, Operation};

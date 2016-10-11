@@ -2,7 +2,7 @@ use prelude::*;
 use glium;
 use glium::Surface;
 use color::Color;
-use graphics::{Display, Layer, sprite, Sprite, font, Font, RawFrame, Vertex, blendmode};
+use graphics::{Display, Layer, sprite, Sprite, font, Font, FontInfo, RawFrame, Vertex, blendmode};
 use scene;
 
 struct LayerBufferContainer {
@@ -85,8 +85,12 @@ impl Renderer {
         sprite::create_sprite(frame_width as f32, frame_height as f32, frame_count, bucket_pos)
     }
 
-    pub fn create_font<'a>(&self, file: &str) -> Font<'a> {
-        font::create_font(/*file*/)
+    pub fn create_font_from_file<'a>(&self, file: &str) -> Font<'a> {
+        font::create_font_from_file(file)
+    }
+
+    pub fn create_font_from_info<'a>(&self, info: FontInfo) -> Font<'a> {
+        font::create_font_from_info(info)
     }
 
     /// prepares a new target for drawing

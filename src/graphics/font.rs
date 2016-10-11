@@ -3,8 +3,30 @@ use graphics::{layer, Layer, Point, Rect};
 use Color;
 use rusttype;
 use glium;
+use font_loader::system_fonts;
 
 use std::borrow::Cow;
+
+#[derive(Clone)]
+pub struct FontInfo {
+    pub italic      : bool,
+    pub oblique     : bool,
+    pub bold        : bool,
+    pub monospace   : bool,
+    pub family      : String,
+}
+
+impl Default for FontInfo {
+    fn default() -> FontInfo {
+        FontInfo {
+            italic      : false,
+            oblique     : false,
+            bold        : false,
+            monospace   : false,
+            family      : "".to_string(),
+        }
+   }
+}
 
 pub struct FontCache {
     cache   : rusttype::gpu_cache::Cache,
@@ -62,34 +84,41 @@ impl FontCache {
         } else {
             None
         }
-
-        // Result<Option<(rusttype::Rect<f32>, rusttype::Rect<i32>)>, rusttype::gpu_cache::CacheReadErr>
     }
 }
 
+static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
 pub struct Font<'a> {
-    font: rusttype::Font<'a>,
+    font    : rusttype::Font<'a>,
+    font_id : usize,
 }
 
 impl<'a> Font<'a> {
 
-    pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: u32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+    pub fn enumerate_systemfonts() -> Vec<String> {
+        system_fonts::query_all()
+    }
 
-        let font_id = 1;
+    pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, size: f32, max_width: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+
         let bucket_id = 0;
-        let glyphs = layout_paragraph(&self.font, rusttype::Scale::uniform(24.0), max_width, &text);
+        let glyphs = layout_paragraph(&self.font, rusttype::Scale::uniform(size), max_width, &text);
         let mut font_cache = layer.font_cache.lock().unwrap();
 
-        font_cache.queue(font_id, &glyphs);
+        font_cache.queue(self.font_id, &glyphs);
 
         let anchor = Point::new(0.0, 0.0);
         let scale = Point::new(scale_x, scale_y);
+        let cos_rot = rotation.cos();
+        let sin_rot = rotation.sin();
 
         for glyph in &glyphs {
-            if let Some((uv, pos, dim)) = font_cache.rect_for(font_id, glyph) {
-                let offset_x = x +   pos.x * scale_x * (rotation).cos() + pos.y * scale_y * (rotation).sin();
-                let offset_y = y +   pos.y * scale_y * (rotation).sin() + pos.x * scale_x * (rotation).cos();
+            if let Some((uv, pos, dim)) = font_cache.rect_for(self.font_id, glyph) {
+                let dist_x = pos.x * scale_x;
+                let dist_y = pos.y * scale_y;
+                let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;
+                let offset_y = y + dist_x * sin_rot + dist_y * cos_rot;
                 layer::add_rect(layer, bucket_id, 0, uv, Point::new(offset_x, offset_y), anchor, dim, color, rotation, scale);
             }
         }
@@ -117,18 +146,39 @@ pub fn update_cache_texture<'a>(layer: &Layer, texture: &mut glium::texture::Tex
     layer.font_cache.lock().unwrap().update(texture);
 }
 
-pub fn create_font<'a>(/*file: &str*/) -> Font<'a> {
-
-    let font_data = include_bytes!("../../res/Arial Unicode.ttf");
-    let font = rusttype::FontCollection::from_bytes(font_data as &[u8]).into_font().unwrap();
-
+fn create_font<'a>(font_data: Vec<u8>) -> Font<'a> {
     Font {
-        font    : font,
+        font    : rusttype::FontCollection::from_bytes(font_data).into_font().unwrap(),
+        font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
     }
 }
 
+pub fn create_font_from_file<'a>(file: &str) -> Font<'a> {
+    let mut f = File::open(Path::new(file)).unwrap();
+    let mut font_data = Vec::new();
+    f.read_to_end(&mut font_data);
+    create_font(font_data)
+}
 
-fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width: u32, text: &str) -> Vec<rusttype::PositionedGlyph<'a>> {
+pub fn create_font_from_info<'a>(info: FontInfo) -> Font<'a> {
+    let mut property = system_fonts::FontPropertyBuilder::new().family(&info.family);
+    if info.italic {
+        property = property.italic();
+    }
+    if info.oblique {
+        property = property.oblique();
+    }
+    if info.bold {
+        property = property.bold();
+    }
+    if info.monospace {
+        property = property.monospace();
+    }
+    let (font_data, _) = system_fonts::get(&property.build()).unwrap();
+    create_font(font_data)
+}
+
+fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width: f32, text: &str) -> Vec<rusttype::PositionedGlyph<'a>> {
     use unicode_normalization::UnicodeNormalization;
     let mut result = Vec::new();
     let v_metrics = font.v_metrics(scale);
