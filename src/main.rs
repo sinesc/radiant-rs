@@ -3,18 +3,17 @@
 
 extern crate radiant_rs;
 extern crate font_loader;
+use font_loader::system_fonts;
 
 //use std::thread;
 use std::time::{Duration, Instant};
 use std::ops::Deref;
 use std::sync::mpsc::sync_channel;
-use radiant_rs::{Input, Color, Renderer, Layer, Descriptor, Display, Scene, Operation, blendmodes, utils, FontInfo};
+use radiant_rs::{Input, Color, Renderer, Layer, Font, Descriptor, Display, Scene, Operation, blendmodes, utils, FontInfo};
 
 //use radiant_rs::avec::AVec;
 use std::thread;
 use std::sync::Arc;
-
-use font_loader::system_fonts;
 
 fn main() {
 /*
@@ -51,10 +50,7 @@ fn main() {
 
     println!("--");
 */
-    let sysfonts = system_fonts::query_all();
-    for string in &sysfonts {
-        println!("{}", string);
-    }
+
     // initialize a display, and input source and a renderer
 
     let max_sprites = 15000;
@@ -69,7 +65,8 @@ fn main() {
     let test3 = renderer.create_sprite(r"res/test_59x30x1.png");
     let sparkles = renderer.create_sprite(r"res/sparkles_64x64x1.png");
     let spark = renderer.create_sprite(r"res/basic_64x64x1.png");
-    let font = renderer.create_font_from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default()});
+    let font = renderer.create_font_from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
+    let big_font = font.with_size(24.0).with_color(Color::red());
 
     let (tx, rx) = sync_channel(1);
 
@@ -131,7 +128,8 @@ let mut rot = 0.0;
 
             layer.clear();
 
-        font.write(layer, "Hello World, how's it going?", 350.0, 350.0, 24.0, 200.0, Color::purple(), rot, 1.0, 1.0);
+        //font.write(layer, "Hello World, how's it going?", 350.0, 350.0, 24.0, 200.0, Color::purple(), rot, 1.0, 1.0);
+        big_font.write(layer, "Hello World, how's it going?", 350.0, 350.0);
         rot += state.delta_f32 / 5.0;
 
             test1.draw(layer, 50, 600., 600., Color::white(), 0.0, 1.0, 1.0);
@@ -151,7 +149,7 @@ let mut rot = 0.0;
 
             scene.clear().ops(&[
                 Operation::Draw(logo),
-/*
+
                 Operation::SetViewMatrix(galaxy, pv3),
                 Operation::SetModelMatrix(galaxy, pm3),
                 Operation::SetColor(galaxy, Color::lightness(0.25)),
@@ -161,12 +159,11 @@ let mut rot = 0.0;
                 Operation::SetModelMatrix(galaxy, pm2),
                 Operation::SetColor(galaxy, Color::lightness(0.5)),
                 Operation::Draw(galaxy),
-*/
-                //Operation::SetViewMatrix(galaxy, pv1),
-                //Operation::SetModelMatrix(galaxy, pm1),
-                Operation::SetColor(galaxy, Color::lightness(1.0)),
-                //Operation::Draw(galaxy),
 
+                Operation::SetViewMatrix(galaxy, pv1),
+                Operation::SetModelMatrix(galaxy, pm1),
+                Operation::SetColor(galaxy, Color::lightness(1.0)),
+                Operation::Draw(galaxy),
             ]);
 
             // this will panic when the main thread exists
