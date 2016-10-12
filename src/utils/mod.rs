@@ -92,3 +92,43 @@ pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_call
         thread::sleep(interval - accumulator);
     }
 }
+
+#[allow(unused_variables)]
+pub fn renderloop<G>(mut render_callback: G) where G: FnMut(MainloopState) -> bool {
+
+    let mut previous_clock = Instant::now();
+
+    let second = Duration::new(1, 0);
+    let mut second_elapsed = Duration::new(0, 0);
+    let mut frames_elapsed = 0;
+    let mut fps = 0;
+
+    loop {
+
+        let now = Instant::now();
+        let delta = now - previous_clock;
+
+        let mut state_info = MainloopState {
+            delta       : delta,
+            delta_f32   : delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32,
+            fps         : fps,
+            state_id    : 0,
+        };
+
+        if render_callback(state_info) == false {
+            break;
+        }
+
+        // framerate print
+        second_elapsed += now - previous_clock;
+        frames_elapsed += 1;
+
+        if second_elapsed >= second {
+            fps = frames_elapsed;
+            second_elapsed -= second;
+            frames_elapsed = 0;
+        }
+
+        previous_clock = now;
+    }
+}

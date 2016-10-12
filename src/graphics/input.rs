@@ -40,7 +40,7 @@ impl Input {
         }
     }
 
-    pub fn poll(&mut self) {
+    pub fn poll(&mut self) -> &mut Self {
 
         for event in self.display.handle.poll_events() {
             match event {
@@ -117,5 +117,7 @@ impl Input {
                 _ => ()
             }
         }
+
+        self
     }
 }

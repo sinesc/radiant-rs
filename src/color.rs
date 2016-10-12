@@ -21,6 +21,10 @@ impl Color {
         Color(1.0, 1.0, 1.0, alpha)
     }
 
+    pub fn alpha_mask(alpha: f32) -> Color {
+        Color(0.0, 0.0, 0.0, alpha)
+    }
+
     pub fn alpha_pm(alpha: f32) -> Color {
         Color(alpha, alpha, alpha, alpha)
     }

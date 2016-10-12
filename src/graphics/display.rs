@@ -24,7 +24,7 @@ impl Monitor {
 }
 
 #[derive(Clone)]
-pub struct Descriptor {
+pub struct DisplayInfo {
     pub width       : u32,
     pub height      : u32,
     pub title       : String,
@@ -34,9 +34,9 @@ pub struct Descriptor {
     pub vsync       : bool,
 }
 
-impl Default for Descriptor {
-    fn default() -> Descriptor {
-        Descriptor {
+impl Default for DisplayInfo {
+    fn default() -> DisplayInfo {
+        DisplayInfo {
             width       : 640,
             height      : 480,
             title       : "".to_string(),
@@ -50,7 +50,7 @@ impl Default for Descriptor {
 
 use graphics::Display;
 impl Display {
-    pub fn new(descriptor: Descriptor) -> Display {
+    pub fn new(descriptor: DisplayInfo) -> Display {
 
         let mut builder = WindowBuilder::new()
             .with_dimensions(descriptor.width, descriptor.height)

@@ -9,7 +9,7 @@ mod font;
 pub use self::blendmode::BlendMode;
 pub use self::blendmode::blendmodes;
 pub use self::input::Input;
-pub use self::display::{Descriptor, Monitor};
+pub use self::display::{DisplayInfo, Monitor};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
 pub use self::font::{Font, FontInfo};

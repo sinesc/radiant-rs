@@ -163,12 +163,12 @@ pub fn update_cache_texture<'a>(layer: &Layer, texture: &mut glium::texture::Tex
     layer.font_cache.lock().unwrap().update(texture);
 }
 
-/// creates a new unique font with a size of 8
+/// creates a new unique font with a size of 12
 fn create_font<'a>(font_data: Vec<u8>) -> Font<'a> {
     Font {
         font    : Arc::new(rusttype::FontCollection::from_bytes(font_data).into_font().unwrap()),
         font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
-        size    : 8.0,
+        size    : 12.0,
         color   : Color::white(),
     }
 }

@@ -29,7 +29,22 @@ struct FrameParameters (u32, u32, u32, SpriteLayout);
 impl Sprite {
 
     /// draws a sprite onto given layer
-    pub fn draw(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+    pub fn draw(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color) -> &Self {
+
+        let bucket_id = self.bucket_id;
+        let texture_id = self.texture_id(frame_id);
+        let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
+        let anchor = Point::new(self.anchor_x, self.anchor_y);
+        let pos = Point::new(x, y);
+        let dim = Point::new(self.width, self.height);
+        let scale = Point::new(1.0, 1.0);
+
+        layer::add_rect(layer, bucket_id, texture_id, uv, pos, anchor, dim, color, 0.0, scale);
+        self
+    }
+
+    /// draws a sprite onto given layer and applies given color, rotation and scaling
+    pub fn draw_transformed(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
 
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
