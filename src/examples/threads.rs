@@ -1,0 +1,61 @@
+use radiant_rs::{Input, Color, Renderer, Layer,  DisplayInfo, Display, blendmodes, utils, FontInfo};
+use std::thread;
+use std::sync::{Arc, Barrier};
+
+ #[allow(dead_code)]
+pub fn run() {
+
+    // create a window, a renderer and some basic input handler for the window
+    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
+    let renderer = Renderer::new(&display, 1000);
+    let mut input = Input::new(&display);
+
+    // create a single layer and a font
+    let layer = Arc::new(Layer::new(1000, (640, 480)));
+    layer.set_blendmode(blendmodes::LIGHTEN);
+    let big_font = Arc::new(renderer.create_font_from_info(FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
+    let font = big_font.with_size(12.0);
+
+    // set up two barriers to ensure 1) all threads are done and before we show the frame
+    // and 2) threads don't restart drawing while the layer is still being rendererd
+    let num_threads = 10;
+    let draw_start = Arc::new(Barrier::new(num_threads + 1));
+    let draw_done = Arc::new(Barrier::new(num_threads + 1));
+
+    for i in 0..num_threads {
+        let (big_font, layer, draw_start, draw_done) = (big_font.clone(), layer.clone(), draw_start.clone(), draw_done.clone());
+
+        // draw from a bunch of threads in parallel
+        thread::spawn(move || {
+            let mut rot = 0.0;
+            let pos = 120.0 + (i as f32) * 20.0;
+            loop {
+                big_font.write_transformed(&layer, &format!("Thread {} !", i+1), pos, pos, 0.0, rot, 1.0, 1.0);
+                rot += 0.0001;
+
+                // wait until all other threads have also drawn, then wait until the layers have been rendered
+                draw_start.wait();
+                draw_done.wait();
+            }
+        });
+    }
+
+    // a simple mainloop helper (just an optional utility function)
+    utils::renderloop(|state| {
+
+        // this will unblock once all threads have finished drawing
+        draw_start.wait();
+
+        renderer.clear_target(Color::black());
+        font.write(&layer, &format!("{}FPS", state.fps), 10.0, 10.0);
+        renderer.draw_layer(&layer);
+        layer.clear();
+
+        // layer is drawn, let threads render their next frame
+        draw_done.wait();
+
+        renderer.swap_target();
+
+        !input.poll().should_close
+    });
+}
