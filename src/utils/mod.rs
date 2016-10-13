@@ -36,6 +36,8 @@ impl Rng {
 pub struct MainloopState {
     pub delta       : Duration,
     pub delta_f32   : f32,
+    pub elapsed     : Duration,
+    pub elapsed_f32 : f32,
     pub fps         : u32,
     pub state_id    : u32,
 }
@@ -45,6 +47,7 @@ pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_call
 
     let mut accumulator = Duration::new(0, 0);
     let mut previous_clock = Instant::now();
+    let start_clock = previous_clock;
 
     let second = Duration::new(1, 0);
     let mut second_elapsed = Duration::new(0, 0);
@@ -55,10 +58,13 @@ pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_call
 
         let now = Instant::now();
         let delta = now - previous_clock;
+        let elapsed = now - start_clock;
 
         let mut state_info = MainloopState {
             delta       : delta,
             delta_f32   : delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32,
+            elapsed     : elapsed,
+            elapsed_f32 : elapsed.as_secs() as f32 + (elapsed.subsec_nanos() as f64 / 1000000000.0) as f32,
             fps         : fps,
             state_id    : 0,
         };
@@ -97,6 +103,7 @@ pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_call
 pub fn renderloop<G>(mut render_callback: G) where G: FnMut(MainloopState) -> bool {
 
     let mut previous_clock = Instant::now();
+    let start_clock = previous_clock;
 
     let second = Duration::new(1, 0);
     let mut second_elapsed = Duration::new(0, 0);
@@ -107,10 +114,13 @@ pub fn renderloop<G>(mut render_callback: G) where G: FnMut(MainloopState) -> bo
 
         let now = Instant::now();
         let delta = now - previous_clock;
+        let elapsed = now - start_clock;
 
         let mut state_info = MainloopState {
             delta       : delta,
             delta_f32   : delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32,
+            elapsed     : elapsed,
+            elapsed_f32 : elapsed.as_secs() as f32 + (elapsed.subsec_nanos() as f64 / 1000000000.0) as f32,
             fps         : fps,
             state_id    : 0,
         };

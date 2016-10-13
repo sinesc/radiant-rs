@@ -71,9 +71,14 @@ impl Scene {
         self
     }
 
-    /// draws a sprite onto given layer
-    pub fn sprite(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
+    /// draws a sprite with given rotation and scaling onto given layer
+    pub fn sprite_transformed(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
         sprite.draw_transformed(self.layer(layer_id), frame_id, x, y, color, rotation, scale_x, scale_y);
+    }
+
+    /// draws a sprite onto given layer
+    pub fn sprite(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color) {
+        sprite.draw(self.layer(layer_id), frame_id, x, y, color);
     }
 
     /// create and add a layer to the scene

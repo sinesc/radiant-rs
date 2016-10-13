@@ -44,9 +44,9 @@ fn main() {
         view3.rotate_z_at((320.0, 200.0), state.delta_f32 * 2.0);
 
         // draw the sprite three times, tinted red, green and blue
-        sprite.draw(&spark_layer, 50, 320.0, 180.0, Color::red());
-        sprite.draw(&spark_layer, 50, 300.0, 200.0, Color::green());
-        sprite.draw(&spark_layer, 50, 340.0, 200.0, Color::blue());
+        sprite.draw(&spark_layer, 0, 320.0, 180.0, Color::red());
+        sprite.draw(&spark_layer, 0, 300.0, 200.0, Color::green());
+        sprite.draw(&spark_layer, 0, 340.0, 200.0, Color::blue());
 
         renderer.clear_target(Color::black());
 
