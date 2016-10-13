@@ -14,6 +14,7 @@ pub struct FontInfo {
     pub bold        : bool,
     pub monospace   : bool,
     pub family      : String,
+    pub size        : f32,
 }
 
 impl Default for FontInfo {
@@ -24,59 +25,74 @@ impl Default for FontInfo {
             bold        : false,
             monospace   : false,
             family      : "".to_string(),
+            size        : 10.0,
         }
    }
 }
 
 pub struct FontCache {
-    cache   : rusttype::gpu_cache::Cache,
-    queue   : Vec<(rusttype::Rect<u32>, Vec<u8>)>,
+    cache   : Mutex<rusttype::gpu_cache::Cache>,
+    queue   : Mutex<Vec<(rusttype::Rect<u32>, Vec<u8>)>>,
+    dirty   : AtomicBool,
 }
 
 impl FontCache {
     pub fn new(width: u32, height: u32, scale_tolerance: f32, position_tolerance: f32) -> FontCache {
         FontCache {
-            cache: rusttype::gpu_cache::Cache::new(width, height, scale_tolerance, position_tolerance),
-            queue: Vec::new(),
+            cache: Mutex::new(rusttype::gpu_cache::Cache::new(width, height, scale_tolerance, position_tolerance)),
+            queue: Mutex::new(Vec::new()),
+            dirty: AtomicBool::new(false),
         }
     }
 
-    pub fn queue(self: &mut Self, font_id: usize, glyphs: &[rusttype::PositionedGlyph]) {
+    pub fn queue(self: &Self, font_id: usize, glyphs: &[rusttype::PositionedGlyph]) {
+
+        let mut cache = self.cache.lock().unwrap();
+        let mut queue = self.queue.lock().unwrap();
+        let mut dirties = false;
+
         for glyph in glyphs {
-            self.cache.queue_glyph(font_id, glyph.clone());
+            cache.queue_glyph(font_id, glyph.clone());
         }
-        let queue = &mut self.queue;
-        self.cache.cache_queued(|rect, data| {
+
+        cache.cache_queued(|rect, data| {
             queue.push((rect, data.to_vec()));
+            dirties = true;
         }).unwrap();
-    }
 
-    pub fn update(self: &mut Self, texture: &mut glium::texture::Texture2d) {
-        for &(ref rect, ref data) in &self.queue {
-            texture.main_level().write(
-                glium::Rect {
-                    left: rect.min.x,
-                    bottom: rect.min.y,
-                    width: rect.width(),
-                    height: rect.height()
-                },
-                glium::texture::RawImage2d {
-                    data: Cow::Borrowed(&data),
-                    width: rect.width(),
-                    height: rect.height(),
-                    format: glium::texture::ClientFormat::U8
-                }
-            );
+        if dirties {
+            self.dirty.store(dirties, Ordering::Relaxed);
         }
-        self.queue.clear();
     }
 
-    pub fn needs_update(self: &Self) -> bool {
-        self.queue.len() > 0
+    pub fn update(self: &Self, texture: &mut glium::texture::Texture2d) {
+
+        if self.dirty.load(Ordering::Relaxed) {
+            let mut queue = self.queue.lock().unwrap();
+            for &(ref rect, ref data) in queue.deref() {
+                texture.main_level().write(
+                    glium::Rect {
+                        left: rect.min.x,
+                        bottom: rect.min.y,
+                        width: rect.width(),
+                        height: rect.height()
+                    },
+                    glium::texture::RawImage2d {
+                        data: Cow::Borrowed(&data),
+                        width: rect.width(),
+                        height: rect.height(),
+                        format: glium::texture::ClientFormat::U8
+                    }
+                );
+            }
+            queue.clear();
+            self.dirty.store(false, Ordering::Relaxed);
+        }
     }
 
     pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point, Point)> {
-        if let Ok(Some((uv_rect, screen_rect))) = self.cache.rect_for(font_id, glyph) {
+        let cache = self.cache.lock().unwrap();
+        if let Ok(Some((uv_rect, screen_rect))) = cache.rect_for(font_id, glyph) {
             let uv = Rect::new(uv_rect.min.x, uv_rect.min.y, uv_rect.max.x, uv_rect.max.y);
             let pos = Point::new(screen_rect.min.x as f32, screen_rect.min.y as f32);
             let dim = Point::new((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
@@ -158,17 +174,12 @@ pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -
     ).unwrap()
 }
 
-/// insert given glyphs into given cache texture
-pub fn update_cache_texture<'a>(layer: &Layer, texture: &mut glium::texture::Texture2d) {
-    layer.font_cache.lock().unwrap().update(texture);
-}
-
-/// creates a new unique font with a size of 12
-fn create_font<'a>(font_data: Vec<u8>) -> Font<'a> {
+/// creates a new unique font
+fn create_font<'a>(font_data: Vec<u8>, size: f32) -> Font<'a> {
     Font {
         font    : Arc::new(rusttype::FontCollection::from_bytes(font_data).into_font().unwrap()),
         font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
-        size    : 12.0,
+        size    : size,
         color   : Color::white(),
     }
 }
@@ -177,14 +188,14 @@ fn create_font<'a>(font_data: Vec<u8>) -> Font<'a> {
 pub fn create_font_from_file<'a>(file: &str) -> Font<'a> {
     let mut f = File::open(Path::new(file)).unwrap();
     let mut font_data = Vec::new();
-    f.read_to_end(&mut font_data);
-    create_font(font_data)
+    f.read_to_end(&mut font_data).unwrap();
+    create_font(font_data, 12.0)
 }
 
 /// creates a new font from given font info (referring to an installed system font)
 pub fn create_font_from_info<'a>(info: FontInfo) -> Font<'a> {
     let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
-    create_font(font_data)
+    create_font(font_data, info.size)
 }
 
 /// write text to given layer using given font
@@ -192,9 +203,8 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
 
     let bucket_id = 0;
     let glyphs = layout_paragraph(&font.font, rusttype::Scale::uniform(font.size), max_width, &text);
-    let mut font_cache = layer.font_cache.lock().unwrap();
 
-    font_cache.queue(font.font_id, &glyphs);
+    layer.font_cache.queue(font.font_id, &glyphs);
 
     let anchor = Point::new(0.0, 0.0);
     let scale = Point::new(scale_x, scale_y);
@@ -202,7 +212,7 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
     let sin_rot = rotation.sin();
 
     for glyph in &glyphs {
-        if let Some((uv, pos, dim)) = font_cache.rect_for(font.font_id, glyph) {
+        if let Some((uv, pos, dim)) = layer.font_cache.rect_for(font.font_id, glyph) {
             let dist_x = pos.x * scale_x;
             let dist_y = pos.y * scale_y;
             let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;

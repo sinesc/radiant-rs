@@ -1,4 +1,4 @@
-pub use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+pub use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering, ATOMIC_USIZE_INIT};
 pub use std::sync::{Arc, Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 pub use std::cell::RefCell;
 pub use std::rc::Rc;

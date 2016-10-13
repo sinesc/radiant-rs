@@ -12,7 +12,7 @@ pub use self::input::Input;
 pub use self::display::{DisplayInfo, Monitor};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
-pub use self::font::{Font, FontInfo};
+pub use self::font::{Font, FontInfo, FontCache};
 
 use prelude::*;
 use glium;
@@ -33,7 +33,7 @@ pub struct Layer {
     gid         : usize,
     lid         : AtomicUsize,
 	vertex_data : AVec<Vertex>,
-    font_cache  : Mutex<font::FontCache>,
+    font_cache  : font::FontCache,
 }
 
 #[derive(Copy, Clone)]

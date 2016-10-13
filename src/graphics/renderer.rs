@@ -140,8 +140,8 @@ impl Renderer {
         {
             // prepare texture array uniforms
 
-            let mut glium_mutexguard = self.glium.borrow_mut();
-            let mut glium = glium_mutexguard.deref_mut(); // !todo blah
+            let mut refcell = self.glium.borrow_mut();
+            let mut glium = refcell.deref_mut();
 
             let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
             let mut arrays = Vec::<&glium::texture::Texture2dArray>::new();
@@ -188,7 +188,7 @@ impl Renderer {
 
             // update font texture from layer
 
-            font::update_cache_texture(layer, &mut container.tc);
+            layer.font_cache.update(&mut container.tc);
 
             let uniforms = uniform! {
                 view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),

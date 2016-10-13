@@ -116,7 +116,7 @@ pub fn renderloop<G>(mut render_callback: G) where G: FnMut(MainloopState) -> bo
         let delta = now - previous_clock;
         let elapsed = now - start_clock;
 
-        let mut state_info = MainloopState {
+        let state_info = MainloopState {
             delta       : delta,
             delta_f32   : delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32,
             elapsed     : elapsed,

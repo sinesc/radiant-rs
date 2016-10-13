@@ -17,9 +17,9 @@ impl Layer {
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
             gid             : LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
-            lid             : ATOMIC_USIZE_INIT,
+            lid             : AtomicUsize::new(0),
             vertex_data     : AVec::new(max_sprites * 4),
-            font_cache      : Mutex::new(font::FontCache::new(512, 512, 0.01, 0.01)),
+            font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
         }
     }
 
