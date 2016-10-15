@@ -70,7 +70,7 @@ impl<'a, T> Deref for AVecMapGuard<'a, T> {
     }
 }
 
-/// vector supporting multiple writes and a single reader
+/// Vector supporting multiple non-blocking writers and a single blocking reader.
 pub struct AVec<T> {
     data    : UnsafeCell<Vec<T>>,
     insert  : Arc<RwLock<AtomicUsize>>,
@@ -83,7 +83,7 @@ unsafe impl<T> Send for AVec<T> { }
 
 impl<T> AVec<T> where T: Default {
 
-    /// creates a new instance with given maximum capacity
+    /// Creates a new instance with given maximum capacity
     pub fn new(capacity: u32) -> AVec<T> {
         let capacity = capacity as usize;
         let mut data = Vec::with_capacity(capacity);
@@ -98,7 +98,8 @@ impl<T> AVec<T> where T: Default {
         }
     }
 
-    /// add an element to the vector. this blocks reads
+    /// Adds an element to the vector and returns the insert position. This function blocks get()
+    /// and clear() until it returns.
     pub fn push(&self, value: T) -> u32 {
         let guard = self.insert.read().unwrap();
         let insert_pos = guard.fetch_add(1, Ordering::Relaxed);
@@ -112,8 +113,8 @@ impl<T> AVec<T> where T: Default {
         insert_pos as u32
     }
 
-    /// maps a slice of the vector for rw access. this blocks reads until the slice goes out of scope
-    /// the mapped content is guaranteed to be contiguously written to the vector
+    /// Maps a slice of the vector for r/w access. This function blocks get()
+    /// and clear() until the mapped result goes out of scope.
     pub fn map<'a>(&'a self, size: u32) -> AVecMapGuard<'a, T>  {
         let guard = self.insert.read().unwrap();
         let insert_pos = guard.fetch_add(size as usize, Ordering::Relaxed);
@@ -123,18 +124,20 @@ impl<T> AVec<T> where T: Default {
         unsafe { AVecMapGuard::new(guard, &self.data, insert_pos, size as usize) }
     }
 
-    /// returns the current length of the vector. this blocks reads
+    /// Returns the current length of the vector. This function blocks get()
+    /// and clear() until it returns.
     pub fn len(&self) -> u32 {
         self.insert.read().unwrap().load(Ordering::Relaxed) as u32
     }
 
-    // clear the vector. this blocks reads and writes
+    /// Clear the vector. This function blocks until it returns.
     pub fn clear(&self) {
         let guard = self.insert.write().unwrap();
         guard.store(0, Ordering::Relaxed);
     }
 
-    // returns a wrapped slice. this blocks reads and writes until the reference goes out of scope
+    /// Maps the entire vector for read access. This function blocks until the mapped result
+    /// goes out of scope.
     pub fn get<'a>(&'a self) -> AVecReadGuard<'a, T> {
         if self.readers.fetch_add(1, Ordering::Relaxed) > 0 {
             panic!("AVec::get: instance already exclusively borrowed");
