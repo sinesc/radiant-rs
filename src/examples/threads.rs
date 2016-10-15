@@ -1,4 +1,4 @@
-use radiant_rs::{Input, Color, Renderer, Layer,  DisplayInfo, Display, blendmodes, utils, FontInfo};
+use radiant_rs::{Input, Color, Renderer, Layer,  DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
 use std::thread;
 use std::sync::{Arc, Barrier};
 
@@ -13,7 +13,7 @@ pub fn run() {
     // create a single layer and a font
     let layer = Arc::new(Layer::new(1000, (640, 480)));
     layer.set_blendmode(blendmodes::LIGHTEN);
-    let big_font = Arc::new(renderer.create_font_from_info(FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
+    let big_font = Arc::new(Font::from_info(FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
     let font = big_font.with_size(12.0);
 
     // set up two barriers to ensure 1) all threads are done and before we show the frame

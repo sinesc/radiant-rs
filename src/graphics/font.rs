@@ -115,6 +115,20 @@ pub struct Font<'a> {
 
 impl<'a> Font<'a> {
 
+    /// creates a font instance from a file
+    pub fn from_file<'b>(file: &str) -> Font<'b> {
+        let mut f = File::open(Path::new(file)).unwrap();
+        let mut font_data = Vec::new();
+        f.read_to_end(&mut font_data).unwrap();
+        create_font(font_data, 12.0)
+    }
+
+    /// creates a new font instance from given FontInfo struct
+    pub fn from_info<'b>(info: FontInfo) -> Font<'b> {
+        let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
+        create_font(font_data, info.size)
+    }
+
     /// returns the names of all available system fonts
     pub fn query_all() -> Vec<String> {
         system_fonts::query_all()
@@ -182,20 +196,6 @@ fn create_font<'a>(font_data: Vec<u8>, size: f32) -> Font<'a> {
         size    : size,
         color   : Color::white(),
     }
-}
-
-/// creates a new font from given file
-pub fn create_font_from_file<'a>(file: &str) -> Font<'a> {
-    let mut f = File::open(Path::new(file)).unwrap();
-    let mut font_data = Vec::new();
-    f.read_to_end(&mut font_data).unwrap();
-    create_font(font_data, 12.0)
-}
-
-/// creates a new font from given font info (referring to an installed system font)
-pub fn create_font_from_info<'a>(info: FontInfo) -> Font<'a> {
-    let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
-    create_font(font_data, info.size)
 }
 
 /// write text to given layer using given font

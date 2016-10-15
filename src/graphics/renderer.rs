@@ -85,14 +85,6 @@ impl Renderer {
         sprite::create_sprite(frame_width as f32, frame_height as f32, frame_count, bucket_pos)
     }
 
-    pub fn create_font_from_file<'a>(&self, file: &str) -> Font<'a> {
-        font::create_font_from_file(file)
-    }
-
-    pub fn create_font_from_info<'a>(&self, info: FontInfo) -> Font<'a> {
-        font::create_font_from_info(info)
-    }
-
     /// prepares a new target for drawing without clearing it
     pub fn prepare_target(&self) {
         let mut glium = self.glium.borrow_mut();

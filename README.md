@@ -7,7 +7,7 @@ This is work-in-progress. API is still incomplete and will probably change heavi
 
 ```rust
 extern crate radiant_rs;
-use radiant_rs::{Input, Color, Renderer, Layer,  DisplayInfo, Display, blendmodes, utils, FontInfo};
+use radiant_rs::{Input, Color, Renderer, Layer, DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
 
 fn main() {
 
@@ -24,7 +24,7 @@ fn main() {
 
     // create a sprite and some fonts
     let sprite = renderer.create_sprite(r"res/sparkles_64x64x1.png");
-    let font = renderer.create_font_from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
+    let font = Font::from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 
     // write text to layer only once and reuse every frame
