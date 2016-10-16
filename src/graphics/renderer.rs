@@ -2,114 +2,69 @@ use prelude::*;
 use glium;
 use glium::Surface;
 use color::Color;
-use graphics::{Display, Layer, sprite, Sprite, font, Font, FontInfo, RawFrame, Vertex, blendmode};
+use graphics::{Display, RenderContext, RenderContextData, RenderContextTextureArray, LayerBufferContainer, Layer, font, blendmode};
 use scene;
 
-struct LayerBufferContainer {
-    lid     : usize,
-    size    : usize,
-    vb      : glium::VertexBuffer<Vertex>,
-    tc      : glium::texture::Texture2d,
-}
-
-// !todo use multiple structs glium (or better something else so it isn't so easy to confuse with glium::...), sprite, font
-struct GliumState {
-    index_buffer    : glium::IndexBuffer<u32>,
-    program         : glium::Program,
-    tex_array       : Vec<Option<glium::texture::Texture2dArray>>,
-    raw_tex_data    : Vec<Vec<RawFrame>>,
-    target          : Option<glium::Frame>,
-    display         : Display,
-    layer_buffers   : HashMap<usize, LayerBufferContainer>,
-}
-
 #[derive(Clone)]
-pub struct Renderer {
+pub struct Renderer<'a> {
     max_sprites     : u32,
-    glium           : Rc<RefCell<GliumState>>,
+    context         : Arc<RenderContext<'a>>,
 }
 
-impl Renderer {
+impl<'a> Renderer<'a> {
 
-    /// returns a new sprite renderer instance
-    ///
-    /// display is a glium Display obtained by i.e. glium::glutin::WindowBuilder::new().with_depth_buffer(24).build_glium().unwrap()
+    /// Returns a new sprite renderer instance
     pub fn new(display: &Display, max_sprites: u32) -> Self {
 
-        let glium = GliumState {
+        let mut context_data = RenderContextData {
             index_buffer    : Self::create_index_buffer(&display.handle, max_sprites),
             program         : Self::create_program(&display.handle),
             tex_array       : Vec::new(),
-            raw_tex_data    : Vec::new(),
             target          : Option::None,
             display         : display.clone(),
             layer_buffers   : HashMap::new(),
         };
+
+        for _ in 0..5 {
+            context_data.tex_array.push(RenderContextTextureArray::new(display));
+        }
+
         Renderer {
             max_sprites     : max_sprites,
-            glium           : Rc::new(RefCell::new(glium)),
+            context         : Arc::new(RenderContext::new(context_data)),
         }
     }
 
-    /// registers a sprite texture for drawing
-    ///
-    /// must be done before first draw, calling  this function after draw will reset existing
-    /// sprites and register new ones
-    /// filename is epected to end on _<width>x<height>x<frames>.<extension>, i.e. asteroid_64x64x24.png
-    pub fn create_sprite(&self, file: &str) -> Sprite {
-
-        let mut glium = self.glium.borrow_mut();
-
-        // load spritesheet into RawFrames
-
-        let (frame_width, frame_height, frames) = sprite::load_spritesheet(file);
-
-        // identify bucket_id (which texture array) and texture index in the array
-
-        let (bucket_id, _) = bucket_info(frame_width, frame_height);
-
-        while glium.raw_tex_data.len() <= bucket_id as usize {
-            glium.raw_tex_data.push(Vec::new());
-        }
-
-        let bucket_pos = glium.raw_tex_data[bucket_id as usize].len() as u32;
-
-        // append frames to the array
-
-        let frame_count = frames.len() as u32;
-
-        for frame in frames {
-            glium.raw_tex_data[bucket_id as usize].push(frame);
-        }
-
-        sprite::create_sprite(frame_width as f32, frame_height as f32, frame_count, bucket_pos)
+    /// Returns a reference to the renderers' context.
+    pub fn context(&self) -> Arc<RenderContext<'a>> {
+        self.context.clone()
     }
 
     /// prepares a new target for drawing without clearing it
     pub fn prepare_target(&self) {
-        let mut glium = self.glium.borrow_mut();
-        glium.target = Some(glium.display.handle.draw());
+        let mut context = self.context.lock();
+        context.target = Some(context.display.handle.draw());
     }
 
     /// prepares a new target and clears it with given color
     pub fn clear_target(&self, color: Color) {
-        let mut glium = self.glium.borrow_mut();
+        let mut context = self.context.lock();
         let (r, g, b, a) = color.as_tuple();
-        let mut target = glium.display.handle.draw();
+        let mut target = context.display.handle.draw();
         target.clear_color(r, g, b, a);
-        glium.target = Some(target);
+        context.target = Some(target);
     }
 
     /// finishes drawing and swaps the drawing target to front
     pub fn swap_target(&self) {
-        let mut glium = self.glium.borrow_mut();
-        glium.target.take().unwrap().finish().unwrap();
+        let mut context = self.context.lock();
+        context.target.take().unwrap().finish().unwrap();
     }
 
     /// takes the target frame from radiant-rs
     pub fn take_target(&self) -> glium::Frame {
-        let mut glium = self.glium.borrow_mut();
-        glium.target.take().unwrap()
+        let mut context = self.context.lock();
+        context.target.take().unwrap()
     }
 
     /// draws given scene
@@ -132,19 +87,8 @@ impl Renderer {
         {
             // prepare texture array uniforms
 
-            let mut refcell = self.glium.borrow_mut();
-            let mut glium = refcell.deref_mut();
-
-            let empty = &glium::texture::Texture2dArray::empty(&glium.display.handle, 2, 2, 1).unwrap();
-            let mut arrays = Vec::<&glium::texture::Texture2dArray>::new();
-
-            for i in 0..5 {
-                arrays.push(if glium.tex_array.len() > i && glium.tex_array[i].is_some() {
-                    glium.tex_array[i].as_ref().unwrap()
-                } else {
-                    empty
-                });
-            }
+            let mut context = self.context.lock();
+            let mut context = context.deref_mut();
 
             // set up draw parameters for given blend options
 
@@ -156,16 +100,16 @@ impl Renderer {
 
             // copy layer data to vertexbuffer
 
-            if glium.layer_buffers.contains_key(&layer.gid) == false {
-                glium.layer_buffers.insert(layer.gid, LayerBufferContainer {
+            if context.layer_buffers.contains_key(&layer.gid) == false {
+                context.layer_buffers.insert(layer.gid, LayerBufferContainer {
                     lid     : 0,
                     size    : 0,
-                    vb      : glium::VertexBuffer::empty_dynamic(&glium.display.handle, self.max_sprites as usize * 4).unwrap(),
-                    tc      : font::create_cache_texture(&glium.display.handle, 512, 512), // !todo
+                    vb      : glium::VertexBuffer::empty_dynamic(&context.display.handle, self.max_sprites as usize * 4).unwrap(),
+                    tc      : font::create_cache_texture(&context.display.handle, 512, 512), // !todo
                 });
             }
 
-            let container = glium.layer_buffers.get_mut(&layer.gid).unwrap();
+            let container = context.layer_buffers.get_mut(&layer.gid).unwrap();
 
             if container.lid != lid {
                 let vertex_data = layer.vertex_data.get();
@@ -187,17 +131,17 @@ impl Renderer {
                 model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
                 global_color    : *layer.color.lock().unwrap().deref_mut(),
                 font_cache      : container.tc.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
-                tex1            : arrays[1],
-                tex2            : arrays[2],
-                tex3            : arrays[3],
-                tex4            : arrays[4],
+                tex1            : &context.tex_array[1].data,
+                tex2            : &context.tex_array[2].data,
+                tex3            : &context.tex_array[3].data,
+                tex4            : &context.tex_array[4].data,
             };
 
             // draw up to container.size (!todo try to check this earlier)
 
             if container.size > 0 {
-                let ib_slice = glium.index_buffer.slice(0 .. container.size as usize * 6).unwrap();
-                glium.target.as_mut().unwrap().draw(&container.vb, &ib_slice, &glium.program, &uniforms, &draw_parameters).unwrap();
+                let ib_slice = context.index_buffer.slice(0 .. container.size as usize * 6).unwrap();
+                context.target.as_mut().unwrap().draw(&container.vb, &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
             }
         }
 
@@ -207,17 +151,27 @@ impl Renderer {
     /// creates texture arrays from registered textures
     fn create_texture_arrays(&self) {
 
-        let mut glium = self.glium.borrow_mut();
+        let mut context = self.context.lock();
+        let mut context = context.deref_mut();
 
-        if glium.tex_array.len() == 0 {
-
-            for bucket_id in 0..glium.raw_tex_data.len() {
-                if glium.raw_tex_data[bucket_id].len() > 0 {
-                    let raw_data = mem::replace(&mut glium.raw_tex_data[bucket_id as usize], Vec::new());
-                    let array = glium::texture::Texture2dArray::new(&glium.display.handle, raw_data).unwrap();
-                    glium.tex_array.push(Some(array));
+        for bucket_id in 0..context.tex_array.len() {
+            if context.tex_array[bucket_id].dirty {
+                context.tex_array[bucket_id].dirty = false;
+                if context.tex_array[bucket_id].raw.len() > 0 {
+                    let mut raw_images = Vec::new();
+                    for texture_id in 0..context.tex_array[bucket_id].raw.len() {
+                        let frame = &context.tex_array[bucket_id].raw[texture_id];
+                        raw_images.push(glium::texture::RawImage2d {
+                            data: frame.data.clone(),
+                            width: frame.width,
+                            height: frame.height,
+                            format: frame.format,
+                        });
+                    }
+                    let array = glium::texture::Texture2dArray::new(&context.display.handle, raw_images).unwrap();
+                    context.tex_array[bucket_id].data = array;
                 } else {
-                    glium.tex_array.push(None);
+                    context.tex_array[bucket_id].data = glium::texture::Texture2dArray::empty(&context.display.handle, 2, 2, 1).unwrap();
                 }
             }
         }

@@ -1,4 +1,4 @@
-use radiant_rs::{Input, Color, Renderer, Layer, DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Input, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
 
 #[allow(dead_code)]
 pub fn run() {
@@ -7,6 +7,7 @@ pub fn run() {
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display, 1000);
     let mut input = Input::new(&display);
+    let context = renderer.context();
 
     // create three layers, change one to use an overlay blend mode
     let text_layer = Layer::new(1000, (640, 480));
@@ -15,7 +16,7 @@ pub fn run() {
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     // create a sprite and some fonts
-    let sprite = renderer.create_sprite(r"res/sparkles_64x64x1.png");
+    let sprite = Sprite::from_file(&context, r"res/sparkles_64x64x1.png");
     let font = Font::from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 

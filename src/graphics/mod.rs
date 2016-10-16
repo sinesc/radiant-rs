@@ -6,8 +6,7 @@ mod renderer;
 mod sprite;
 mod font;
 
-pub use self::blendmode::BlendMode;
-pub use self::blendmode::blendmodes;
+pub use self::blendmode::{blendmodes, BlendMode};
 pub use self::input::Input;
 pub use self::display::{DisplayInfo, Monitor};
 pub use self::sprite::Sprite;
@@ -24,6 +23,50 @@ use avec::AVec;
 pub struct Display {
     handle: glium::Display,
 }
+
+pub struct LayerBufferContainer {
+    lid     : usize,
+    size    : usize,
+    vb      : glium::VertexBuffer<Vertex>,
+    tc      : glium::texture::Texture2d,
+}
+
+pub struct RenderContextTextureArray<'a> {
+    dirty   : bool,
+    data    : glium::texture::Texture2dArray,
+    raw     : Vec<glium::texture::RawImage2d<'a, u8>>,
+}
+
+impl<'a> RenderContextTextureArray<'a> {
+    pub fn new(display: &Display) -> Self {
+        RenderContextTextureArray {
+            dirty   : false,
+            data    : glium::texture::Texture2dArray::empty(&display.handle, 2, 2, 1).unwrap(),
+            raw     : Vec::new(),
+        }
+    }
+}
+
+pub struct RenderContextData<'a> {
+    index_buffer    : glium::IndexBuffer<u32>,
+    program         : glium::Program,
+    tex_array       : Vec<RenderContextTextureArray<'a>>,
+    target          : Option<glium::Frame>,
+    display         : Display,
+    layer_buffers   : HashMap<usize, LayerBufferContainer>,
+}
+
+pub struct RenderContext<'a> (Mutex<RenderContextData<'a>>);
+
+impl<'a> RenderContext<'a> {
+    fn new(data: RenderContextData) -> RenderContext {
+        RenderContext (Mutex::new(data))
+    }
+    fn lock(self: &Self) -> MutexGuard<RenderContextData<'a>> {
+        self.0.lock().unwrap()
+    }
+}
+
 
 pub struct Layer {
     view_matrix : Mutex<Mat4<f32>>,
@@ -54,9 +97,6 @@ impl Rect {
         Rect(Point { x: x1, y: y1 }, Point { x: x2, y: y2 })
     }
 }
-
-
-pub type RawFrame = Vec<Vec<(u8, u8, u8, u8)>>;
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
