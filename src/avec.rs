@@ -126,8 +126,8 @@ impl<T> AVec<T> where T: Default {
 
     /// Returns the current length of the vector. This function blocks get()
     /// and clear() until it returns.
-    pub fn len(&self) -> u32 {
-        self.insert.read().unwrap().load(Ordering::Relaxed) as u32
+    pub fn len(&self) -> usize {
+        self.insert.read().unwrap().load(Ordering::Relaxed)
     }
 
     /// Clear the vector. This function blocks until it returns.

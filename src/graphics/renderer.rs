@@ -2,7 +2,7 @@ use prelude::*;
 use glium;
 use glium::Surface;
 use color::Color;
-use graphics::{Display, RenderContext, RenderContextData, RenderContextTextureArray, LayerBufferContainer, Layer, font, blendmode};
+use graphics::{Display, RenderContext, RenderContextData, RenderContextTextureArray, Layer, font, blendmode};
 use scene;
 
 #[derive(Clone)]
@@ -22,7 +22,6 @@ impl<'a> Renderer<'a> {
             tex_array       : Vec::new(),
             target          : Option::None,
             display         : display.clone(),
-            layer_buffers   : HashMap::new(),
             font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
             font_texture    : font::create_cache_texture(&display.handle, 512, 512),
         };
@@ -78,19 +77,14 @@ impl<'a> Renderer<'a> {
     /// draws all sprites on given layer
     pub fn draw_layer(&self, layer: &Layer) -> &Self {
 
-        // make sure texture arrays have been generated from raw images
-
-        self.create_texture_arrays();
-
-        // load layer local id, guard against writes to vertex_data
-
-        let lid = layer.lid.load(Ordering::Relaxed);
-
         {
             // prepare texture array uniforms
 
             let mut context = self.context.lock();
             let mut context = context.deref_mut();
+
+            Self::update_texture_arrays(context);
+            context.font_cache.update(&mut context.font_texture);
 
             // set up draw parameters for given blend options
 
@@ -100,32 +94,29 @@ impl<'a> Renderer<'a> {
                 .. Default::default()
             };
 
+            // prepare vertexbuffer if not already done
+
+            let mut vertex_buffer = layer.vertex_buffer.lock().unwrap();
+            let mut vertex_buffer = vertex_buffer.deref_mut();
+
+            if vertex_buffer.is_none() {
+                *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, self.max_sprites as usize * 4).unwrap());
+            }
+
             // copy layer data to vertexbuffer
 
-            if context.layer_buffers.contains_key(&layer.gid) == false {
-                context.layer_buffers.insert(layer.gid, LayerBufferContainer {
-                    lid     : 0,
-                    size    : 0,
-                    vb      : glium::VertexBuffer::empty_dynamic(&context.display.handle, self.max_sprites as usize * 4).unwrap(),
-                });
-            }
+            let num_vertices;
 
-            let container = context.layer_buffers.get_mut(&layer.gid).unwrap();
-
-            if container.lid != lid {
+            if layer.dirty.swap(false, Ordering::Relaxed) {
                 let vertex_data = layer.vertex_data.get();
-                container.size = vertex_data.len() / 4;
-                if container.size > 0 {
-                    let num_vertices = container.size as usize * 4;
-                    let vb_slice = container.vb.slice(0 .. num_vertices).unwrap();
-                    vb_slice.write(&vertex_data[0 .. num_vertices]);
-                    container.lid = lid;
-                }
+                num_vertices = vertex_data.len();
+                let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
+                vb_slice.write(&vertex_data[0 .. num_vertices]);
+            } else {
+                num_vertices = layer.vertex_data.len();
             }
 
-            // update font texture from layer
-
-            context.font_cache.update(&mut context.font_texture);
+            // set up uniforms
 
             let uniforms = uniform! {
                 view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
@@ -138,23 +129,19 @@ impl<'a> Renderer<'a> {
                 tex4            : &context.tex_array[4].data,
             };
 
-            // draw up to container.size (!todo try to check this earlier)
+            // draw up to container.size
 
-            if container.size > 0 {
-                let ib_slice = context.index_buffer.slice(0 .. container.size as usize * 6).unwrap();
-                context.target.as_mut().unwrap().draw(&container.vb, &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
+            if num_vertices > 0 {
+                let ib_slice = context.index_buffer.slice(0 ..num_vertices as usize / 4 * 6).unwrap();
+                context.target.as_mut().unwrap().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
             }
         }
 
         self
     }
 
-    /// creates texture arrays from registered textures
-    fn create_texture_arrays(&self) {
-
-        let mut context = self.context.lock();
-        let mut context = context.deref_mut();
-
+    /// update texture arrays from registered textures
+    fn update_texture_arrays(context: &mut RenderContextData) {
         for bucket_id in 0..context.tex_array.len() {
             if context.tex_array[bucket_id].dirty {
                 context.tex_array[bucket_id].dirty = false;
@@ -169,8 +156,7 @@ impl<'a> Renderer<'a> {
                             format: frame.format,
                         });
                     }
-                    let array = glium::texture::Texture2dArray::new(&context.display.handle, raw_images).unwrap();
-                    context.tex_array[bucket_id].data = array;
+                    context.tex_array[bucket_id].data = glium::texture::Texture2dArray::new(&context.display.handle, raw_images).unwrap();
                 } else {
                     context.tex_array[bucket_id].data = glium::texture::Texture2dArray::empty(&context.display.handle, 2, 2, 1).unwrap();
                 }

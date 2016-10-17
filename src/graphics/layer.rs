@@ -4,7 +4,6 @@ use maths::{Vec3, Mat4};
 use color::Color;
 use graphics::{blendmodes, BlendMode, Point, Rect};
 
-static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub use Layer;
 
 impl Layer {
@@ -16,9 +15,9 @@ impl Layer {
             model_matrix    : Mutex::new(Mat4::<f32>::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
-            gid             : LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
-            lid             : AtomicUsize::new(0),
             vertex_data     : AVec::new(max_sprites * 4),
+            vertex_buffer   : Mutex::new(None),
+            dirty           : AtomicBool::new(true),
         }
     }
 
@@ -69,8 +68,7 @@ impl Layer {
     /// removes previously added sprites from the drawing queue. typically invoked after draw()
     pub fn clear(self: &Self) -> &Self {
 
-        // increase local part of hash to mark this layer as modified against cached state in Renderer
-        self.lid.fetch_add(1, Ordering::Relaxed);
+        self.dirty.store(true, Ordering::Relaxed);
         self.vertex_data.clear();
         self
     }
@@ -87,14 +85,11 @@ impl Layer {
 /// draws a rectangle on given layer
 pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point, anchor: Point, dim: Point, color: Color, rotation: f32, scale: Point) {
 
-    // increase local part of hash to mark this layer as modified against cached state in Renderer
-
-    layer.lid.fetch_add(1, Ordering::Relaxed);
-
     // get vertex_data slice and draw into it
 
     let mut guard = layer.vertex_data.map(4);
     let mut vertex = guard.deref_mut();
+    layer.dirty.store(true, Ordering::Relaxed);
 
     // corner positions relative to x/y
 
