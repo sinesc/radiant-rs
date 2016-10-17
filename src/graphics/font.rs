@@ -1,5 +1,5 @@
 use prelude::*;
-use graphics::{layer, Layer, Point, Rect};
+use graphics::{layer, Layer, Point, Rect, RenderContext};
 use Color;
 use rusttype;
 use glium;
@@ -111,22 +111,23 @@ pub struct Font<'a> {
     font_id : usize,
     size    : f32,
     color   : Color,
+    context : Arc<RenderContext<'a>>,
 }
 
 impl<'a> Font<'a> {
 
     /// creates a font instance from a file
-    pub fn from_file<'b>(file: &str) -> Font<'b> {
+    pub fn from_file<'b>(context: &Arc<RenderContext<'b>>, file: &str) -> Font<'b> {
         let mut f = File::open(Path::new(file)).unwrap();
         let mut font_data = Vec::new();
         f.read_to_end(&mut font_data).unwrap();
-        create_font(font_data, 12.0)
+        create_font(context, font_data, 12.0)
     }
 
     /// creates a new font instance from given FontInfo struct
-    pub fn from_info<'b>(info: FontInfo) -> Font<'b> {
+    pub fn from_info<'b>(context: &Arc<RenderContext<'b>>, info: FontInfo) -> Font<'b> {
         let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
-        create_font(font_data, info.size)
+        create_font(context, font_data, info.size)
     }
 
     /// returns the names of all available system fonts
@@ -154,19 +155,19 @@ impl<'a> Font<'a> {
     }
 
     /// write to given layer
-    pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32) -> &Font {
+    pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32) -> &Font<'a> {
         write(self, layer, text, x, y, 0.0, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// write to given layer. breaks lines after max_width pixels
-    pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32) -> &Font {
+    pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32) -> &Font<'a> {
         write(self, layer, text, x, y, max_width, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// write to given layer. breaks lines after max_width pixels and applies given rotation and scaling
-    pub fn write_transformed(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, rotation: f32, scale_x: f32, scale_y: f32) -> &Font {
+    pub fn write_transformed(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, rotation: f32, scale_x: f32, scale_y: f32) -> &Font<'a> {
         write(self, layer, text, x, y, max_width, &self.color, rotation, scale_x, scale_y);
         self
     }
@@ -189,12 +190,13 @@ pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -
 }
 
 /// creates a new unique font
-fn create_font<'a>(font_data: Vec<u8>, size: f32) -> Font<'a> {
+fn create_font<'a>(context: &Arc<RenderContext<'a>>, font_data: Vec<u8>, size: f32) -> Font<'a> {
     Font {
         font    : Arc::new(rusttype::FontCollection::from_bytes(font_data).into_font().unwrap()),
         font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
         size    : size,
         color   : Color::white(),
+        context : context.clone(),
     }
 }
 
@@ -203,8 +205,9 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
 
     let bucket_id = 0;
     let glyphs = layout_paragraph(&font.font, rusttype::Scale::uniform(font.size), max_width, &text);
+    let context = font.context.lock();
 
-    layer.font_cache.queue(font.font_id, &glyphs);
+    context.font_cache.queue(font.font_id, &glyphs);
 
     let anchor = Point::new(0.0, 0.0);
     let scale = Point::new(scale_x, scale_y);
@@ -212,7 +215,7 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
     let sin_rot = rotation.sin();
 
     for glyph in &glyphs {
-        if let Some((uv, pos, dim)) = layer.font_cache.rect_for(font.font_id, glyph) {
+        if let Some((uv, pos, dim)) = context.font_cache.rect_for(font.font_id, glyph) {
             let dist_x = pos.x * scale_x;
             let dist_y = pos.y * scale_y;
             let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;

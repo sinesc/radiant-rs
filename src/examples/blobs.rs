@@ -17,7 +17,7 @@ pub fn run() {
 
     // create a sprite and some fonts
     let sprite = Sprite::from_file(&context, r"res/sparkles_64x64x1.png");
-    let font = Font::from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
+    let font = Font::from_info(&context, FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 
     // write text to layer only once and reuse every frame

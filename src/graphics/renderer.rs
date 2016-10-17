@@ -23,6 +23,8 @@ impl<'a> Renderer<'a> {
             target          : Option::None,
             display         : display.clone(),
             layer_buffers   : HashMap::new(),
+            font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
+            font_texture    : font::create_cache_texture(&display.handle, 512, 512),
         };
 
         for _ in 0..5 {
@@ -105,7 +107,6 @@ impl<'a> Renderer<'a> {
                     lid     : 0,
                     size    : 0,
                     vb      : glium::VertexBuffer::empty_dynamic(&context.display.handle, self.max_sprites as usize * 4).unwrap(),
-                    tc      : font::create_cache_texture(&context.display.handle, 512, 512), // !todo
                 });
             }
 
@@ -124,13 +125,13 @@ impl<'a> Renderer<'a> {
 
             // update font texture from layer
 
-            layer.font_cache.update(&mut container.tc);
+            context.font_cache.update(&mut context.font_texture);
 
             let uniforms = uniform! {
                 view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
                 model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
                 global_color    : *layer.color.lock().unwrap().deref_mut(),
-                font_cache      : container.tc.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
+                font_cache      : context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
                 tex1            : &context.tex_array[1].data,
                 tex2            : &context.tex_array[2].data,
                 tex3            : &context.tex_array[3].data,

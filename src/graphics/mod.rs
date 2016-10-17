@@ -28,7 +28,6 @@ pub struct LayerBufferContainer {
     lid     : usize,
     size    : usize,
     vb      : glium::VertexBuffer<Vertex>,
-    tc      : glium::texture::Texture2d,
 }
 
 pub struct RenderContextTextureArray<'a> {
@@ -54,9 +53,13 @@ pub struct RenderContextData<'a> {
     target          : Option<glium::Frame>,
     display         : Display,
     layer_buffers   : HashMap<usize, LayerBufferContainer>,
+    font_cache      : font::FontCache,
+    font_texture    : glium::texture::Texture2d,
 }
 
 pub struct RenderContext<'a> (Mutex<RenderContextData<'a>>);
+unsafe impl<'a> Send for RenderContext<'a> { }
+unsafe impl<'a> Sync for RenderContext<'a> { }
 
 impl<'a> RenderContext<'a> {
     fn new(data: RenderContextData) -> RenderContext {
@@ -76,7 +79,6 @@ pub struct Layer {
     gid         : usize,
     lid         : AtomicUsize,
 	vertex_data : AVec<Vertex>,
-    font_cache  : font::FontCache,
 }
 
 #[derive(Copy, Clone)]

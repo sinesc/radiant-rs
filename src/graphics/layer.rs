@@ -2,7 +2,7 @@ use prelude::*;
 use avec::AVec;
 use maths::{Vec3, Mat4};
 use color::Color;
-use graphics::{blendmodes, font, BlendMode, Point, Rect};
+use graphics::{blendmodes, BlendMode, Point, Rect};
 
 static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 pub use Layer;
@@ -19,7 +19,6 @@ impl Layer {
             gid             : LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
             lid             : AtomicUsize::new(0),
             vertex_data     : AVec::new(max_sprites * 4),
-            font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
         }
     }
 
