@@ -7,7 +7,7 @@ This is work-in-progress. API is still incomplete and will probably change heavi
 
 ```rust
 extern crate radiant_rs;
-use radiant_rs::{Input, Color, Renderer, Layer, DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Input, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
 
 fn main() {
 
@@ -15,6 +15,7 @@ fn main() {
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display, 1000);
     let mut input = Input::new(&display);
+    let context = renderer.context();
 
     // create three layers, change one to use an overlay blend mode
     let text_layer = Layer::new(1000, (640, 480));
@@ -23,8 +24,8 @@ fn main() {
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     // create a sprite and some fonts
-    let sprite = renderer.create_sprite(r"res/sparkles_64x64x1.png");
-    let font = Font::from_info(FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
+    let sprite = Sprite::from_file(&context, r"res/sparkles_64x64x1.png");
+    let font = Font::from_info(&context, FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 
     // write text to layer only once and reuse every frame
@@ -52,19 +53,17 @@ fn main() {
         view3.rotate_z_at((320.0, 200.0), state.delta_f32 * 2.0);
 
         // draw the sprite three times, tinted red, green and blue
-        sprite.draw(&spark_layer, 50, 320.0, 180.0, Color::red());
-        sprite.draw(&spark_layer, 50, 300.0, 200.0, Color::green());
-        sprite.draw(&spark_layer, 50, 340.0, 200.0, Color::blue());
-
-        renderer.clear_target(Color::black());
+        sprite.draw(&spark_layer, 0, 320.0, 180.0, Color::red());
+        sprite.draw(&spark_layer, 0, 300.0, 200.0, Color::green());
+        sprite.draw(&spark_layer, 0, 340.0, 200.0, Color::blue());
 
         // draw the spark layer three times with different matrices and alpha levels as well as the text layer
+        renderer.clear_target(Color::black());
         renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1));
         renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2));
         renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3));
         renderer.draw_layer(&text_layer);
         renderer.draw_layer(&fps_layer);
-
         renderer.swap_target();
 
         !input.poll().should_close

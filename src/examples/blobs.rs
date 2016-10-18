@@ -1,6 +1,5 @@
 use radiant_rs::{DisplayInfo, Display, Renderer, Input, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
 
-#[allow(dead_code)]
 pub fn run() {
 
     // create a window, a renderer and some basic input handler for the window
