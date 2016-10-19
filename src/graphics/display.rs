@@ -1,6 +1,8 @@
 use glium;
 use glium::DisplayBuild;
 use glium::glutin::WindowBuilder;
+use prelude::*;
+use graphics::{input, Display, InputState};
 
 pub struct Monitor {
     id: glium::glutin::MonitorId,
@@ -48,7 +50,6 @@ impl Default for DisplayInfo {
    }
 }
 
-use graphics::Display;
 impl Display {
     pub fn new(descriptor: DisplayInfo) -> Display {
 
@@ -70,7 +71,8 @@ impl Display {
         }
 
         Display {
-            handle: builder.build_glium().unwrap()
+            handle: builder.build_glium().unwrap(),
+            input_state: Arc::new(RwLock::new(InputState::new())),
         }
     }
 
@@ -103,7 +105,13 @@ impl Display {
 
     pub fn from_window_builder(builder: WindowBuilder<'static>) -> Display {
         Display {
-            handle: builder.build_glium().unwrap()
+            handle: builder.build_glium().unwrap(),
+            input_state: Arc::new(RwLock::new(InputState::new())),
         }
+    }
+
+    pub fn poll_events(&self) -> &Self {
+        input::poll_events(self);
+        self
     }
 }

@@ -5,7 +5,7 @@ pub fn run() {
     // create a window, a renderer and some basic input handler for the window
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display, 1000);
-    let mut input = Input::new(&display);
+    let input = Input::new(&display);
     let context = renderer.context();
 
     // create three layers, change one to use an overlay blend mode
@@ -32,11 +32,14 @@ pub fn run() {
     // a simple mainloop helper (just an optional utility function)
     utils::renderloop(|state| {
 
+        display.poll_events();
+
         // clear the layer containing the sparks and rotate its model matrix  (per-sprite matrix)
         spark_layer.clear();
         spark_layer.set_model_matrix(*model.rotate_z(-state.delta_f32 * 4.0));
 
         font.write(&fps_layer.clear(), &format!("{}FPS", state.fps), 10.0, 10.0);
+        font.write(&fps_layer, &format!("mouse {} {}", input.mouse_x(), input.mouse_y()), 10.0, 20.0);
 
         // rotate the three viewmatrix clones at different rates
         view1.rotate_z_at((320.0, 200.0), state.delta_f32 * 1.0);
@@ -57,6 +60,6 @@ pub fn run() {
         renderer.draw_layer(&fps_layer);
         renderer.swap_target();
 
-        !input.poll().should_close
+        !input.should_close() && !input.escape()
     });
 }

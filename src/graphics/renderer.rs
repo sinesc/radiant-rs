@@ -77,64 +77,62 @@ impl<'a> Renderer<'a> {
     /// draws all sprites on given layer
     pub fn draw_layer(&self, layer: &Layer) -> &Self {
 
-        {
-            // prepare texture array uniforms
+        // prepare texture array uniforms
 
-            let mut context = self.context.lock();
-            let mut context = context.deref_mut();
+        let mut context = self.context.lock();
+        let mut context = context.deref_mut();
 
-            Self::update_texture_arrays(context);
-            context.font_cache.update(&mut context.font_texture);
+        Self::update_texture_arrays(context);
+        context.font_cache.update(&mut context.font_texture);
 
-            // set up draw parameters for given blend options
+        // set up draw parameters for given blend options
 
-            let draw_parameters = glium::draw_parameters::DrawParameters {
-                backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-                blend           : blendmode::access_blendmode(layer.blend.lock().unwrap().deref_mut()),
-                .. Default::default()
-            };
+        let draw_parameters = glium::draw_parameters::DrawParameters {
+            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
+            blend           : blendmode::access_blendmode(layer.blend.lock().unwrap().deref_mut()),
+            .. Default::default()
+        };
 
-            // prepare vertexbuffer if not already done
+        // prepare vertexbuffer if not already done
 
-            let mut vertex_buffer = layer.vertex_buffer.lock().unwrap();
-            let mut vertex_buffer = vertex_buffer.deref_mut();
+        let mut vertex_buffer = layer.vertex_buffer.lock().unwrap();
+        let mut vertex_buffer = vertex_buffer.deref_mut();
 
-            if vertex_buffer.is_none() {
-                *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, self.max_sprites as usize * 4).unwrap());
-            }
+        if vertex_buffer.is_none() {
+            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, self.max_sprites as usize * 4).unwrap());
+        }
 
-            // copy layer data to vertexbuffer
+        // copy layer data to vertexbuffer
 
-            let num_vertices;
+        let num_vertices;
 
-            if layer.dirty.swap(false, Ordering::Relaxed) {
-                let vertex_data = layer.vertex_data.get();
-                num_vertices = vertex_data.len();
-                let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
-                vb_slice.write(&vertex_data[0 .. num_vertices]);
-            } else {
-                num_vertices = layer.vertex_data.len();
-            }
+        if layer.dirty.swap(false, Ordering::Relaxed) {
+            let vertex_data = layer.vertex_data.get();
+            num_vertices = vertex_data.len();
+            let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
+            vb_slice.write(&vertex_data[0 .. num_vertices]);
+        } else {
+            num_vertices = layer.vertex_data.len();
+        }
 
-            // set up uniforms
+        // set up uniforms
 
-            let uniforms = uniform! {
-                view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
-                model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
-                global_color    : *layer.color.lock().unwrap().deref_mut(),
-                font_cache      : context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
-                tex1            : &context.tex_array[1].data,
-                tex2            : &context.tex_array[2].data,
-                tex3            : &context.tex_array[3].data,
-                tex4            : &context.tex_array[4].data,
-            };
+        let uniforms = uniform! {
+            view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
+            model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
+            global_color    : *layer.color.lock().unwrap().deref_mut(),
+            font_cache      : context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
+            tex1            : &context.tex_array[1].data,
+            tex2            : &context.tex_array[2].data,
+            tex3            : &context.tex_array[3].data,
+            tex4            : &context.tex_array[4].data,
+        };
 
-            // draw up to container.size
+        // draw up to container.size
 
-            if num_vertices > 0 {
-                let ib_slice = context.index_buffer.slice(0 ..num_vertices as usize / 4 * 6).unwrap();
-                context.target.as_mut().unwrap().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
-            }
+        if num_vertices > 0 {
+            let ib_slice = context.index_buffer.slice(0 ..num_vertices as usize / 4 * 6).unwrap();
+            context.target.as_mut().unwrap().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
         }
 
         self

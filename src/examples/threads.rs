@@ -8,7 +8,7 @@ pub fn run() {
     // create a window, a renderer and some basic input handler for the window
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display, 1000);
-    let mut input = Input::new(&display);
+    let input = Input::new(&display);
     let context = renderer.context();
 
     // create a single layer and a font
@@ -44,6 +44,8 @@ pub fn run() {
     // a simple mainloop helper (just an optional utility function)
     utils::renderloop(|state| {
 
+        display.poll_events();
+
         // this will unblock once all threads have finished drawing
         draw_start.wait();
 
@@ -57,6 +59,6 @@ pub fn run() {
 
         renderer.swap_target();
 
-        !input.poll().should_close
+        !input.should_close()
     });
 }
