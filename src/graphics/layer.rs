@@ -8,7 +8,7 @@ pub use Layer;
 
 impl Layer {
 
-    /// creates a new layer with given dimensions and sprite limit
+    /// Creates a new layer with given dimensions and object limit.
     pub fn new(max_sprites: u32, dimensions: (u32, u32)) -> Self {
         Layer {
             view_matrix     : Mutex::new(Self::viewport_matrix(dimensions.0, dimensions.1)),
@@ -21,51 +21,68 @@ impl Layer {
         }
     }
 
-    /// sets global color multiplicator
+    /// Sets a global color multiplicator. Setting this to white means that the layer contents
+    /// are renderered in their original colors.
+    ///
+    /// Note that [`Color`](struct.Color.html)s contain
+    /// alpha information and are not clamped to any range, so it is possible to use an overbright
+    /// color to brighten the result or use the alpha channel to apply global transparency.
     pub fn set_color(&self, color: Color) -> &Self {
         self.color().set(color);
         self
     }
 
-    /// returns a mutex guarded mutable reference to the global color multiplicator
+    /// Returns a mutex guarded mutable reference to the global color multiplicator.
     pub fn color(&self) -> MutexGuard<Color> {
         self.color.lock().unwrap()
     }
 
-    /// sets the view matrix
+    /// Sets the view matrix.
+    ///
+    /// View matrix transformation is applied after the objects are fully positioned on the layer.
+    /// As a result, manipulating the view matrix has the effect of manipulating the layer itself,
+    /// i.e. rotating the entire layer.
     pub fn set_view_matrix(&self, matrix: Mat4<f32>) -> &Self {
         self.view_matrix().set(matrix);
         self
     }
 
-    /// returns a mutex guarded mutable reference to the view matrix
+    /// Returns a mutex guarded mutable reference to the view matrix.
+    /// See [`set_model_matrix()`](#method.set_model_matrix) for a description of the model matrix.
     pub fn view_matrix(&self) -> MutexGuard<Mat4<f32>> {
         self.view_matrix.lock().unwrap()
     }
 
-    /// sets the model matrix
+    /// Sets the model matrix.
+    ///
+    /// Model matrix transformation is applied before each object is transformed to its position
+    /// on the layer. As a result, manipulating the model matrix has the effect of manipulating
+    /// every object on the layer in the same way, i.e. rotating every individual object on the
+    /// layer around a point relative to the individual object.
     pub fn set_model_matrix(&self, matrix: Mat4<f32>) -> &Self {
         self.model_matrix().set(matrix);
         self
     }
 
-    /// returns a mutex guarded mutable reference to the model matrix
+    /// Returns a mutex guarded mutable reference to the model matrix.
+    /// See [`set_view_matrix()`](#method.set_view_matrix) for a description of the view matrix.
     pub fn model_matrix(&self) -> MutexGuard<Mat4<f32>> {
         self.model_matrix.lock().unwrap()
     }
 
-    /// sets the blendmode
+    /// Sets the blendmode.
     pub fn set_blendmode(&self, blendmode: BlendMode) -> &Self {
         self.blendmode().set(blendmode);
         self
     }
 
-    /// returns a mutex guarded mutable reference to the blendmode
+    /// Returns a mutex guarded mutable reference to the blendmode.
     pub fn blendmode(&self) -> MutexGuard<BlendMode> {
         self.blend.lock().unwrap()
     }
 
-    /// removes previously added sprites from the drawing queue. typically invoked after draw()
+    /// Removes all previously added object from the layer. Typically invoked after the layer has
+    /// been rendered.
     pub fn clear(self: &Self) -> &Self {
 
         self.dirty.store(true, Ordering::Relaxed);

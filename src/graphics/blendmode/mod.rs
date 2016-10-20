@@ -2,6 +2,8 @@ pub mod blendmodes;
 
 use glium;
 
+/// A blendmode for use with `Layer::set_blendmode()`.
+/// See [blendmodes](blendmodes/index.html) for a list of predefined modes.
 #[derive(Copy, Clone)]
 pub struct BlendMode (glium::draw_parameters::Blend);
 

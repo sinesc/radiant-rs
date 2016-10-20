@@ -1,3 +1,6 @@
+
+//! A set of predefined blendmodes for use with `Layer::set_blendmode()`.
+
 use glium::draw_parameters::*;
 use BlendMode;
 

@@ -6,10 +6,17 @@ use image::GenericImage;
 use regex::Regex;
 use glium;
 
+/// A sprite used for drawing on a [`Layer`](struct.Layer.html).
+///
+/// Sprites are created from spritesheets containing one or more frames. To determine frame
+/// dimensions, [`Sprite::from_file()`](#method.from_file) expects sprite sheet file names to
+/// follow a specific pattern. (Future versions will add more configurable means to load sprites.)
 #[derive(Copy, Clone)]
 pub struct Sprite {
-    pub anchor_x    : f32,
-    pub anchor_y    : f32,
+    /// Defines the sprite origin. Defaults to (0.5, 0.5), meaning that the center of the
+    /// sprite would be drawn at the coordinates given to [`Sprite::draw()`](#method.draw). Likewise, (0.0, 0.0)
+    /// would mean that the sprite's top left corner would be drawn at the given coordinates.
+    pub anchor      : (f32, f32),
     width           : f32,
     height          : f32,
     frames          : u32,
@@ -30,9 +37,9 @@ struct FrameParameters (u32, u32, u32, SpriteLayout);
 
 impl Sprite {
 
-    /// creates a new sprite texture
+    /// Creates a new sprite texture
     ///
-    /// filename is epected to end on _<width>x<height>x<frames>.<extension>, i.e. asteroid_64x64x24.png
+    /// The given filename is epected to end on _<width>x<height>x<frames>.<extension>, i.e. asteroid_64x64x24.png.
     pub fn from_file(context: &Arc<RenderContext>, file: &str) -> Sprite {
 
         let mut context = context.lock();
@@ -60,13 +67,13 @@ impl Sprite {
         create_sprite(frame_width as f32, frame_height as f32, frame_count, texture_id)
     }
 
-    /// draws a sprite onto given layer
+    /// Draws a sprite onto the given layer.
     pub fn draw(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color) -> &Self {
 
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let anchor = Point::new(self.anchor_x, self.anchor_y);
+        let anchor = Point::new(self.anchor.0, self.anchor.1);
         let pos = Point::new(x, y);
         let dim = Point::new(self.width, self.height);
         let scale = Point::new(1.0, 1.0);
@@ -75,13 +82,13 @@ impl Sprite {
         self
     }
 
-    /// draws a sprite onto given layer and applies given color, rotation and scaling
+    /// Draws a sprite onto the given layer and applies given color, rotation and scaling.
     pub fn draw_transformed(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
 
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let anchor = Point::new(self.anchor_x, self.anchor_y);
+        let anchor = Point::new(self.anchor.0, self.anchor.1);
         let pos = Point::new(x, y);
         let dim = Point::new(self.width, self.height);
         let scale = Point::new(scale_x, scale_y);
@@ -90,33 +97,38 @@ impl Sprite {
         self
     }
 
+    /// Returns the width of the sprite.
     pub fn width(self: &Self) -> f32 {
         self.width
     }
 
+    /// Returns the height of the sprite.
     pub fn height(self: &Self) -> f32 {
         self.height
     }
 
+    /// Returns the number of frames of the sprite.
     pub fn frames(self: &Self) -> u32 {
         self.frames
     }
 
-    pub fn bucket_id(self: &Self) -> u32 {
+    /// Returns the texture id for given frame
+    fn texture_id(self: &Self, frame_id: u32) -> u32 {
+        self.texture_id + (frame_id % self.frames)
+    }
+/*
+    fn bucket_id(self: &Self) -> u32 {
         self.bucket_id
     }
 
-    pub fn texture_id(self: &Self, frame_id: u32) -> u32 {
-        self.texture_id + (frame_id % self.frames)
-    }
-
-    pub fn u_max(self: &Self) -> f32 {
+    fn u_max(self: &Self) -> f32 {
         self.u_max
     }
 
-    pub fn v_max(self: &Self) -> f32 {
+    fn v_max(self: &Self) -> f32 {
         self.v_max
     }
+*/
 }
 
 /// creates a new sprite instance. a sprite instance contains only meta information about a
@@ -129,8 +141,7 @@ pub fn create_sprite(width: f32, height: f32, frames: u32, texture_id: u32) -> S
         width       : width,
         height      : height,
         frames      : frames,
-        anchor_x    : 0.5,
-        anchor_y    : 0.5,
+        anchor      : (0.5, 0.5),
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         u_max       : (width as f32 / texture_size as f32),

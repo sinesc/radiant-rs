@@ -7,7 +7,7 @@ mod sprite;
 mod font;
 
 pub use self::blendmode::{blendmodes, BlendMode};
-pub use self::input::Input;
+pub use self::input::{Input, ButtonState};
 pub use self::display::{DisplayInfo, Monitor};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
@@ -18,31 +18,9 @@ use glium;
 use color::Color;
 use maths::Mat4;
 use avec::AVec;
+use graphics::input::InputState;
 
-struct InputState {
-    pub mouse           : (i32, i32),
-    pub mouse_delta     : (i32, i32),
-    pub button          : (bool, bool, bool),
-    pub key             : [ bool; 255 ],
-    pub should_close    : bool,
-    pub cursor_grabbed  : bool,
-    pub dimensions      : (u32, u32),
-}
-
-impl InputState {
-    pub fn new() -> InputState {
-        InputState {
-            mouse           : (0, 0),
-            mouse_delta     : (0, 0),
-            button          : (false, false, false),
-            key             : [ false; 255 ],
-            should_close    : false,
-            cursor_grabbed  : false,
-            dimensions      : (0, 0),
-        }
-    }
-}
-
+/// A target to render to, i.e. a window or full screen.
 #[derive(Clone)]
 pub struct Display {
     handle: glium::Display,
@@ -75,6 +53,9 @@ pub struct RenderContextData<'a> {
     font_texture    : glium::texture::Texture2d,
 }
 
+/// A thread-safe render-context.
+///
+/// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
 pub struct RenderContext<'a> (Mutex<RenderContextData<'a>>);
 unsafe impl<'a> Send for RenderContext<'a> { }
 unsafe impl<'a> Sync for RenderContext<'a> { }
@@ -88,6 +69,15 @@ impl<'a> RenderContext<'a> {
     }
 }
 
+/// A non-blocking, thread-safe drawing target.
+///
+/// In radiant_rs, all drawing happens on layers. Layers provide transformation capabilities in
+/// the form of model- and view-matrices and the layer's blendmode and color determine
+/// how sprites are rendered onto the display. Layers can be rendered multiple times using
+/// different matrices, blendmodes or colors without having to redraw their contents first.
+///
+/// Multiple threads can draw onto the same layer without blocking. However, manipulating layer
+/// properties may block other threads from manipulating the same property.
 pub struct Layer {
     view_matrix     : Mutex<Mat4<f32>>,
     model_matrix    : Mutex<Mat4<f32>>,

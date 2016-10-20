@@ -5,6 +5,15 @@ use color::Color;
 use graphics::{Display, RenderContext, RenderContextData, RenderContextTextureArray, Layer, font, blendmode};
 use scene;
 
+/// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
+/// [`Display`](struct.Display.html).
+///
+/// The renderer itself is not thread-safe. Instead, draw or write onto layers (from any one or
+/// more threads)  and present those layers using the renderer once your threads have concluded
+/// drawing.
+///
+/// Alternatively to directly drawing on layers, [`Scene`](struct.Scene.html) provides a higher
+/// level abstraction.
 #[derive(Clone)]
 pub struct Renderer<'a> {
     max_sprites     : u32,
@@ -13,7 +22,8 @@ pub struct Renderer<'a> {
 
 impl<'a> Renderer<'a> {
 
-    /// Returns a new sprite renderer instance
+    /// Returns a new renderer instance. Currently, the maximum number of expected sprites per
+    /// layer has to be set during instance creation. Future versions will lift this requirement.
     pub fn new(display: &Display, max_sprites: u32) -> Self {
 
         let mut context_data = RenderContextData {
@@ -36,18 +46,20 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    /// Returns a reference to the renderers' context.
+    /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext)
+    /// is thread-safe and required by [`Font`](struct.Font) and [`Sprite`](struct.Sprite) to
+    /// create new instances.
     pub fn context(&self) -> Arc<RenderContext<'a>> {
         self.context.clone()
     }
 
-    /// prepares a new target for drawing without clearing it
+    /// Prepares a new target for drawing without clearing it.
     pub fn prepare_target(&self) {
         let mut context = self.context.lock();
         context.target = Some(context.display.handle.draw());
     }
 
-    /// prepares a new target and clears it with given color
+    /// Prepares a new target and clears it with given color.
     pub fn clear_target(&self, color: Color) {
         let mut context = self.context.lock();
         let (r, g, b, a) = color.as_tuple();
@@ -56,25 +68,25 @@ impl<'a> Renderer<'a> {
         context.target = Some(target);
     }
 
-    /// finishes drawing and swaps the drawing target to front
+    /// Finishes drawing and swaps the drawing target to front.
     pub fn swap_target(&self) {
         let mut context = self.context.lock();
         context.target.take().unwrap().finish().unwrap();
     }
-
-    /// takes the target frame from radiant-rs
+/*
+    /// Takes the target frame from the renderer.
     pub fn take_target(&self) -> glium::Frame {
         let mut context = self.context.lock();
         context.target.take().unwrap()
     }
-
-    /// draws given scene
+*/
+    /// Draws given scene.
     pub fn draw_scene(&self, scene: &scene::Scene) -> &Self {
         scene::draw(scene, self);
         self
     }
 
-    /// draws all sprites on given layer
+    /// Draws given layer.
     pub fn draw_layer(&self, layer: &Layer) -> &Self {
 
         // prepare texture array uniforms

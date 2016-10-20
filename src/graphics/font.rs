@@ -7,6 +7,9 @@ use font_loader::system_fonts;
 
 use std::borrow::Cow;
 
+/// A struct used to filter the result of [`Font::query_specific()`](struct.Font.html#method.query_specific)
+/// or to describe a [`Font`](struct.Font.html) to be created from a system font
+/// via [`Font::from_info()`](struct.Font.html#method.from_info).
 #[derive(Clone)]
 pub struct FontInfo {
     pub italic      : bool,
@@ -105,6 +108,15 @@ impl FontCache {
 
 static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
+/// A font used for writing on a [`Layer`](struct.Layer.html).
+///
+/// Fonts can be created from files, registered system fonts or existing font objects.
+/// When creating fonts from system fonts, a [`FontInfo`](struct.FontInfo.html) structure can be
+/// used to define requirements for the font, i.e. "any available monospace font".
+///
+/// In addition to the usual properties of a font, radiant also assigns a fixed color and size
+/// to each font object. Instead of modifying these properties, you can clone a new font
+/// with modified values using [`Font::with_color()`](struct.Font.html#method.with_color) and/or [`Font::with_size()`](struct.Font.html#method.with_size).
 #[derive(Clone)]
 pub struct Font<'a> {
     font    : Arc<rusttype::Font<'a>>,
@@ -116,7 +128,7 @@ pub struct Font<'a> {
 
 impl<'a> Font<'a> {
 
-    /// creates a font instance from a file
+    /// Creates a font instance from a file
     pub fn from_file<'b>(context: &Arc<RenderContext<'b>>, file: &str) -> Font<'b> {
         let mut f = File::open(Path::new(file)).unwrap();
         let mut font_data = Vec::new();
@@ -124,49 +136,49 @@ impl<'a> Font<'a> {
         create_font(context, font_data, 12.0)
     }
 
-    /// creates a new font instance from given FontInfo struct
+    /// Creates a new font instance from given FontInfo struct
     pub fn from_info<'b>(context: &Arc<RenderContext<'b>>, info: FontInfo) -> Font<'b> {
         let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
         create_font(context, font_data, info.size)
     }
 
-    /// returns the names of all available system fonts
+    /// Returns the names of all available system fonts
     pub fn query_all() -> Vec<String> {
         system_fonts::query_all()
     }
 
-    /// returns the names of all available system fonts with the given properties (i.e. monospace)
+    /// Returns the names of all available system fonts with the given properties (i.e. monospace)
     pub fn query_specific(info: FontInfo) -> Vec<String> {
         system_fonts::query_specific(&mut build_property(&info))
     }
 
-    /// returns a new font instance with given size
+    /// Returns a new font instance with given size
     pub fn with_size(self: &Self, size: f32) -> Font<'a> {
         let mut font = (*self).clone();
         font.size = size;
         font
     }
 
-    /// returns a new font instance with given color
+    /// Returns a new font instance with given color
     pub fn with_color(self: &Self, color: Color) -> Font<'a> {
         let mut font = (*self).clone();
         font.color = color;
         font
     }
 
-    /// write to given layer
+    /// Write to given layer
     pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32) -> &Font<'a> {
         write(self, layer, text, x, y, 0.0, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
-    /// write to given layer. breaks lines after max_width pixels
+    /// Write to given layer. Breaks lines after max_width pixels.
     pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32) -> &Font<'a> {
         write(self, layer, text, x, y, max_width, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
-    /// write to given layer. breaks lines after max_width pixels and applies given rotation and scaling
+    /// Write to given layer. Breaks lines after max_width pixels and applies given rotation and scaling.
     pub fn write_transformed(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, rotation: f32, scale_x: f32, scale_y: f32) -> &Font<'a> {
         write(self, layer, text, x, y, max_width, &self.color, rotation, scale_x, scale_y);
         self
@@ -174,7 +186,7 @@ impl<'a> Font<'a> {
 
 }
 
-/// creates a new cache texture for the renderer
+/// creates a new cache texture for the renderer.
 pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -> glium::texture::Texture2d {
     glium::texture::Texture2d::with_format(
         display,

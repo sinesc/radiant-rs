@@ -2,29 +2,39 @@ use glium;
 use glium::DisplayBuild;
 use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton/*, VirtualKeyCode*/};
 use prelude::*;
-use graphics::{Display, InputState};
+use graphics::Display;
+use graphics::input::{InputState, ButtonState};
 
+/// An individual monitor, returned from [`Display::monitors()`](struct.Display.html#method.monitors).
 pub struct Monitor {
     id: glium::glutin::MonitorId,
 }
 
 impl Monitor {
+    /// Returns the name of the device.
     pub fn name(&self) -> String {
         self.id.get_name().unwrap_or("".to_string())
     }
+
+    /// Returns the current width in pixels.
     pub fn width(&self) -> u32 {
         let (width, _) = self.id.get_dimensions();
         width
     }
+
+    /// Returns the current height in pixels.
     pub fn height(&self) -> u32 {
         let (_, height) = self.id.get_dimensions();
         height
     }
+
+    /// Returns the current width and height in pixels.
     pub fn dimensions(&self) -> (u32, u32) {
         self.id.get_dimensions()
     }
 }
 
+/// A struct describing a [`Display`](struct.Display.html) to be created.
 #[derive(Clone)]
 pub struct DisplayInfo {
     pub width       : u32,
@@ -51,6 +61,8 @@ impl Default for DisplayInfo {
 }
 
 impl Display {
+
+    /// Creates a new instance from given [`DisplayInfo`](struct.DisplayInfo.html).
     pub fn new(descriptor: DisplayInfo) -> Display {
 
         let mut builder = WindowBuilder::new()
@@ -76,18 +88,27 @@ impl Display {
         }
     }
 
+    /// Sets the window title.
     pub fn set_title(self: &Self, title: &str) {
         self.window().set_title(title);
     }
 
+    /// Makes the previously hidden window visible.
     pub fn show(self: &Self) {
         self.window().show();
     }
 
+    /// Hides the window.
     pub fn hide(self: &Self) {
         self.window().hide();
     }
 
+    /// Enables cursor grab mode. While in this mode, the mouse cursor will be hidden and
+    /// constrained to the window. Additionally, [`Input`](struct.Input.html) will be able to
+    /// provide mouse movement deltas and allow mouse coordinates to exceed the window-bounds.
+    ///
+    /// Grab mode will be temporarily released when the window loses focus and automatically
+    /// restored once it regains focus.
     pub fn grab_cursor(self: &Self) {
         let window = self.window();
         window.set_cursor_state(glium::glutin::CursorState::Grab).unwrap();
@@ -95,20 +116,24 @@ impl Display {
         window.set_cursor_position(100, 100).unwrap();
     }
 
+    /// Hides the mouse cursor while it is inside the window.
     pub fn hide_cursor(self: &Self) {
         self.window().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
         self.input_state.write().unwrap().cursor_grabbed = false;
     }
 
+    /// Releases a previously grabbed or hidden cursor and makes it visible again.
     pub fn free_cursor(self: &Self) {
         self.window().set_cursor_state(glium::glutin::CursorState::Normal).unwrap();
         self.input_state.write().unwrap().cursor_grabbed = false;
     }
 
+    /// Returns the window dimensions.
     pub fn dimensions(self: &Self) -> (u32, u32) {
         self.handle.get_framebuffer_dimensions()
     }
 
+    /// Returns monitor details for given monitor id.
     pub fn monitor(index: u32) -> Option<Monitor> {
         let mut iter = glium::glutin::get_available_monitors();
         let result = iter.nth(index as usize);
@@ -121,6 +146,7 @@ impl Display {
         }
     }
 
+    /// Returns a vector of available monitors.
     pub fn monitors() -> Vec<Monitor> {
         let iter = glium::glutin::get_available_monitors();
         let mut result = Vec::<Monitor>::new();
@@ -131,14 +157,17 @@ impl Display {
         }
         result
     }
-
+/*
     pub fn from_window_builder(builder: WindowBuilder<'static>) -> Display {
         Display {
             handle: builder.build_glium().unwrap(),
             input_state: Arc::new(RwLock::new(InputState::new())),
         }
     }
+*/
 
+    /// Polls for events like keyboard or mouse input and changes to the window. See
+    /// [`Input`](struct.Input.html) for basic keyboard and mouse support.
     pub fn poll_events(self: &Self) -> &Self {
         let mut input_state = self.input_state.write().unwrap();
         let window = self.window();
@@ -176,8 +205,17 @@ impl Display {
                     }
                 },*/
                 Event::KeyboardInput(element_state, scan_code, _) => {
-                    let new_state = if element_state == ElementState::Pressed { true } else { false };
-                    input_state.key[scan_code as usize] = new_state;
+                    let new_state = if element_state == ElementState::Pressed { ButtonState::Down } else { ButtonState::Up };
+                    let current_state = input_state.key[scan_code as usize];
+
+                    input_state.key[scan_code as usize] = if current_state == ButtonState::Up && new_state == ButtonState::Down {
+                        ButtonState::Pressed
+                    } else if current_state == ButtonState::Down && new_state == ButtonState::Up {
+                        ButtonState::Released
+                    } else {
+                        new_state
+                    };
+
                     //println!("key: {}", scan_code);
                 },
                 Event::MouseMoved(x, y) => {
@@ -193,14 +231,22 @@ impl Display {
                     }
                 },
                 Event::MouseInput(element_state, button) => {
-                    let new_state = if element_state == ElementState::Pressed { true } else { false };
-                    if button == MouseButton::Left {
-                        input_state.button.0 = new_state;
-                    } else if button == MouseButton::Middle {
-                        input_state.button.1 = new_state;
-                    } else if button == MouseButton::Right {
-                        input_state.button.2 = new_state;
-                    }
+                    let button_id = match button {
+                        MouseButton::Left => 1,
+                        MouseButton::Middle => 2,
+                        MouseButton::Right => 3,
+                        MouseButton::Other(x) => x,
+                    };
+                    let new_state = if element_state == ElementState::Pressed { ButtonState::Down } else { ButtonState::Up };
+                    let current_state = input_state.button[button_id as usize];
+
+                    input_state.button[button_id as usize] = if current_state == ButtonState::Up && new_state == ButtonState::Down {
+                        ButtonState::Pressed
+                    } else if current_state == ButtonState::Down && new_state == ButtonState::Up {
+                        ButtonState::Released
+                    } else {
+                        new_state
+                    };
                 },
                 Event::Focused(true) => {
                     // restore grab after focus loss
@@ -221,6 +267,7 @@ impl Display {
         self
     }
 
+    /// returns a reference to the underlying glutin window
     fn window(self: &Self) -> glium::backend::glutin_backend::WinRef {
         self.handle.get_window().unwrap()
     }
