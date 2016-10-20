@@ -20,33 +20,25 @@ use maths::Mat4;
 use avec::AVec;
 
 struct InputState {
-    pub mouse       : (u32, u32),
-    pub button      : (bool, bool, bool),
-    pub key         : [ bool; 255 ],
-    pub alt_left    : bool,
-    pub alt_right   : bool,
-    pub ctrl_left   : bool,
-    pub ctrl_right  : bool,
-    pub shift_left  : bool,
-    pub shift_right : bool,
-    pub escape      : bool,
-    pub should_close: bool,
+    pub mouse           : (i32, i32),
+    pub mouse_delta     : (i32, i32),
+    pub button          : (bool, bool, bool),
+    pub key             : [ bool; 255 ],
+    pub should_close    : bool,
+    pub cursor_grabbed  : bool,
+    pub dimensions      : (u32, u32),
 }
 
 impl InputState {
     pub fn new() -> InputState {
         InputState {
-            mouse       : (0, 0),
-            button      : (false, false, false),
-            key         : [ false; 255 ],
-            alt_left    : false,
-            alt_right   : false,
-            ctrl_left   : false,
-            ctrl_right  : false,
-            shift_left  : false,
-            shift_right : false,
-            escape      : false,
-            should_close: false,
+            mouse           : (0, 0),
+            mouse_delta     : (0, 0),
+            button          : (false, false, false),
+            key             : [ false; 255 ],
+            should_close    : false,
+            cursor_grabbed  : false,
+            dimensions      : (0, 0),
         }
     }
 }
