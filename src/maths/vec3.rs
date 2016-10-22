@@ -2,10 +2,12 @@ use prelude::*;
 use maths::VecType;
 use glium::uniforms::{AsUniformValue, UniformValue};
 
+/// A 3-dimensional vector.
 #[derive(Copy, Clone, Debug)]
 pub struct Vec3<T: Copy + fmt::Display + Float>(pub T, pub T, pub T);
 
 impl<T: Copy + fmt::Display + Float> Vec3<T> {
+    /// Creates a new instances.
     pub fn new() -> Vec3<T> {
         Vec3::<T>(T::zero(), T::zero(), T::zero())
     }

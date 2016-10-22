@@ -6,7 +6,7 @@ use glium::vertex::{Attribute, AttributeType};
 /// and alpha.
 ///
 /// Various drawing methods accept color instances to be used as multiplicators in the drawing
-/// process, i.e. [`Sprite::draw()`](struct.Sprite.html#method.draw) allows multiplying the sprite-
+/// process, e.g. [`Sprite::draw()`](struct.Sprite.html#method.draw) allows multiplying the sprite-
 /// texture's color channels by given color.
 #[derive(Copy, Clone, Default)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);

@@ -20,7 +20,7 @@ use maths::Mat4;
 use avec::AVec;
 use graphics::input::InputState;
 
-/// A target to render to, i.e. a window or full screen.
+/// A target to render to, e.g. a window or full screen.
 #[derive(Clone)]
 pub struct Display {
     handle: glium::Display,

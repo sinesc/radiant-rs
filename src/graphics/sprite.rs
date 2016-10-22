@@ -39,7 +39,7 @@ impl Sprite {
 
     /// Creates a new sprite texture
     ///
-    /// The given filename is epected to end on _<width>x<height>x<frames>.<extension>, i.e. asteroid_64x64x24.png.
+    /// The given filename is epected to end on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
     pub fn from_file(context: &Arc<RenderContext>, file: &str) -> Sprite {
 
         let mut context = context.lock();

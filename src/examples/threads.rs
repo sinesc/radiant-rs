@@ -1,14 +1,13 @@
 extern crate radiant_rs;
-use radiant_rs::{Input, Color, Renderer, Layer,  DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
+use radiant_rs::{Color, Renderer, Layer,  DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
 use std::thread;
 use std::sync::{Arc, Barrier};
 
 pub fn main() {
 
-    // create a window, a renderer and some basic input handler for the window
+    // create a window, a renderer and a threadsafe context (required for sprite/font creation)
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display, 1000);
-    let input = Input::new(&display);
     let context = renderer.context();
 
     // create a single layer and a font
@@ -44,8 +43,6 @@ pub fn main() {
     // a simple mainloop helper (just an optional utility function)
     utils::renderloop(|state| {
 
-        display.poll_events();
-
         // this will unblock once all threads have finished drawing
         draw_start.wait();
 
@@ -59,6 +56,6 @@ pub fn main() {
 
         renderer.swap_target();
 
-        !input.should_close()
+        !display.poll_events().was_closed()
     });
 }

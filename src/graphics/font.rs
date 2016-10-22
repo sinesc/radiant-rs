@@ -112,7 +112,7 @@ static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 ///
 /// Fonts can be created from files, registered system fonts or existing font objects.
 /// When creating fonts from system fonts, a [`FontInfo`](struct.FontInfo.html) structure can be
-/// used to define requirements for the font, i.e. "any available monospace font".
+/// used to define requirements for the font, e.g. "any available monospace font".
 ///
 /// In addition to the usual properties of a font, radiant also assigns a fixed color and size
 /// to each font object. Instead of modifying these properties, you can clone a new font
@@ -147,7 +147,7 @@ impl<'a> Font<'a> {
         system_fonts::query_all()
     }
 
-    /// Returns the names of all available system fonts with the given properties (i.e. monospace)
+    /// Returns the names of all available system fonts with the given properties (e.g. monospace)
     pub fn query_specific(info: FontInfo) -> Vec<String> {
         system_fonts::query_specific(&mut build_property(&info))
     }

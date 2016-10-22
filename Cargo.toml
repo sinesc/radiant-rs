@@ -29,3 +29,7 @@ path = "src/examples/blobs.rs"
 [[example]]
 name = "threads"
 path = "src/examples/threads.rs"
+
+[[example]]
+name = "minimalistic"
+path = "src/examples/minimalistic.rs"

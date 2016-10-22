@@ -1,72 +1,30 @@
 # radiant-rs
-Rust sprite rendering engine. Main goals: threadsafty, API-simplicity.
+Rust sprite rendering engine. Main goals: thread-safety, API-simplicity.
 
-This is work-in-progress. API is still incomplete and will probably change heavily. Don't bother with it yet :)
+This is work-in-progress. The API is incomplete and will likely still change somewhat. Have a look if you like, but don't depend on it :)
+
+To compile the examples, use e.g. `cargo run --release --example blobs`. See examples folder for other available examples.
 
 ![Screenshot](https://raw.githubusercontent.com/sinesc/radiant-rs/master/res/screenshot.jpg "Screenshot")
 
-```rust
-extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Input, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
+## 10 lines to the first frame
 
-fn main() {
+1. Create a display with `Display::new()`. This represents the window/fullscreen.
+2. Create a renderer with `Renderer::new()`. It does all the work.
+3. Grab a context from the renderer using the `context()` method. It is only required in order to load resources.
+4. Use it to load sprites or fonts with e.g. `Font::from_file()` or `Sprite::from_file()`.
+5. Create as many drawing layers as you need using `Layer::new()`.
+6. Draw stuff onto the layer using the `Font::write()` or `Sprite::draw()` methods.
+7. Clear the drawing target using `Renderer::clear_target()`. (If you don't want to clear, use `Renderer::prepare_target()` instead.)
+8. Draw the contents of your layers onto the target using `Renderer::draw_layer()`.
+9. Make the target visible via `Renderer::swap_target()`.
+10. Goto 6.
 
-    // create a window, a renderer and some basic input handler for the window
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display, 1000);
-    let mut input = Input::new(&display);
-    let context = renderer.context();
+## Multi-threaded environments
 
-    // create three layers, change one to use an overlay blend mode
-    let text_layer = Layer::new(1000, (640, 480));
-    let spark_layer = Layer::new(1000, (640, 480));
-    let fps_layer = Layer::new(1000, (640, 480));
-    spark_layer.set_blendmode(blendmodes::LIGHTEN);
-
-    // create a sprite and some fonts
-    let sprite = Sprite::from_file(&context, r"res/sparkles_64x64x1.png");
-    let font = Font::from_info(&context, FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
-    let big_red_font = font.with_size(24.0).with_color(Color::red());
-
-    // write text to layer only once and reuse every frame
-    big_red_font.write(&text_layer, "Simple demo", 350.0, 350.0);
-    font.write(&text_layer, "No scenes used", 395.0, 370.0);
-
-    // clone a couple of layer matrices to play around with
-    let mut view1 = spark_layer.view_matrix().clone();
-    let mut view2 = spark_layer.view_matrix().clone();
-    let mut view3 = spark_layer.view_matrix().clone();
-    let mut model = *spark_layer.model_matrix().clone().scale((4.0, 4.0));
-
-    // a simple mainloop helper (just an optional utility function)
-    utils::renderloop(|state| {
-
-        // clear the layer containing the sparks and rotate its model matrix  (per-sprite matrix)
-        spark_layer.clear();
-        spark_layer.set_model_matrix(*model.rotate_z(-state.delta_f32 * 4.0));
-
-        font.write(&fps_layer.clear(), &format!("{}FPS", state.fps), 10.0, 10.0);
-
-        // rotate the three viewmatrix clones at different rates
-        view1.rotate_z_at((320.0, 200.0), state.delta_f32 * 1.0);
-        view2.rotate_z_at((320.0, 200.0), state.delta_f32 * 1.5);
-        view3.rotate_z_at((320.0, 200.0), state.delta_f32 * 2.0);
-
-        // draw the sprite three times, tinted red, green and blue
-        sprite.draw(&spark_layer, 0, 320.0, 180.0, Color::red());
-        sprite.draw(&spark_layer, 0, 300.0, 200.0, Color::green());
-        sprite.draw(&spark_layer, 0, 340.0, 200.0, Color::blue());
-
-        // draw the spark layer three times with different matrices and alpha levels as well as the text layer
-        renderer.clear_target(Color::black());
-        renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1));
-        renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2));
-        renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3));
-        renderer.draw_layer(&text_layer);
-        renderer.draw_layer(&fps_layer);
-        renderer.swap_target();
-
-        !input.poll().should_close
-    });
-}
-```
+1. Stick fonts, sprites, and layers or scenes into `Arc`s.  
+The context received from `Renderer::context()` is already wrapped in `Arc`.
+2. Clone the `Arc`s for each thread that needs their contents.
+3. Move the clones into the thread.
+4. Draw onto your layers, load sprites etc. from however many threads you like. Layers are non-blocking for drawing operations, blocking for other manipulations (e.g. matrix modification).
+5. Perform steps 7-10 from the above list in the thread that created the `Renderer`; both it and `Display` do not implement `Send`

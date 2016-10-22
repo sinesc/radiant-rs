@@ -33,14 +33,11 @@ pub fn main() {
     // a simple mainloop helper (just an optional utility function)
     utils::renderloop(|state| {
 
-        display.poll_events();
-
         // clear the layer containing the sparks and rotate its model matrix  (per-sprite matrix)
         spark_layer.clear();
         spark_layer.set_model_matrix(*model.rotate_z(-state.delta_f32 * 4.0));
 
         font.write(&fps_layer.clear(), &format!("{}FPS", state.fps), 10.0, 10.0);
-        font.write(&fps_layer, &format!("mouse {} {}", input.mouse_x(), input.mouse_y()), 10.0, 20.0);
 
         // rotate the three viewmatrix clones at different rates
         view1.rotate_z_at((320.0, 200.0), state.delta_f32 * 1.0);
@@ -48,9 +45,9 @@ pub fn main() {
         view3.rotate_z_at((320.0, 200.0), state.delta_f32 * 2.0);
 
         // draw the sprite three times, tinted red, green and blue
-        sprite.draw(&spark_layer, 0, 320.0, 180.0, Color::red());
-        sprite.draw(&spark_layer, 0, 300.0, 200.0, Color::green());
-        sprite.draw(&spark_layer, 0, 340.0, 200.0, Color::blue());
+        sprite.draw(&spark_layer, 0, 320.0, 180.0, Color::red().scale(1.5));
+        sprite.draw(&spark_layer, 0, 300.0, 200.0, Color::green().scale(1.5));
+        sprite.draw(&spark_layer, 0, 340.0, 200.0, Color::blue().scale(1.5));
 
         // draw the spark layer three times with different matrices and alpha levels as well as the text layer
         renderer.clear_target(Color::black());
@@ -61,6 +58,6 @@ pub fn main() {
         renderer.draw_layer(&fps_layer);
         renderer.swap_target();
 
-        !input.should_close() && !input.escape()
+        !display.poll_events().was_closed() && !input.escape()
     });
 }
