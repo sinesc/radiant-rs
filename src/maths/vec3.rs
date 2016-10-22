@@ -39,12 +39,14 @@ impl<T: Copy + fmt::Display + Float> Mul<T> for Vec3<T> {
     }
 }
 
+#[doc(hidden)]
 impl AsUniformValue for Vec3<f32> {
     fn as_uniform_value(&self) -> UniformValue {
         UniformValue::Vec3([ self.0, self.1, self.2 ])
     }
 }
 
+#[doc(hidden)]
 impl AsUniformValue for Vec3<f64> {
     fn as_uniform_value(&self) -> UniformValue {
         UniformValue::DoubleVec3([ self.0, self.1, self.2 ])

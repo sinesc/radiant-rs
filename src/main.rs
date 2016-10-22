@@ -1,9 +1,10 @@
 extern crate radiant_rs;
-mod examples;
+
+#[path="examples/blobs.rs"]
+mod blobs;
 
 fn main() {
 
-    examples::blobs::run();
-    //examples::threads::run();
+    blobs::main();
 
 }

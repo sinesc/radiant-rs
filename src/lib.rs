@@ -15,7 +15,7 @@ mod maths;
 mod scene;
 
 pub use graphics::{BlendMode, blendmodes, Display, DisplayInfo, Monitor, Layer, Renderer, RenderContext, Sprite, Font, FontInfo, Input, ButtonState};
-pub use maths::{Mat4, Vec2, Vec3, Dir1, VecType};
+pub use maths::{Mat4, Vec2, Vec3, VecType};
 pub use color::Color;
 pub use scene::{Scene, Operation};
 

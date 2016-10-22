@@ -1,9 +1,9 @@
+extern crate radiant_rs;
 use radiant_rs::{Input, Color, Renderer, Layer,  DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
 use std::thread;
 use std::sync::{Arc, Barrier};
 
- #[allow(dead_code)]
-pub fn run() {
+pub fn main() {
 
     // create a window, a renderer and some basic input handler for the window
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });

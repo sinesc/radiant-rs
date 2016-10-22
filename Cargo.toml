@@ -3,15 +3,6 @@ name = "radiant-rs"
 version = "0.1.0"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 
-[lib]
-name = "radiant_rs"
-path = "src/lib.rs"
-
-[[bin]]
-doc = false
-name = "demos"
-path = "src/main.rs"
-
 [dependencies]
 glium = "*"
 image = "*"
@@ -21,3 +12,20 @@ num = "*"
 rusttype = "0.2.1"
 unicode-normalization = "0.1.0"
 font-loader = "*"
+
+[lib]
+name = "radiant_rs"
+path = "src/lib.rs"
+
+[[bin]]
+doc = false
+name = "demos"
+path = "src/main.rs"
+
+[[example]]
+name = "blobs"
+path = "src/examples/blobs.rs"
+
+[[example]]
+name = "threads"
+path = "src/examples/threads.rs"

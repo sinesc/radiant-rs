@@ -181,6 +181,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
     }
 }
 
+#[doc(hidden)]
 impl AsUniformValue for Mat4<f32> {
     fn as_uniform_value(&self) -> UniformValue {
         UniformValue::Mat4([
@@ -192,6 +193,7 @@ impl AsUniformValue for Mat4<f32> {
     }
 }
 
+#[doc(hidden)]
 impl AsUniformValue for Mat4<f64> {
     fn as_uniform_value(&self) -> UniformValue {
         UniformValue::DoubleMat4([

@@ -1,6 +1,7 @@
+extern crate radiant_rs;
 use radiant_rs::{DisplayInfo, Display, Renderer, Input, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
 
-pub fn run() {
+pub fn main() {
 
     // create a window, a renderer and some basic input handler for the window
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
@@ -16,18 +17,18 @@ pub fn run() {
 
     // create a sprite and some fonts
     let sprite = Sprite::from_file(&context, r"res/sparkles_64x64x1.png");
-    let font = Font::from_info(&context, FontInfo { family: "Arial".to_string(), ..FontInfo::default() });
+    let font = Font::from_info(&context, FontInfo { family: "Arial".to_string(), size: 12.0, ..FontInfo::default() } );
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 
     // write text to layer only once and reuse every frame
-    big_red_font.write(&text_layer, "Simple demo", 350.0, 350.0);
-    font.write(&text_layer, "No scenes used", 395.0, 370.0);
+    big_red_font.write(&text_layer, "examples/blobs.rs", 355.0, 330.0);
+    font.write(&text_layer, "rotating colorful blobs since 2016", 370.0, 350.0);
 
     // clone a couple of layer matrices to play around with
     let mut view1 = spark_layer.view_matrix().clone();
     let mut view2 = spark_layer.view_matrix().clone();
     let mut view3 = spark_layer.view_matrix().clone();
-    let mut model = *spark_layer.model_matrix().clone().scale((4.0, 4.0));
+    let mut model = *spark_layer.model_matrix().clone().scale(4.0);
 
     // a simple mainloop helper (just an optional utility function)
     utils::renderloop(|state| {
