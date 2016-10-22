@@ -29,7 +29,7 @@ pub struct Display {
 
 pub struct RenderContextTextureArray<'a> {
     dirty   : bool,
-    data    : glium::texture::Texture2dArray,
+    data    : glium::texture::SrgbTexture2dArray,
     raw     : Vec<glium::texture::RawImage2d<'a, u8>>,
 }
 
@@ -37,7 +37,7 @@ impl<'a> RenderContextTextureArray<'a> {
     pub fn new(display: &Display) -> Self {
         RenderContextTextureArray {
             dirty   : false,
-            data    : glium::texture::Texture2dArray::empty(&display.handle, 2, 2, 1).unwrap(),
+            data    : glium::texture::SrgbTexture2dArray::empty(&display.handle, 2, 2, 1).unwrap(),
             raw     : Vec::new(),
         }
     }

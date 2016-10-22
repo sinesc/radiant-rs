@@ -157,7 +157,7 @@ pub fn load_spritesheet<'b>(file: &str) -> (u32, u32, Vec<glium::texture::RawIma
 
     let path = Path::new(file);
     let mut image = image::open(&path).unwrap();
-    let image_dimensions = image.to_rgba().dimensions(); // todo how much does this cost?
+    let image_dimensions = image.dimensions();
 
     // compute frame parameters
 
@@ -210,14 +210,12 @@ fn build_frame_texture<'b>(image: &mut image::DynamicImage, image_dimensions: (u
         // pad image if it doesn't match an available texture array size
         let mut dest = image::DynamicImage::new_rgba8(pad_size, pad_size);
         dest.copy_from(&subimage, 0, 0);
-        //dest.to_rgba()
-        glium::texture::RawImage2d::from_raw_rgba_reversed(dest.to_rgba().into_raw(), (pad_size, pad_size))
+        glium::texture::RawImage2d::from_raw_rgba(dest.to_rgba().into_raw(), (pad_size, pad_size))
 
     } else {
 
         // perfect fit
-        //subimage.to_rgba()
-        glium::texture::RawImage2d::from_raw_rgba_reversed(subimage.to_rgba().into_raw(), (frame_width, frame_height))
+        glium::texture::RawImage2d::from_raw_rgba(subimage.to_rgba().into_raw(), (frame_width, frame_height))
     }
 }
 

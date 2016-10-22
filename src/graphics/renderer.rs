@@ -166,9 +166,9 @@ impl<'a> Renderer<'a> {
                             format: frame.format,
                         });
                     }
-                    context.tex_array[bucket_id].data = glium::texture::Texture2dArray::new(&context.display.handle, raw_images).unwrap();
+                    context.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::new(&context.display.handle, raw_images).unwrap();
                 } else {
-                    context.tex_array[bucket_id].data = glium::texture::Texture2dArray::empty(&context.display.handle, 2, 2, 1).unwrap();
+                    context.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::empty(&context.display.handle, 2, 2, 1).unwrap();
                 }
             }
         }
