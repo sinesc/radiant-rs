@@ -61,11 +61,6 @@ impl Input {
         }
     }
 
-    /// Returns true if the window associated with the display has closed.
-    pub fn should_close(self: &Self) -> bool {
-        self.get().should_close
-    }
-
     /// Returns current mouse coordinates relative to the window.
     pub fn mouse(self: &Self) -> (i32, i32) {
         self.get().mouse

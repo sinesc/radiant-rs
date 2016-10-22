@@ -267,6 +267,14 @@ impl Display {
         self
     }
 
+    /// Returns true once after the attached window was closed
+    pub fn was_closed(self: &Self) -> bool {
+        let mut input_state = self.input_state.write().unwrap();
+        let result = input_state.should_close;
+        input_state.should_close = false;
+        result
+    }
+
     /// returns a reference to the underlying glutin window
     fn window(self: &Self) -> glium::backend::glutin_backend::WinRef {
         self.handle.get_window().unwrap()
