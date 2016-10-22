@@ -7,6 +7,7 @@ pub struct LoopState {
     pub delta_f32   : f32,
     pub elapsed     : Duration,
     pub elapsed_f32 : f32,
+    pub frame_id    : u64,
     pub fps         : u32,
     pub state_id    : u32,
 }
@@ -24,6 +25,7 @@ pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_call
     let mut second_elapsed = Duration::new(0, 0);
     let mut frames_elapsed = 0;
     let mut fps = 0;
+    let mut frame_id = 0;
 
     loop {
 
@@ -36,6 +38,7 @@ pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_call
             delta_f32   : delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32,
             elapsed     : elapsed,
             elapsed_f32 : elapsed.as_secs() as f32 + (elapsed.subsec_nanos() as f64 / 1000000000.0) as f32,
+            frame_id    : frame_id,
             fps         : fps,
             state_id    : 0,
         };
@@ -58,6 +61,7 @@ pub fn mainloop<F, G>(interval: Duration, mut state_callback: F, mut render_call
         // framerate print
         second_elapsed += now - previous_clock;
         frames_elapsed += 1;
+        frame_id += 1;
 
         if second_elapsed >= second {
             fps = frames_elapsed;
@@ -81,6 +85,7 @@ pub fn renderloop<G>(mut render_callback: G) where G: FnMut(LoopState) -> bool {
     let mut second_elapsed = Duration::new(0, 0);
     let mut frames_elapsed = 0;
     let mut fps = 0;
+    let mut frame_id = 0;
 
     loop {
 
@@ -93,6 +98,7 @@ pub fn renderloop<G>(mut render_callback: G) where G: FnMut(LoopState) -> bool {
             delta_f32   : delta.as_secs() as f32 + (delta.subsec_nanos() as f64 / 1000000000.0) as f32,
             elapsed     : elapsed,
             elapsed_f32 : elapsed.as_secs() as f32 + (elapsed.subsec_nanos() as f64 / 1000000000.0) as f32,
+            frame_id    : frame_id,
             fps         : fps,
             state_id    : 0,
         };
@@ -104,6 +110,7 @@ pub fn renderloop<G>(mut render_callback: G) where G: FnMut(LoopState) -> bool {
         // framerate print
         second_elapsed += now - previous_clock;
         frames_elapsed += 1;
+        frame_id += 1;
 
         if second_elapsed >= second {
             fps = frames_elapsed;
