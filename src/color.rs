@@ -40,10 +40,30 @@ impl Color {
         Color(value, value, value, 1.0)
     }
 
-    /// Creates a new instance from given color-temperature (~1000 to ~40000K).
+    /// Creates a new instance from given HSL (range 0.0 - 1.0)
+    pub fn from_hsl(hue: f32, saturation: f32, lightness: f32, alpha: f32) -> Color {
+        if saturation == 0.0 {
+            Color(lightness, lightness, lightness, alpha)
+        } else {
+            let q = if lightness < 0.5 {
+                lightness * (1.0 + saturation)
+            } else {
+                lightness + saturation - lightness * saturation
+            };
+            let p = 2.0 * lightness - q;
+            Color(
+                hue_to_rgb(p, q, hue + 1.0 / 3.0),
+                hue_to_rgb(p, q, hue),
+                hue_to_rgb(p, q, hue - 1.0 / 3.0),
+                alpha
+            )
+        }
+    }
+
+    /// Creates a new instance from given color-temperature (~1000 to ~40000).
     ///
     /// Based on http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
-    pub fn temperature(temperature: f32, alpha: f32) -> Color {
+    pub fn from_temperature(temperature: f32, alpha: f32) -> Color {
 
         let value = (temperature / 100.0).floor();
         let red;
@@ -170,6 +190,25 @@ impl Color {
     pub fn purple() -> Color {
         Color(1.0, 0.0, 1.0, 1.0)
     }
+}
+
+fn hue_to_rgb(p: f32, q: f32, mut hue: f32) -> f32 {
+    if hue < 0.0 {
+        hue += 1.0;
+    }
+    if hue > 1.0 {
+        hue -= 1.0;
+    }
+    if hue < 1.0 / 6.0 {
+        return p + (q - p) * 6.0 * hue;
+    }
+    if hue < 1.0 / 2.0 {
+        return q;
+    }
+    if hue < 2.0 / 3.0 {
+        return p + (q - p) * (2.0/3.0 - hue) * 6.0;
+    }
+    return p;
 }
 
 #[doc(hidden)]
