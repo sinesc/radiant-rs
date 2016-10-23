@@ -1,6 +1,6 @@
 [package]
 name = "radiant-rs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 description = "Easy to use, thread-safe sprite rendering engine"
 documentation = "https://sinesc.github.io/doc/radiant_rs/"
@@ -28,12 +28,12 @@ path = "src/main.rs"
 
 [[example]]
 name = "blobs"
-path = "src/examples/blobs.rs"
+path = "examples/blobs.rs"
 
 [[example]]
 name = "threads"
-path = "src/examples/threads.rs"
+path = "examples/threads.rs"
 
 [[example]]
 name = "minimalistic"
-path = "src/examples/minimalistic.rs"
+path = "examples/minimalistic.rs"
