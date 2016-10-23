@@ -35,14 +35,14 @@ pub fn main() {
 
         // clear the layer containing the sparks and rotate its model matrix  (per-sprite matrix)
         spark_layer.clear();
-        spark_layer.set_model_matrix(*model.rotate_z(-state.delta_f32 * 4.0));
+        spark_layer.set_model_matrix(*model.rotate(-state.delta_f32 * 4.0));
 
         font.write(&fps_layer.clear(), &format!("{}FPS", state.fps), 10.0, 10.0);
 
         // rotate the three viewmatrix clones at different rates
-        view1.rotate_z_at((320.0, 200.0), state.delta_f32 * 1.0);
-        view2.rotate_z_at((320.0, 200.0), state.delta_f32 * 1.5);
-        view3.rotate_z_at((320.0, 200.0), state.delta_f32 * 2.0);
+        view1.rotate_at((320.0, 200.0), state.delta_f32 * 1.0);
+        view2.rotate_at((320.0, 200.0), state.delta_f32 * 1.5);
+        view3.rotate_at((320.0, 200.0), state.delta_f32 * 2.0);
 
         // draw the sprite three times, tinted red, green and blue
         sprite.draw(&spark_layer, 0, 320.0, 180.0, Color::red().scale(1.5));

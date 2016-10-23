@@ -26,7 +26,7 @@ fn main() {
         layer.set_color(rainbow);
 
         // rotate the layer as a whole (by contrast, layer.model_matrix() would rotate the individual sprites)
-        layer.view_matrix().rotate_z_at((320.0, 200.0), -state.delta_f32);
+        layer.view_matrix().rotate_at((320.0, 200.0), -state.delta_f32);
 
         // write some text
         font.write(&layer, &format!("It works. {} FPS", state.fps), 260.0, 140.0);

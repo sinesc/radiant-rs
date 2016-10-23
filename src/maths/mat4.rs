@@ -42,6 +42,15 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
         }
     }
 
+    /// Creates viewport matrix mapping viewport top left to (0.0, 0.0) and bottom right to (width, height)
+    pub fn viewport(width: T, height: T) -> Mat4<T> {
+        let mut matrix = Mat4::<T>::identity();
+        let two = T::one() + T::one();
+        *matrix
+            .translate(Vec3::<T>(-T::one(), T::one(), T::zero()))
+            .scale(Vec3(two / width, -two / height, T::one()))
+    }
+
     /// Translate matrix by given vector.
     pub fn translate<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
 
@@ -77,7 +86,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
     }
 
     /// Rotates the origin around given vector.
-    pub fn rotate<Vector: VecType<T>>(&mut self, rad: T, axis: Vector) -> &mut Self {
+    pub fn rotate_axis<Vector: VecType<T>>(&mut self, rad: T, axis: Vector) -> &mut Self {
 
         let Vec3::<T>(mut x, mut y, mut z) = axis.as_vec3(T::zero());
 
@@ -138,7 +147,7 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
     }
 
     /// Rotates the origin around z.
-    pub fn rotate_z(&mut self, rad: T) -> &mut Self {
+    pub fn rotate(&mut self, rad: T) -> &mut Self {
 
         let s = rad.sin();
         let c = rad.cos();
@@ -165,11 +174,21 @@ impl<T: Copy + fmt::Display + Float> Mat4<T> {
     }
 
     /// Rotates around z at given position.
-    pub fn rotate_z_at<Vector: VecType<T>>(&mut self, v: Vector, rad: T) -> &mut Self {
-        let v3 = v.as_vec3(T::zero());
-        self.translate(v3)
-            .rotate_z(rad)
-            .translate(-v3);
+    pub fn rotate_at<Vector: VecType<T>>(&mut self, position: Vector, radians: T) -> &mut Self {
+        let position = position.as_vec3(T::zero());
+        self.translate(position)
+            .rotate(radians)
+            .translate(-position);
+
+        self
+    }
+
+    /// Scales at given position.
+    pub fn scale_at<Vector: VecType<T>>(&mut self, position: Vector, scaling: Vector) -> &mut Self {
+        let position = position.as_vec3(T::zero());
+        self.translate(position)
+            .scale(scaling)
+            .translate(-position);
 
         self
     }

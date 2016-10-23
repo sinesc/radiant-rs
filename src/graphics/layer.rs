@@ -1,6 +1,6 @@
 use prelude::*;
 use avec::AVec;
-use maths::{Vec3, Mat4};
+use maths::Mat4;
 use color::Color;
 use graphics::{blendmodes, BlendMode, Point, Rect};
 
@@ -11,7 +11,7 @@ impl Layer {
     /// Creates a new layer with given dimensions and object limit.
     pub fn new(max_sprites: u32, dimensions: (u32, u32)) -> Self {
         Layer {
-            view_matrix     : Mutex::new(Self::viewport_matrix(dimensions.0, dimensions.1)),
+            view_matrix     : Mutex::new(Mat4::<f32>::viewport(dimensions.0 as f32, dimensions.1 as f32)),
             model_matrix    : Mutex::new(Mat4::<f32>::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
@@ -84,18 +84,9 @@ impl Layer {
     /// Removes all previously added object from the layer. Typically invoked after the layer has
     /// been rendered.
     pub fn clear(self: &Self) -> &Self {
-
         self.dirty.store(true, Ordering::Relaxed);
         self.vertex_data.clear();
         self
-    }
-
-    /// compute the default view matrix
-    fn viewport_matrix(width: u32, height: u32) -> Mat4<f32> {
-        let mut matrix = Mat4::<f32>::identity();
-        *matrix
-            .translate(Vec3(-1.0, 1.0, 0.0))
-            .scale(Vec3(2.0 / width as f32, -2.0 / height as f32, 1.0))
     }
 }
 
