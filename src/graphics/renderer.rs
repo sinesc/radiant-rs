@@ -116,33 +116,35 @@ impl<'a> Renderer<'a> {
 
         // copy layer data to vertexbuffer
 
-        let num_vertices;
-
-        if layer.dirty.swap(false, Ordering::Relaxed) {
+        let num_vertices = if layer.dirty.swap(false, Ordering::Relaxed) {
             let vertex_data = layer.vertex_data.get();
-            num_vertices = vertex_data.len();
-            let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
-            vb_slice.write(&vertex_data[0 .. num_vertices]);
+            let num_vertices = vertex_data.len();
+            if num_vertices > 0 {
+                let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
+                vb_slice.write(&vertex_data[0 .. num_vertices]);
+            }
+            num_vertices
         } else {
-            num_vertices = layer.vertex_data.len();
-        }
-
-        // set up uniforms
-
-        let uniforms = uniform! {
-            view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
-            model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
-            global_color    : *layer.color.lock().unwrap().deref_mut(),
-            font_cache      : context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
-            tex1            : &context.tex_array[1].data,
-            tex2            : &context.tex_array[2].data,
-            tex3            : &context.tex_array[3].data,
-            tex4            : &context.tex_array[4].data,
+            layer.vertex_data.len()
         };
 
-        // draw up to container.size
-
         if num_vertices > 0 {
+
+            // set up uniforms
+
+            let uniforms = uniform! {
+                view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
+                model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
+                global_color    : *layer.color.lock().unwrap().deref_mut(),
+                font_cache      : context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
+                tex1            : &context.tex_array[1].data,
+                tex2            : &context.tex_array[2].data,
+                tex3            : &context.tex_array[3].data,
+                tex4            : &context.tex_array[4].data,
+            };
+
+            // draw up to container.size
+
             let ib_slice = context.index_buffer.slice(0 ..num_vertices as usize / 4 * 6).unwrap();
             context.target.as_mut().unwrap().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
         }
