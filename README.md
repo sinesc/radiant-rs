@@ -1,7 +1,9 @@
 # radiant-rs
-Rust sprite rendering engine. Main goals: thread-safety, API-simplicity.
+Very easy to use, thread-safe Rust sprite rendering engine.
 
 This is work-in-progress. The API is incomplete and will likely still change somewhat. Have a look if you like, but don't depend on it :)
+
+[Documentation here](https://sinesc.github.io/doc/radiant_rs/).
 
 To compile the examples, use e.g. `cargo run --release --example blobs`. See examples folder for other available examples.
 

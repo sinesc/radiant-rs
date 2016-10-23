@@ -29,6 +29,7 @@ impl Default for Operation {
    }
 }
 
+/// [WIP] Poke with long stick. Wear gloves.
 pub struct Scene {
     operations      : AVec<Operation>,
     layers          : UnsafeCell<Vec<Layer>>,
