@@ -67,6 +67,15 @@ impl<'a> RenderContext<'a> {
     fn lock(self: &Self) -> MutexGuard<RenderContextData<'a>> {
         self.0.lock().unwrap()
     }
+    fn store(self: &Self, bucket_id: u32, raw_frames: Vec<glium::texture::RawImage2d<'a, u8>>) -> u32 {
+        let mut lock = self.lock();
+        let texture_id = lock.tex_array[bucket_id as usize].raw.len() as u32;
+        for frame in raw_frames {
+            lock.tex_array[bucket_id as usize].raw.push(frame);
+        }
+        lock.tex_array[bucket_id as usize].dirty = true;
+        texture_id
+    }
 }
 
 /// A non-blocking, thread-safe drawing target.

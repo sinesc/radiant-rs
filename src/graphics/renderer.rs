@@ -159,8 +159,7 @@ impl<'a> Renderer<'a> {
                 context.tex_array[bucket_id].dirty = false;
                 if context.tex_array[bucket_id].raw.len() > 0 {
                     let mut raw_images = Vec::new();
-                    for texture_id in 0..context.tex_array[bucket_id].raw.len() {
-                        let frame = &context.tex_array[bucket_id].raw[texture_id];
+                    for ref frame in context.tex_array[bucket_id].raw.iter() {
                         raw_images.push(glium::texture::RawImage2d {
                             data: frame.data.clone(),
                             width: frame.width,
@@ -205,7 +204,7 @@ impl<'a> Renderer<'a> {
     }
 }
 
-/// returns the appropriate bucket_id for the given texture size
+/// returns the appropriate bucket_id and padded texture size for the given texture size
 pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
     let size = 2u32.pow(ln2);

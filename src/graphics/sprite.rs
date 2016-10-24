@@ -11,20 +11,20 @@ use glium;
 /// Sprites are created from spritesheets containing one or more frames. To determine frame
 /// dimensions, [`Sprite::from_file()`](#method.from_file) expects sprite sheet file names to
 /// follow a specific pattern. (Future versions will add more configurable means to load sprites.)
-#[derive(Copy, Clone)]
-pub struct Sprite {
+#[derive(Clone)]
+pub struct Sprite<'a> {
     /// Defines the sprite origin. Defaults to (0.5, 0.5), meaning that the center of the
     /// sprite would be drawn at the coordinates given to [`Sprite::draw()`](#method.draw). Likewise, (0.0, 0.0)
     /// would mean that the sprite's top left corner would be drawn at the given coordinates.
     pub anchor      : (f32, f32),
     width           : f32,
     height          : f32,
-    frames          : u32,
+    num_frames      : u32,
     bucket_id       : u32,
     texture_id      : u32,
     u_max           : f32,
     v_max           : f32,
-    loaded          : bool,
+    context         : Arc<RenderContext<'a>>,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -35,37 +35,34 @@ enum SpriteLayout {
 
 struct FrameParameters (u32, u32, u32, SpriteLayout);
 
-impl Sprite {
+impl<'a> Sprite<'a> {
 
     /// Creates a new sprite texture
     ///
     /// The given filename is epected to end on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
-    pub fn from_file(context: &Arc<RenderContext>, file: &str) -> Sprite {
+    pub fn from_file(context: &Arc<RenderContext<'a>>, file: &str) -> Sprite<'a> {
 
-        let mut context = context.lock();
+        let (bucket_id, texture_size, frame_width, frame_height, raw_frames) = load_spritesheet(file);
+        let num_frames = raw_frames.len() as u32;
+        let texture_id = context.store(bucket_id, raw_frames);
 
-        // load spritesheet into RawFrames
-
-        let (frame_width, frame_height, frames) = load_spritesheet(file);
-
-        // identify bucket_id (which texture array) and texture index in the array
-
-        let (bucket_id, _) = renderer::bucket_info(frame_width, frame_height);
-
-        let texture_id = context.tex_array[bucket_id as usize].raw.len() as u32;
-
-        // append frames to the array
-
-        let frame_count = frames.len() as u32;
-
-        for frame in frames {
-            context.tex_array[bucket_id as usize].raw.push(frame);
+        Sprite::<'a> {
+            width       : frame_width as f32,
+            height      : frame_height as f32,
+            num_frames  : num_frames,
+            anchor      : (0.5, 0.5),
+            bucket_id   : bucket_id,
+            texture_id  : texture_id,
+            u_max       : (frame_width as f32 / texture_size as f32),
+            v_max       : (frame_height as f32 / texture_size as f32),
+            context     : context.clone()
         }
-
-        context.tex_array[bucket_id as usize].dirty = true;
-
-        create_sprite(frame_width as f32, frame_height as f32, frame_count, texture_id)
     }
+// !todo when sprite is dropped, texture would have to be removed (easy)
+// alters the texture ids of all following sprites (bah)
+//   a) create a lookup table in the context sprite_texture_id <-> texture_array_texture_id
+//  or b) keep a list of sprite instances in the context and mutate those (sounds sucky)
+
 
     /// Draws a sprite onto the given layer.
     pub fn draw(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color) -> &Self {
@@ -108,50 +105,18 @@ impl Sprite {
     }
 
     /// Returns the number of frames of the sprite.
-    pub fn frames(self: &Self) -> u32 {
-        self.frames
+    pub fn num_frames(self: &Self) -> u32 {
+        self.num_frames
     }
 
     /// Returns the texture id for given frame
     fn texture_id(self: &Self, frame_id: u32) -> u32 {
-        self.texture_id + (frame_id % self.frames)
-    }
-/*
-    fn bucket_id(self: &Self) -> u32 {
-        self.bucket_id
-    }
-
-    fn u_max(self: &Self) -> f32 {
-        self.u_max
-    }
-
-    fn v_max(self: &Self) -> f32 {
-        self.v_max
-    }
-*/
-}
-
-/// creates a new sprite instance. a sprite instance contains only meta information about a
-/// sprite, the actual texture is kept by the renderer. use renderer::create_sprite() to create a sprite
-pub fn create_sprite(width: f32, height: f32, frames: u32, texture_id: u32) -> Sprite {
-
-    let (bucket_id, texture_size) = renderer::bucket_info(width as u32, height as u32);
-
-    Sprite {
-        width       : width,
-        height      : height,
-        frames      : frames,
-        anchor      : (0.5, 0.5),
-        bucket_id   : bucket_id,
-        texture_id  : texture_id,
-        u_max       : (width as f32 / texture_size as f32),
-        v_max       : (height as f32 / texture_size as f32),
-        loaded      : true,
+        self.texture_id + (frame_id % self.num_frames)
     }
 }
 
 /// loads a spritesheet and returns a vector of frames
-pub fn load_spritesheet<'b>(file: &str) -> (u32, u32, Vec<glium::texture::RawImage2d<'b, u8>>) {
+pub fn load_spritesheet<'b>(file: &str) -> (u32, u32, u32, u32, Vec<glium::texture::RawImage2d<'b, u8>>) {
 
     // load image file
 
@@ -163,15 +128,15 @@ pub fn load_spritesheet<'b>(file: &str) -> (u32, u32, Vec<glium::texture::RawIma
 
     let frame_parameters = parse_parameters(image_dimensions, path);
     let FrameParameters(frame_width, frame_height, frame_count, _) = frame_parameters;
-    let (_, pad_size) = renderer::bucket_info(frame_width, frame_height);
+    let (bucket_id, pad_size) = renderer::bucket_info(frame_width, frame_height);
 
-    let mut frames = Vec::<glium::texture::RawImage2d<'b, u8>>::new();
+    let mut raw_frames = Vec::<glium::texture::RawImage2d<'b, u8>>::new();
 
     for frame_id in 0..frame_count {
-        frames.push(build_frame_texture(&mut image, image_dimensions, &frame_parameters, frame_id, pad_size));
+        raw_frames.push(build_frame_texture(&mut image, image_dimensions, &frame_parameters, frame_id, pad_size));
     }
 
-    (frame_width, frame_height, frames)
+    (bucket_id, pad_size, frame_width, frame_height, raw_frames)
 }
 
 /// parses sprite-sheet filename for dimensions and frame count
