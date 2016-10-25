@@ -96,8 +96,8 @@ impl<'a> Renderer<'a> {
 
         // update sprite texture arrays, font texture and vertex buffer as required
 
-        context.tex_array_update();
-        context.font_cache.update(&mut context.font_texture);
+        context.update_tex_array();
+        context.update_font_cache();
         let (vertex_buffer, num_vertices) = layer::upload(&layer, context);
 
         // draw the layer, unless it is empty
