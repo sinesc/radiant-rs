@@ -130,6 +130,11 @@ impl<T> AVec<T> where T: Default {
         self.insert.read().unwrap().load(Ordering::Relaxed)
     }
 
+    /// Returns maximum capacity
+    pub fn capacity(self: &Self) -> usize {
+        self.capacity
+    }
+
     /// Clear the vector. This function blocks until it returns.
     pub fn clear(&self) {
         let guard = self.insert.write().unwrap();

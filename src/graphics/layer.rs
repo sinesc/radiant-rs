@@ -1,10 +1,42 @@
+use glium;
 use prelude::*;
 use avec::AVec;
 use maths::Mat4;
 use color::Color;
-use graphics::{blendmodes, BlendMode, Point, Rect};
+use graphics::{blendmodes, BlendMode, Point, Rect, RenderContextData};
 
-pub use Layer;
+#[derive(Copy, Clone, Default)]
+pub struct Vertex {
+    position    : [f32; 2],
+    offset      : [f32; 2],
+    rotation    : f32,
+    color       : Color,
+    bucket_id   : u32,
+    texture_id  : u32,
+    texture_uv  : [f32; 2],
+}
+implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv);
+
+/// A non-blocking, thread-safe drawing target.
+///
+/// In radiant_rs, all drawing happens on layers. Layers provide transformation capabilities in
+/// the form of model- and view-matrices and the layer's blendmode and color determine
+/// how sprites are rendered onto the display. Layers can be rendered multiple times using
+/// different matrices, blendmodes or colors without having to redraw their contents first.
+///
+/// Multiple threads can draw onto the same layer without blocking. However, manipulating layer
+/// properties may block other threads from manipulating the same property.
+pub struct Layer {
+    view_matrix     : Mutex<Mat4<f32>>,
+    model_matrix    : Mutex<Mat4<f32>>,
+    blend           : Mutex<BlendMode>,
+    color           : Mutex<Color>,
+    vertex_data     : AVec<Vertex>,
+    vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
+    dirty           : AtomicBool,
+}
+unsafe impl Send for Layer { }
+unsafe impl Sync for Layer { }
 
 impl Layer {
 
@@ -90,7 +122,7 @@ impl Layer {
     }
 }
 
-/// draws a rectangle on given layer
+/// Draws a rectangle on given layer
 pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point, anchor: Point, dim: Point, color: Color, rotation: f32, scale: Point) {
 
     // get vertex_data slice and draw into it
@@ -154,4 +186,38 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: P
     vertex[3].color         = color;
     vertex[3].texture_uv[0] = uv.1.x;
     vertex[3].texture_uv[1] = uv.1.y;
+}
+
+/// Uploads vertex data to the vertex buffer and returns number of vertices uploaded and the mutex-guarded vertex-buffer.
+pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<'a, Option<glium::VertexBuffer<Vertex>>>, usize) {
+
+    // prepare vertexbuffer if not already done
+
+    let mut vertex_buffer_guard = layer.vertex_buffer.lock().unwrap();
+
+    let num_vertices = {
+        let mut vertex_buffer = vertex_buffer_guard.deref_mut();
+
+        // prepare vertexbuffer if not already done
+
+        if vertex_buffer.is_none() {
+            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, layer.vertex_data.capacity()).unwrap());
+        }
+
+        // copy layer data to vertexbuffer
+
+        if layer.dirty.swap(false, Ordering::Relaxed) {
+            let vertex_data = layer.vertex_data.get();
+            let num_vertices = vertex_data.len();
+            if num_vertices > 0 {
+                let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
+                vb_slice.write(&vertex_data[0 .. num_vertices]);
+            }
+            num_vertices
+        } else {
+            layer.vertex_data.len()
+        }
+    };
+
+    (vertex_buffer_guard, num_vertices)
 }

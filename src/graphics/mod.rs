@@ -12,12 +12,10 @@ pub use self::display::{DisplayInfo, Monitor};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
 pub use self::font::{Font, FontInfo, FontCache};
+pub use self::layer::Layer;
 
 use prelude::*;
 use glium;
-use color::Color;
-use maths::Mat4;
-use avec::AVec;
 use graphics::input::InputState;
 
 /// A target to render to, e.g. a window or full screen.
@@ -53,6 +51,31 @@ pub struct RenderContextData<'a> {
     font_texture    : glium::texture::Texture2d,
 }
 
+impl<'a> RenderContextData<'a> {
+    /// update texture arrays from registered textures
+    fn tex_array_update(self: &mut Self) {
+        for bucket_id in 0..self.tex_array.len() {
+            if self.tex_array[bucket_id].dirty {
+                self.tex_array[bucket_id].dirty = false;
+                if self.tex_array[bucket_id].raw.len() > 0 {
+                    let mut raw_images = Vec::new();
+                    for ref frame in self.tex_array[bucket_id].raw.iter() {
+                        raw_images.push(glium::texture::RawImage2d {
+                            data: frame.data.clone(),
+                            width: frame.width,
+                            height: frame.height,
+                            format: frame.format,
+                        });
+                    }
+                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::new(&self.display.handle, raw_images).unwrap();
+                } else {
+                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::empty(&self.display.handle, 2, 2, 1).unwrap();
+                }
+            }
+        }
+    }
+}
+
 /// A thread-safe render-context.
 ///
 /// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
@@ -78,27 +101,6 @@ impl<'a> RenderContext<'a> {
     }
 }
 
-/// A non-blocking, thread-safe drawing target.
-///
-/// In radiant_rs, all drawing happens on layers. Layers provide transformation capabilities in
-/// the form of model- and view-matrices and the layer's blendmode and color determine
-/// how sprites are rendered onto the display. Layers can be rendered multiple times using
-/// different matrices, blendmodes or colors without having to redraw their contents first.
-///
-/// Multiple threads can draw onto the same layer without blocking. However, manipulating layer
-/// properties may block other threads from manipulating the same property.
-pub struct Layer {
-    view_matrix     : Mutex<Mat4<f32>>,
-    model_matrix    : Mutex<Mat4<f32>>,
-    blend           : Mutex<BlendMode>,
-    color           : Mutex<Color>,
-    vertex_data     : AVec<Vertex>,
-    vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
-    dirty           : AtomicBool,
-}
-unsafe impl Send for Layer { }
-unsafe impl Sync for Layer { }
-
 #[derive(Copy, Clone)]
 pub struct Point {
     x: f32,
@@ -117,15 +119,3 @@ impl Rect {
         Rect(Point { x: x1, y: y1 }, Point { x: x2, y: y2 })
     }
 }
-
-#[derive(Copy, Clone, Default)]
-pub struct Vertex {
-    position    : [f32; 2],
-    offset      : [f32; 2],
-    rotation    : f32,
-    color       : Color,
-    bucket_id   : u32,
-    texture_id  : u32,
-    texture_uv  : [f32; 2],
-}
-implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv);

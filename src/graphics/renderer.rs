@@ -2,7 +2,7 @@ use prelude::*;
 use glium;
 use glium::Surface;
 use color::Color;
-use graphics::{Display, RenderContext, RenderContextData, RenderContextTextureArray, Layer, font, blendmode};
+use graphics::{Display, RenderContext, RenderContextData, RenderContextTextureArray, layer, Layer, font, blendmode};
 use scene;
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
@@ -89,58 +89,40 @@ impl<'a> Renderer<'a> {
     /// Draws given layer.
     pub fn draw_layer(&self, layer: &Layer) -> &Self {
 
-        // prepare texture array uniforms
+        // open context
 
         let mut context = self.context.lock();
         let mut context = context.deref_mut();
 
-        Self::update_texture_arrays(context);
+        // update sprite texture arrays, font texture and vertex buffer as required
+
+        context.tex_array_update();
         context.font_cache.update(&mut context.font_texture);
+        let (vertex_buffer, num_vertices) = layer::upload(&layer, context);
 
-        // set up draw parameters for given blend options
-
-        let draw_parameters = glium::draw_parameters::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-            blend           : blendmode::access_blendmode(layer.blend.lock().unwrap().deref_mut()),
-            .. Default::default()
-        };
-
-        // prepare vertexbuffer if not already done
-
-        let mut vertex_buffer = layer.vertex_buffer.lock().unwrap();
-        let mut vertex_buffer = vertex_buffer.deref_mut();
-
-        if vertex_buffer.is_none() {
-            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, self.max_sprites as usize * 4).unwrap());
-        }
-
-        // copy layer data to vertexbuffer
-
-        let num_vertices = if layer.dirty.swap(false, Ordering::Relaxed) {
-            let vertex_data = layer.vertex_data.get();
-            let num_vertices = vertex_data.len();
-            if num_vertices > 0 {
-                let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
-                vb_slice.write(&vertex_data[0 .. num_vertices]);
-            }
-            num_vertices
-        } else {
-            layer.vertex_data.len()
-        };
+        // draw the layer, unless it is empty
 
         if num_vertices > 0 {
 
             // set up uniforms
 
             let uniforms = uniform! {
-                view_matrix     : *layer.view_matrix.lock().unwrap().deref_mut(),
-                model_matrix    : *layer.model_matrix.lock().unwrap().deref_mut(),
-                global_color    : *layer.color.lock().unwrap().deref_mut(),
+                view_matrix     : *layer.view_matrix().deref_mut(),
+                model_matrix    : *layer.model_matrix().deref_mut(),
+                global_color    : *layer.color().deref_mut(),
                 font_cache      : context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
                 tex1            : &context.tex_array[1].data,
                 tex2            : &context.tex_array[2].data,
                 tex3            : &context.tex_array[3].data,
                 tex4            : &context.tex_array[4].data,
+            };
+
+            // set up draw parameters for given blend options
+
+            let draw_parameters = glium::draw_parameters::DrawParameters {
+                backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
+                blend           : blendmode::access_blendmode(layer.blendmode().deref_mut()),
+                .. Default::default()
             };
 
             // draw up to container.size
@@ -150,29 +132,6 @@ impl<'a> Renderer<'a> {
         }
 
         self
-    }
-
-    /// update texture arrays from registered textures
-    fn update_texture_arrays(context: &mut RenderContextData) {
-        for bucket_id in 0..context.tex_array.len() {
-            if context.tex_array[bucket_id].dirty {
-                context.tex_array[bucket_id].dirty = false;
-                if context.tex_array[bucket_id].raw.len() > 0 {
-                    let mut raw_images = Vec::new();
-                    for ref frame in context.tex_array[bucket_id].raw.iter() {
-                        raw_images.push(glium::texture::RawImage2d {
-                            data: frame.data.clone(),
-                            width: frame.width,
-                            height: frame.height,
-                            format: frame.format,
-                        });
-                    }
-                    context.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::new(&context.display.handle, raw_images).unwrap();
-                } else {
-                    context.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::empty(&context.display.handle, 2, 2, 1).unwrap();
-                }
-            }
-        }
     }
 
     /// creates vertex pool for given number of sprites
