@@ -125,10 +125,6 @@ impl Layer {
 /// Draws a rectangle on given layer
 pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point, anchor: Point, dim: Point, color: Color, rotation: f32, scale: Point) {
 
-    // get vertex_data slice and draw into it
-
-    let mut guard = layer.vertex_data.map(4);
-    let mut vertex = guard.deref_mut();
     layer.dirty.store(true, Ordering::Relaxed);
 
     // corner positions relative to x/y
@@ -141,51 +137,49 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: P
     let offset_y0 = -anchor_y * scale.y;
     let offset_y1 = (dim.y - anchor_y) * scale.y;
 
-    // fill vertex array
+    // get vertex_data slice and draw into it
 
-    vertex[0].position[0]   = pos.x;
-    vertex[0].position[1]   = pos.y;
-    vertex[0].offset[0]     = offset_x0;
-    vertex[0].offset[1]     = offset_y0;
-    vertex[0].rotation      = rotation;
-    vertex[0].bucket_id     = bucket_id;
-    vertex[0].texture_id    = texture_id;
-    vertex[0].color         = color;
-    vertex[0].texture_uv[0] = uv.0.x;
-    vertex[0].texture_uv[1] = uv.0.y;
+    let map = layer.vertex_data.map(4);
 
-    vertex[1].position[0]   = pos.x;
-    vertex[1].position[1]   = pos.y;
-    vertex[1].offset[0]     = offset_x1;
-    vertex[1].offset[1]     = offset_y0;
-    vertex[1].rotation      = rotation;
-    vertex[1].bucket_id     = bucket_id;
-    vertex[1].texture_id    = texture_id;
-    vertex[1].color         = color;
-    vertex[1].texture_uv[0] = uv.1.x;
-    vertex[1].texture_uv[1] = uv.0.y;
+    map.set(0, Vertex {
+        position    : [pos.x, pos.y],
+        offset      : [offset_x0, offset_y0],
+        rotation    : rotation,
+        color       : color,
+        bucket_id   : bucket_id,
+        texture_id  : texture_id,
+        texture_uv  : [uv.0.x, uv.0.y],
+    });
 
-    vertex[2].position[0]   = pos.x;
-    vertex[2].position[1]   = pos.y;
-    vertex[2].offset[0]     = offset_x0;
-    vertex[2].offset[1]     = offset_y1;
-    vertex[2].rotation      = rotation;
-    vertex[2].bucket_id     = bucket_id;
-    vertex[2].texture_id    = texture_id;
-    vertex[2].color         = color;
-    vertex[2].texture_uv[0] = uv.0.x;
-    vertex[2].texture_uv[1] = uv.1.y;
+    map.set(1, Vertex {
+        position    : [pos.x, pos.y],
+        offset      : [offset_x1, offset_y0],
+        rotation    : rotation,
+        color       : color,
+        bucket_id   : bucket_id,
+        texture_id  : texture_id,
+        texture_uv  : [uv.1.x, uv.0.y],
+    });
 
-    vertex[3].position[0]   = pos.x;
-    vertex[3].position[1]   = pos.y;
-    vertex[3].offset[0]     = offset_x1;
-    vertex[3].offset[1]     = offset_y1;
-    vertex[3].rotation      = rotation;
-    vertex[3].bucket_id     = bucket_id;
-    vertex[3].texture_id    = texture_id;
-    vertex[3].color         = color;
-    vertex[3].texture_uv[0] = uv.1.x;
-    vertex[3].texture_uv[1] = uv.1.y;
+    map.set(2, Vertex {
+        position    : [pos.x, pos.y],
+        offset      : [offset_x0, offset_y1],
+        rotation    : rotation,
+        color       : color,
+        bucket_id   : bucket_id,
+        texture_id  : texture_id,
+        texture_uv  : [uv.0.x, uv.1.y],
+    });
+
+    map.set(3, Vertex {
+        position    : [pos.x, pos.y],
+        offset      : [offset_x1, offset_y1],
+        rotation    : rotation,
+        color       : color,
+        bucket_id   : bucket_id,
+        texture_id  : texture_id,
+        texture_uv  : [uv.1.x, uv.1.y],
+    });
 }
 
 /// Uploads vertex data to the vertex buffer and returns number of vertices uploaded and the mutex-guarded vertex-buffer.
