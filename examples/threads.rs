@@ -7,13 +7,12 @@ pub fn main() {
 
     // create a window, a renderer and a threadsafe context (required for sprite/font creation)
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display, 1000);
-    let context = renderer.context();
+    let renderer = Renderer::new(&display);
 
     // create a single layer and a font
-    let layer = Arc::new(Layer::new(1000, (640, 480)));
+    let layer = Arc::new(Layer::new(640, 480));
     layer.set_blendmode(blendmodes::LIGHTEN);
-    let big_font = Arc::new(Font::from_info(&context, FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
+    let big_font = Arc::new(Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
     let font = big_font.with_size(12.0);
 
     // set up two barriers to ensure 1) all threads are done and before we show the frame

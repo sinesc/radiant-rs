@@ -2,7 +2,7 @@ use prelude::*;
 use glium;
 use glium::Surface;
 use color::Color;
-use graphics::{Display, RenderContext, RenderContextData, RenderContextTextureArray, layer, Layer, font, blendmode};
+use graphics::{Display, RenderContext, RenderContextData, layer, Layer, blendmode};
 use scene;
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
@@ -16,33 +16,20 @@ use scene;
 /// level abstraction.
 #[derive(Clone)]
 pub struct Renderer<'a> {
-    max_sprites     : u32,
-    context         : Arc<RenderContext<'a>>,
+    capacity    : usize,
+    context     : Arc<RenderContext<'a>>,
 }
 
 impl<'a> Renderer<'a> {
 
-    /// Returns a new renderer instance. Currently, the maximum number of expected sprites per
-    /// layer has to be set during instance creation. Future versions will lift this requirement.
-    pub fn new(display: &Display, max_sprites: u32) -> Self {
+    /// Returns a new renderer instance.
+    pub fn new(display: &Display) -> Self {
 
-        let mut context_data = RenderContextData {
-            index_buffer    : Self::create_index_buffer(&display.handle, max_sprites),
-            program         : Self::create_program(&display.handle),
-            tex_array       : Vec::new(),
-            target          : Option::None,
-            display         : display.clone(),
-            font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
-            font_texture    : font::create_cache_texture(&display.handle, 512, 512),
-        };
-
-        for _ in 0..5 {
-            context_data.tex_array.push(RenderContextTextureArray::new(display));
-        }
+        let context_data = RenderContextData::new(display, 1024);  // todo: "1024" add some sort of configurable?
 
         Renderer {
-            max_sprites     : max_sprites,
-            context         : Arc::new(RenderContext::new(context_data)),
+            capacity: 1024,
+            context : Arc::new(RenderContext::new(context_data)),
         }
     }
 
@@ -99,6 +86,7 @@ impl<'a> Renderer<'a> {
         context.update_tex_array();
         context.update_font_cache();
         let (vertex_buffer, num_vertices) = layer::upload(&layer, context);
+        context.update_index_buffer(num_vertices / 4);
 
         // draw the layer, unless it is empty
 
@@ -127,39 +115,11 @@ impl<'a> Renderer<'a> {
 
             // draw up to container.size
 
-            let ib_slice = context.index_buffer.slice(0 ..num_vertices as usize / 4 * 6).unwrap();
+            let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
             context.target.as_mut().unwrap().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
         }
 
         self
-    }
-
-    /// creates vertex pool for given number of sprites
-    fn create_index_buffer(display: &glium::Display, max_sprites: u32) -> glium::index::IndexBuffer<u32> {
-
-        let mut ib_data = Vec::with_capacity(max_sprites as usize * 6);
-
-        for i in 0..max_sprites {
-            let num = i as u32;
-            ib_data.push(num * 4);
-            ib_data.push(num * 4 + 1);
-            ib_data.push(num * 4 + 2);
-            ib_data.push(num * 4 + 1);
-            ib_data.push(num * 4 + 3);
-            ib_data.push(num * 4 + 2);
-        }
-
-        glium::index::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &ib_data).unwrap()
-    }
-
-    /// creates the shader program
-    fn create_program(display: &glium::Display) -> glium::Program {
-        program!(display,
-            140 => {
-                vertex: include_str!("../shader/default.vs"),
-                fragment: include_str!("../shader/default.fs")
-            }
-        ).unwrap()
     }
 }
 

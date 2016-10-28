@@ -5,14 +5,14 @@ pub fn main() {
 
     // create a window, a renderer and some basic input handler for the window
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display, 1000);
+    let renderer = Renderer::new(&display);
     let input = Input::new(&display);
     let context = renderer.context();
 
     // create three layers, change one to use an overlay blend mode
-    let text_layer = Layer::new(1000, (640, 480));
-    let spark_layer = Layer::new(1000, (640, 480));
-    let fps_layer = Layer::new(1000, (640, 480));
+    let text_layer = Layer::new(640, 480);
+    let spark_layer = Layer::new(640, 480);
+    let fps_layer = Layer::new(640, 480);
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     // create a sprite and some fonts

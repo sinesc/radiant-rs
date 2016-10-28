@@ -41,13 +41,13 @@ unsafe impl Sync for Layer { }
 impl Layer {
 
     /// Creates a new layer with given dimensions and object limit.
-    pub fn new(max_sprites: u32, dimensions: (u32, u32)) -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
         Layer {
-            view_matrix     : Mutex::new(Mat4::<f32>::viewport(dimensions.0 as f32, dimensions.1 as f32)),
+            view_matrix     : Mutex::new(Mat4::<f32>::viewport(width as f32, height as f32)),
             model_matrix    : Mutex::new(Mat4::<f32>::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
-            vertex_data     : AVec::new(max_sprites * 4),
+            vertex_data     : AVec::new(1024 * 4),  // todo: "1024" add some sort of configurable?
             vertex_buffer   : Mutex::new(None),
             dirty           : AtomicBool::new(true),
         }
@@ -119,6 +119,16 @@ impl Layer {
         self.dirty.store(true, Ordering::Relaxed);
         self.vertex_data.clear();
         self
+    }
+
+    /// Returns the number of sprites the layer can hold without having to perform a blocking reallocation.
+    pub fn capacity(self: &Self) -> usize {
+        self.vertex_data.capacity() / 4
+    }
+
+    /// Returns the number of sprites currently stored the layer.
+    pub fn len(self: &Self) -> usize {
+        self.vertex_data.len() / 4
     }
 }
 
@@ -204,6 +214,11 @@ pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<
             let vertex_data = layer.vertex_data.get();
             let num_vertices = vertex_data.len();
             if num_vertices > 0 {
+                // resize as neccessary
+                if num_vertices > vertex_buffer.as_ref().unwrap().len() {
+                    *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, layer.vertex_data.capacity()).unwrap());
+                }
+                // copy data to buffer
                 let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
                 vb_slice.write(&vertex_data[0 .. num_vertices]);
             }

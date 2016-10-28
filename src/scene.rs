@@ -34,12 +34,13 @@ impl Default for Operation {
    }
 }
 
-/// [WIP] Poke with long stick. Wear gloves.
+/// bla
+#[allow(dead_code)]
 pub struct Scene<'a> {
     operations      : AVec<Operation>,
-    layers          : RwLock<Vec<Layer>>,
-    sprites         : RwLock<Vec<Sprite<'a>>>,
-    fonts           : RwLock<Vec<Font<'a>>>,
+    layers          : AVec<Layer>,
+    sprites         : AVec<Sprite<'a>>,
+    fonts           : AVec<Font<'a>>,
     context         : Arc<RenderContext<'a>>,
 }
 
@@ -50,10 +51,10 @@ impl<'a> Scene<'a> {
     /// Create a new scene instance.
     pub fn new(context: &Arc<RenderContext<'a>>) -> Scene<'a> {
         Scene {
-            operations  : AVec::new(1024),  // !todo
-            layers      : RwLock::new(Vec::new()),
-            sprites     : RwLock::new(Vec::new()),
-            fonts       : RwLock::new(Vec::new()),
+            operations  : AVec::new(1024),
+            layers      : AVec::new(64),
+            sprites     : AVec::new(64),
+            fonts       : AVec::new(64),
             context     : context.clone(),
         }
     }
@@ -79,48 +80,44 @@ impl<'a> Scene<'a> {
     }
 
     /// Draws a sprite with given rotation and scaling onto given layer.
-    pub fn sprite_transformed(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
-        let layers = self.layers.read().unwrap();
-        sprite.draw_transformed(&layers[layer_id.0], frame_id, x, y, color, rotation, scale_x, scale_y);
+    pub fn sprite_transformed(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+        let layers = self.layers.get();
+        let sprites = self.sprites.get();
+        sprites[sprite_id.0].draw_transformed(&layers[layer_id.0], frame_id, x, y, color, rotation, scale_x, scale_y);
         self
     }
 
     /// Draws a sprite onto given layer.
     pub fn sprite(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, x: f32, y: f32, color: Color) -> &Self {
-        let layers = self.layers.read().unwrap();
-        let sprites = self.sprites.read().unwrap();
+        let layers = self.layers.get();
+        let sprites = self.sprites.get();
         sprites[sprite_id.0].draw(&layers[layer_id.0], frame_id, x, y, color);
         self
     }
 
-    /// Draws a sprite onto given layer.
-    pub fn write(&self, layer_id: LayerId, sprite: Sprite, frame_id: u32, x: f32, y: f32, color: Color) -> &Self {
-        let layers = self.layers.read().unwrap();
-        sprite.draw(&layers[layer_id.0], frame_id, x, y, color);
+    /// Writes a string onto given layer.
+    pub fn write(&self, layer_id: LayerId, font_id: FontId, text: &str, x: f32, y: f32) -> &Self {
+        let layers = self.layers.get();
+        let fonts = self.fonts.get();
+        fonts[font_id.0].write(&layers[layer_id.0], text, x, y);
         self
     }
 
     /// Create and add a layer to the scene.
-    pub fn create_layer(&self, max_sprites: u32, dimensions: (u32, u32)) -> LayerId {
-        let mut layers = self.layers.write().unwrap();
-        let insert_position = layers.len();
-        layers.push(Layer::new(max_sprites, dimensions));
+    pub fn create_layer(&self, width: u32, height: u32) -> LayerId {
+        let insert_position = self.layers.push(Layer::new(width, height));
         LayerId(insert_position)
     }
 
     /// Register a sprite for the scene.
     pub fn register_sprite(self: &Self, sprite: Sprite<'a>) -> SpriteId {
-        let mut sprites = self.sprites.write().unwrap();
-        let insert_position = sprites.len();
-        sprites.push(sprite);
+        let insert_position = self.sprites.push(sprite);
         SpriteId(insert_position)
     }
 
     /// Register a font for the scene.
     pub fn register_font(self: &Self, font: Font<'a>) -> FontId {
-        let mut fonts = self.fonts.write().unwrap();
-        let insert_position = fonts.len();
-        fonts.push(font);
+        let insert_position = self.fonts.push(font);
         FontId(insert_position)
     }
 
@@ -132,7 +129,7 @@ impl<'a> Scene<'a> {
 pub fn draw(this: &Scene, renderer: &Renderer) {
     let operations_guard = this.operations.get();
     let operations = operations_guard.deref();
-    let layers = this.layers.read().unwrap();
+    let layers = this.layers.get();
 
     for operation in operations {
         match *operation {
@@ -149,7 +146,7 @@ pub fn draw(this: &Scene, renderer: &Renderer) {
                 layers[layer_id.0 as usize].set_blendmode(blendmode);
             }
             Operation::Draw(layer_id) => {
-                renderer.draw_layer(&layers[layer_id.0 as usize]);
+                renderer.draw_layer(&layers[layer_id.0]);
             }
             Operation::Reset(layer_id) => {
                 layers[layer_id.0 as usize].clear();

@@ -5,12 +5,12 @@ fn main() {
 
     // create a display to render to, a renderer to do the rendering
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display, 1000);
+    let renderer = Renderer::new(&display);
 
     // create a sprite, a font (here from a known systemfont) and a layer
     let sprite = Sprite::from_file(&renderer.context(), r"res/ball_v2_32x32x18.jpg");
     let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 16.0, ..FontInfo::default() } );
-    let layer = Layer::new(1000, (640, 480));
+    let layer = Layer::new(640, 480);
 
     // set how to blend the layer with the background
     layer.set_blendmode(blendmodes::LIGHTEN);
