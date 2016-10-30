@@ -4,7 +4,8 @@ use prelude::*;
 use std::cell::UnsafeCell;
 use std::ptr;
 
-/// read guard
+/// Result of AVec::get(). While this reference is valid, the associated AVec will panic on
+/// concurrent writes.
 pub struct AVecReadGuard<'a, T: 'a> {
     owner   : &'a AVec<T>,
     size    : usize,
@@ -22,7 +23,7 @@ impl<'a, T> AVecReadGuard<'a, T> {
 impl<'a, T> Deref for AVecReadGuard<'a, T> {
     type Target = [T];
     fn deref(&self) -> &[T] {
-        let data = unsafe { &*self.owner.data.get() };
+        let data = self.owner.read();
         &data[0..self.size]
     }
 }
@@ -33,7 +34,8 @@ impl<'a, T> Drop for AVecReadGuard<'a, T> {
     }
 }
 
-/// map guard
+/// Result of AVec::map(). While this reference is valid, the associated AVec will panic on
+/// concurrent reads.
 pub struct AVecMapGuard<'a, T: 'a> {
     owner   : &'a AVec<T>,
     start   : usize,
@@ -41,6 +43,7 @@ pub struct AVecMapGuard<'a, T: 'a> {
 }
 
 impl<'a, T> AVecMapGuard<'a, T> {
+
     fn new(owner: &'a AVec<T>, start: usize, size: usize) -> AVecMapGuard<'a, T> {
         AVecMapGuard {
             owner   : &owner,
@@ -48,21 +51,21 @@ impl<'a, T> AVecMapGuard<'a, T> {
             size    : size,
         }
     }
+
+    /// Returns the actual range on the associated AVec mapped by this guard.
     pub fn mapped_range(self: &Self) -> (usize, usize) {
         (self.start, self.start + self.size)
     }
+
+    /// Returns the length of the mapped range.
+    pub fn len(self: &Self) -> usize {
+        self.size
+    }
+
+    /// Sets an element within the mapped ranged of 0 <= index < size().
     pub fn set(self: &Self, index: usize, value: T) {
         if index < self.size {
-            // insert element, dropping any previous occupants, if any
-            unsafe {
-                let insert_pos = self.start + index;
-                let mut data = &mut *self.owner.data.get();
-                if insert_pos < *self.owner.max_init.get() {
-                    ptr::drop_in_place(&mut data[insert_pos]);
-                }
-                ptr::write(&mut data[insert_pos], value);
-            }
-
+            self.owner.write(self.start + index, value);
         } else {
             panic!("index out of bounds");
         }
@@ -76,21 +79,20 @@ impl<'a, T> Drop for AVecMapGuard<'a, T> {
 }
 
 /// Vector supporting multiple non-overlapping writers or multiple readers. Blocks during resizes only.
+/// !todo panics on concurrent reads+writes
 pub struct AVec<T> {
-    /// A vector acting as buffer. Resizes are mutec-guarded.
-    data    : UnsafeCell<Vec<T>>,
+    /// A vector acting as buffer. Resizes are mutex-guarded.
+    data: UnsafeCell<Vec<T>>,
     /// Next insert position.
-    insert  : AtomicUsize,
+    insert: AtomicUsize,
     /// Number of concurrent readers.
-    readers : AtomicUsize,
+    readers: AtomicUsize,
     /// Number of concurrent writers.
-    writers : AtomicUsize,
+    writers: AtomicUsize,
     /// Number of initialized buffer elements. On Drop, the buffer will set_len to this and let the underlying vector perform the drops.
-    max_init: UnsafeCell<usize>,
-    /// Current capacity of the underlying vector
-    capacity: UnsafeCell<usize>,
-    /// Locked while the underlying vector is being resized.
-    grow    : Mutex<usize>,
+    initialized: UnsafeCell<usize>,
+    /// Locked while the underlying vector is being resized. Contains dummy data.
+    grow: Mutex<usize>,
 }
 
 unsafe impl<T> Sync for AVec<T> { }
@@ -98,11 +100,7 @@ unsafe impl<T> Send for AVec<T> { }
 
 impl<'a, T> Drop for AVec<T> {
     fn drop(&mut self) {
-        // set_len buffer to number of actually initialized data and let it handle the drops
-        unsafe {
-            let mut data = &mut *self.data.get();
-            data.set_len(*self.max_init.get());
-        }
+        self.shrink_to_initialized();
     }
 }
 
@@ -110,19 +108,16 @@ impl<T> AVec<T> {
 
     /// Creates a new instance with given inital capacity
     pub fn new(initial_capacity: usize) -> AVec<T> {
-        let mut data = Vec::with_capacity(initial_capacity);
-        unsafe {
-            data.set_len(initial_capacity);
-        }
-        AVec::<T> {
-            data        : UnsafeCell::new(data),
+        let instance = AVec::<T> {
+            data        : UnsafeCell::new(Vec::new()),
             insert      : AtomicUsize::new(0),
             readers     : AtomicUsize::new(0),
             writers     : AtomicUsize::new(0),
-            max_init    : UnsafeCell::new(0),
-            capacity    : UnsafeCell::new(initial_capacity),
+            initialized : UnsafeCell::new(0),
             grow        : Mutex::new(initial_capacity),
-        }
+        };
+        instance.resize(initial_capacity);
+        instance
     }
 
     /// Adds an element to the vector and returns the insert position.
@@ -132,14 +127,7 @@ impl<T> AVec<T> {
         while insert_pos >= self.capacity() {
             self.grow(insert_pos + 1);
         }
-        // insert element, dropping any previous occupants, if any
-        unsafe {
-            let mut data = &mut *self.data.get();
-            if insert_pos < *self.max_init.get() {
-                ptr::drop_in_place(&mut data[insert_pos]);
-            }
-            ptr::write(&mut data[insert_pos], value);
-        }
+        self.write(insert_pos, value);
         self.end_write();
         insert_pos
     }
@@ -160,11 +148,6 @@ impl<T> AVec<T> {
         self.insert.load(Ordering::Relaxed)
     }
 
-    /// Returns maximum capacity.
-    pub fn capacity(self: &Self) -> usize {
-        unsafe { *self.capacity.get() }
-    }
-
     /// Grow vector by given number of elements.
     pub fn grow(self: &Self, required_capacity: usize) {
         let mut guard = self.grow.lock().unwrap();
@@ -172,12 +155,12 @@ impl<T> AVec<T> {
         if required_capacity > capacity {
             let new_capacity = if required_capacity > capacity * 2 {
                 // need more than 2x the current capacity: resize exactly
-                unsafe { self.internal_grow(required_capacity - capacity) }
+                self.resize(required_capacity)
             } else {
                 // need less than 2x the current capacity: grow by current capacity (=double it)
-                unsafe { self.internal_grow(capacity) }
+                self.resize(capacity * 2)
             };
-            *guard.deref_mut() = new_capacity;
+            *guard.deref_mut() = new_capacity; // dummy
         }
     }
 
@@ -185,14 +168,16 @@ impl<T> AVec<T> {
     pub fn clear(&self) {
         // since we decrease the insert position new inserts might run into still-in-progress
         // inserts from before the clear if we didn't prevent that.
-        self.begin_rw();
-        let current_max = self.insert.swap(0, Ordering::SeqCst);
-        unsafe {
-            if current_max > *self.max_init.get() {
-                *self.max_init.get() = current_max;
-            }
+        if self.readers.fetch_add(1, Ordering::SeqCst) > 0 {
+            panic!("Attempt read+write with concurrent readers");
         }
-        self.end_rw();
+        if self.writers.fetch_add(1, Ordering::SeqCst) > 0 {
+            panic!("Attempt read+write with concurrent writers");
+        }
+        let current_max = self.insert.swap(0, Ordering::SeqCst);
+        self.update_initialized(current_max);
+        self.readers.fetch_sub(1, Ordering::SeqCst);
+        self.writers.fetch_sub(1, Ordering::SeqCst);
     }
 
     /// Maps the entire vector for read access.
@@ -202,31 +187,68 @@ impl<T> AVec<T> {
         AVecReadGuard::new(&self, size)
     }
 
-    /// grow by additional elements and return total available number of elements
-    unsafe fn internal_grow(self: &Self, additional: usize) -> usize {
-        let mut capacity = self.capacity();
-        let data = self.data.get();
-        capacity += additional;
-        (*data).reserve(additional);
-        (*data).set_len(capacity);
-        *self.capacity.get() = capacity;
-        capacity
+    /// Returns current capacity. The vector will reallocate once this is exceeded.
+    pub fn capacity(self: &Self) -> usize {
+        self.read().capacity()
     }
 
-    /// Begin a read/write block and check for concurrent readers/writers
-    fn begin_rw(self: &Self) {
-        if self.readers.fetch_add(1, Ordering::SeqCst) > 0 {
-            panic!("Attempt read+write with concurrent readers");
-        }
-        if self.writers.fetch_add(1, Ordering::SeqCst) > 0 {
-            panic!("Attempt read+write with concurrent writers");
+    /// Shrinks the underlying vector to contain only initialized elements
+    fn shrink_to_initialized(self: &Self) {
+        let mut guard = self.grow.lock().unwrap();
+        let num_initialized = self.initialized();
+        self.resize(num_initialized);
+        *guard.deref_mut() = num_initialized;
+    }
+
+    /// Resize to given size. Returns new capacity, which may be larger than the given size.
+    fn resize(self: &Self, new_size: usize) -> usize {
+        unsafe {
+            let mut data = &mut *self.data.get();
+            let capacity = data.capacity();
+            if new_size > capacity {
+                data.reserve(new_size - capacity);
+                data.set_len(new_size);
+            } else if new_size < capacity {
+                if new_size < self.initialized() {
+                    panic!("Attempted to reduce size below initialized number of elements.")
+                }
+                data.set_len(new_size);
+                data.shrink_to_fit();
+            }
+            data.capacity()
         }
     }
 
-    /// Ends a read/write block
-    fn end_rw(self: &Self) {
-        self.readers.fetch_sub(1, Ordering::SeqCst);
-        self.writers.fetch_sub(1, Ordering::SeqCst);
+    /// Updates number of initialized buffer elements if given value is larger than the current one.
+    fn update_initialized(self: &Self, num_initialized: usize) {
+        unsafe {
+            let current = *self.initialized.get();
+            if num_initialized > current {
+                *self.initialized.get() = num_initialized;
+            }
+        }
+    }
+
+    /// Returns number of initialized buffer elements.
+    fn initialized(self: &Self) -> usize {
+        // initialized is only updated on clear, so the true result is the max. of initialized and current-length
+        unsafe { cmp::max(*self.initialized.get(), self.len()) }
+    }
+
+    /// Write element to the underlying vector, dropping the previous occupant, if any.
+    fn write(self: &Self, insert_pos: usize, value: T) {
+        unsafe {
+            let mut data = &mut *self.data.get();
+            if insert_pos < *self.initialized.get() {
+                ptr::drop_in_place(&mut data[insert_pos]);
+            }
+            ptr::write(&mut data[insert_pos], value);
+        }
+    }
+
+    /// Returns underlying buffer for reading
+    fn read(self: &Self) -> &Vec<T> {
+        unsafe { &*self.data.get() }
     }
 
     /// Begin a read and check for concurrent writers

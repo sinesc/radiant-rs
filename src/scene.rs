@@ -44,9 +44,6 @@ pub struct Scene<'a> {
     context         : Arc<RenderContext<'a>>,
 }
 
-unsafe impl<'a> Send for Scene<'a> { }
-unsafe impl<'a> Sync for Scene<'a> { }
-
 impl<'a> Scene<'a> {
     /// Create a new scene instance.
     pub fn new(context: &Arc<RenderContext<'a>>) -> Scene<'a> {
