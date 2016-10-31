@@ -11,6 +11,10 @@ impl<T: Copy + fmt::Display + Float> Vec3<T> {
     pub fn new() -> Vec3<T> {
         Vec3::<T>(T::zero(), T::zero(), T::zero())
     }
+    /// Returns the length of the vector
+    pub fn len(self: &Self) -> T {
+        (self.0*self.0 + self.1*self.1 + self.2*self.2).sqrt()
+    }
 }
 
 impl<T: Copy + fmt::Display + Float> VecType<T> for Vec3<T> {

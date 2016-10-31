@@ -37,3 +37,7 @@ path = "examples/threads.rs"
 [[example]]
 name = "minimalistic"
 path = "examples/minimalistic.rs"
+
+[[example]]
+name = "scene"
+path = "examples/scene.rs"

@@ -6,4 +6,3 @@ mod rng;
 
 pub use utils::loops::{renderloop, mainloop};
 pub use utils::rng::Rng;
-pub use scene::{Scene, Operation};

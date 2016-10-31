@@ -12,10 +12,9 @@ mod avec;
 mod color;
 mod graphics;
 mod maths;
-mod scene;
+pub mod scene;
+pub mod utils;
 
 pub use graphics::{BlendMode, blendmodes, Display, DisplayInfo, Monitor, Layer, Renderer, RenderContext, Sprite, Font, FontInfo, Input, ButtonState};
 pub use maths::{Mat4, Vec2, Vec3, VecType};
 pub use color::Color;
-
-pub mod utils;

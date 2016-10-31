@@ -68,8 +68,8 @@ impl<'a> Renderer<'a> {
     }
 */
     /// Draws given scene.
-    pub fn draw_scene(&self, scene: &scene::Scene) -> &Self {
-        scene::draw(scene, self);
+    pub fn draw_scene(&self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
+        scene::draw(scene, self, per_frame_multiplier);
         self
     }
 

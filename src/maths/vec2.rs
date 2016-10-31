@@ -2,11 +2,6 @@ use prelude::*;
 use maths::{Vec3, VecType};
 use glium::uniforms::{AsUniformValue, UniformValue};
 
-const RAD_TO_DEG32: f32 = 180.0 / f32::consts::PI;
-const RAD_TO_DEG64: f64 = 180.0 / f64::consts::PI;
-const DEG_TO_RAD32: f32 = f32::consts::PI / 180.0;
-const DEG_TO_RAD64: f64 = f64::consts::PI / 180.0;
-
 /// A 2-dimensional vector.
 #[derive(Copy, Clone, Debug)]
 pub struct Vec2<T: Copy + fmt::Display + Float>(pub T, pub T);
@@ -16,37 +11,25 @@ impl<T: Copy + fmt::Display + Float> Vec2<T> {
     pub fn new() -> Vec2<T> {
         Vec2::<T>(T::zero(), T::zero())
     }
+    /// Returns the length of the vector
+    pub fn len(self: &Self) -> T {
+        (self.0*self.0 + self.1*self.1).sqrt()
+    }
     /// Returns the direction of the vector in radians.
     pub fn to_rad(self: &Self) -> T {
         self.1.atan2(self.0)
+    }
+    /// Returns the direction of the vector in degrees.
+    pub fn to_deg(self: &Self) -> T {
+        self.to_rad().to_degrees()
     }
     /// Creates a unit-vector from the angle given in radians.
     pub fn from_rad(radians: T) -> Vec2<T> {
         Vec2::<T>(radians.cos(), radians.sin())
     }
-}
-
-impl Vec2<f64> {
-    /// Returns the direction of the vector in degrees.
-    pub fn to_deg(self: &Self) -> f64 {
-        self.to_rad() * RAD_TO_DEG64
-    }
     /// Creates a unit-vector from the angle given in degrees.
-    pub fn from_deg(degrees: f64) -> Vec2<f64> {
-        let radians = degrees * DEG_TO_RAD64;
-        Self::from_rad(radians)
-    }
-}
-
-impl Vec2<f32> {
-    /// Returns the direction of the vector in degrees.
-    pub fn to_deg(self: &Self) -> f32 {
-        self.to_rad() * RAD_TO_DEG32
-    }
-    /// Creates a unit-vector from the angle given in degrees.
-    pub fn from_deg(degrees: f32) -> Vec2<f32> {
-        let radians = degrees * DEG_TO_RAD32;
-        Self::from_rad(radians)
+    pub fn from_deg(degrees: T) -> Vec2<T> {
+        Self::from_rad(degrees.to_radians())
     }
 }
 

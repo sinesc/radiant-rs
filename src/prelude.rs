@@ -11,3 +11,4 @@ pub use std::io::prelude::*;
 pub use std::fs::File;
 
 pub use num::traits::Float;
+pub use num::traits::FromPrimitive;
