@@ -6,6 +6,8 @@ mod renderer;
 mod sprite;
 mod font;
 mod rendercontext;
+mod scene;
+mod color;
 
 pub use self::blendmode::{blendmodes, BlendMode};
 pub use self::input::{Input, ButtonState};
@@ -14,7 +16,9 @@ pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
 pub use self::font::{Font, FontInfo, FontCache};
 pub use self::layer::Layer;
-pub use self::rendercontext::{RenderContextData,RenderContextTextureArray};
+pub use self::rendercontext::{RenderContextData, RenderContextTextureArray};
+pub use self::color::Color;
+pub use self::scene::*;
 
 use prelude::*;
 use glium;

@@ -95,27 +95,27 @@ impl Color {
     }
 
     /// Returns value of the instance's red channel.
-    pub fn r(&self) -> f32 {
+    pub fn r(self: &Self) -> f32 {
         self.0
     }
 
     /// Returns value of the instance's green channel.
-    pub fn g(&self) -> f32 {
+    pub fn g(self: &Self) -> f32 {
         self.1
     }
 
     /// Returns value of the instance's blue channel.
-    pub fn b(&self) -> f32 {
+    pub fn b(self: &Self) -> f32 {
         self.2
     }
 
     /// Returns value of the instance's alpha channel.
-    pub fn a(&self) -> f32 {
+    pub fn a(self: &Self) -> f32 {
         self.3
     }
 
     /// Sets the instance's channels from another color object.
-    pub fn set(&mut self, value: Color) {
+    pub fn set(self: &mut Self, value: Color) {
         self.0 = value.0;
         self.1 = value.1;
         self.2 = value.2;
@@ -123,31 +123,31 @@ impl Color {
     }
 
     /// Sets a value for the instance's red channel
-    pub fn set_r(&mut self, value: f32) -> Color {
+    pub fn set_r(self: &mut Self, value: f32) -> Color {
         self.0 = value;
         *self
     }
 
     /// Sets a value for the instance's green channel.
-    pub fn set_g(&mut self, value: f32) -> Color {
+    pub fn set_g(self: &mut Self, value: f32) -> Color {
         self.1 = value;
         *self
     }
 
     /// Sets a value for the instance's blue channel.
-    pub fn set_b(&mut self, value: f32) -> Color {
+    pub fn set_b(self: &mut Self, value: f32) -> Color {
         self.2 = value;
         *self
     }
 
     /// Sets a value for the instance's alpha channel.
-    pub fn set_a(&mut self, value: f32) -> Color {
+    pub fn set_a(self: &mut Self, value: f32) -> Color {
         self.3 = value;
         *self
     }
 
     /// Multiplies the instance's color channels by given scaling factor. Does not modify alpha.
-    pub fn scale(&mut self, scaling: f32) -> Color {
+    pub fn scale(self: &mut Self, scaling: f32) -> Color {
         self.0 *= scaling;
         self.1 *= scaling;
         self.2 *= scaling;
@@ -155,7 +155,7 @@ impl Color {
     }
 
     /// Returns the instance's channels as a tuple.
-    pub fn as_tuple(&self) -> (f32, f32, f32, f32) {
+    pub fn as_tuple(self: &Self) -> (f32, f32, f32, f32) {
         (self.0, self.1, self.2, self.3)
     }
 
@@ -226,7 +226,7 @@ impl AsUniformValue for Color {
 }
 
 impl fmt::Display for Color {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(self: &Self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Color({}, {}, {}, {})", self.0, self.1, self.2, self.3)
     }
 }

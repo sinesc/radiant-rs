@@ -1,9 +1,8 @@
 use glium;
 use prelude::*;
-use avec::AVec;
+use misc::AVec;
 use maths::Mat4;
-use color::Color;
-use graphics::{blendmodes, BlendMode, Point, Rect, RenderContextData};
+use graphics::{blendmodes, BlendMode, Point, Rect, RenderContextData, Color};
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {

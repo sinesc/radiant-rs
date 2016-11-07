@@ -22,14 +22,14 @@ impl<'a, T> AVecReadGuard<'a, T> {
 
 impl<'a, T> Deref for AVecReadGuard<'a, T> {
     type Target = [T];
-    fn deref(&self) -> &[T] {
+    fn deref(self: &Self) -> &[T] {
         let data = self.owner.read();
         &data[0..self.size]
     }
 }
 
 impl<'a, T> Drop for AVecReadGuard<'a, T> {
-    fn drop(&mut self) {
+    fn drop(self: &mut Self) {
         self.owner.end_read();
     }
 }
@@ -121,7 +121,7 @@ impl<T> AVec<T> {
     }
 
     /// Adds an element to the vector and returns the insert position.
-    pub fn push(&self, value: T) -> usize {
+    pub fn push(self: &Self, value: T) -> usize {
         self.begin_write();
         let insert_pos = self.insert.fetch_add(1, Ordering::Relaxed);
         while insert_pos >= self.capacity() {
@@ -144,7 +144,7 @@ impl<T> AVec<T> {
     }
 
     /// Returns the current length of the vector.
-    pub fn len(&self) -> usize {
+    pub fn len(self: &Self) -> usize {
         self.insert.load(Ordering::Relaxed)
     }
 
@@ -165,7 +165,7 @@ impl<T> AVec<T> {
     }
 
     /// Clears the vector.
-    pub fn clear(&self) {
+    pub fn clear(self: &Self) {
         // since we decrease the insert position new inserts might run into still-in-progress
         // inserts from before the clear if we didn't prevent that.
         if self.readers.fetch_add(1, Ordering::SeqCst) > 0 {

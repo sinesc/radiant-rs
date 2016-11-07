@@ -1,8 +1,7 @@
 use prelude::*;
-use avec::AVec;
-use color::Color;
+use misc::AVec;
 use maths::{Mat4, Vec2};
-use graphics::{Renderer, RenderContext, Layer, Font, Sprite};
+use graphics::{Renderer, RenderContext, Layer, Font, Sprite, Color};
 use BlendMode;
 
 /// An operation-id returned from Scene::op.
@@ -17,7 +16,7 @@ pub struct LayerId(usize);
 #[derive(Copy, Clone)]
 pub struct SpriteId(usize);
 
-/// A sprite-id returned from font registration or creation methods.
+/// A font-id returned from font registration or creation methods.
 #[derive(Copy, Clone)]
 pub struct FontId(usize);
 
