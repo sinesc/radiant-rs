@@ -15,7 +15,7 @@ use core::{Display, RenderContext, RenderContextData, layer, Layer, blendmode, s
 #[derive(Clone)]
 pub struct Renderer<'a> {
     capacity    : usize,
-    context     : Arc<RenderContext<'a>>,
+    context     : RenderContext<'a>,
 }
 
 impl<'a> Renderer<'a> {
@@ -27,14 +27,14 @@ impl<'a> Renderer<'a> {
 
         Renderer {
             capacity: 1024,
-            context : Arc::new(RenderContext::new(context_data)),
+            context : RenderContext::new(context_data),
         }
     }
 
     /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext)
     /// is thread-safe and required by [`Font`](struct.Font) and [`Sprite`](struct.Sprite) to
     /// create new instances.
-    pub fn context(&self) -> Arc<RenderContext<'a>> {
+    pub fn context(&self) -> RenderContext<'a> {
         self.context.clone()
     }
 

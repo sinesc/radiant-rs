@@ -34,13 +34,14 @@ pub struct Display {
 /// A thread-safe render-context.
 ///
 /// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
-pub struct RenderContext<'a> (Mutex<RenderContextData<'a>>);
+#[derive(Clone)]
+pub struct RenderContext<'a> (Arc<Mutex<RenderContextData<'a>>>);
 unsafe impl<'a> Send for RenderContext<'a> { }
 unsafe impl<'a> Sync for RenderContext<'a> { }
 
 impl<'a> RenderContext<'a> {
     fn new(data: RenderContextData) -> RenderContext {
-        RenderContext (Mutex::new(data))
+        RenderContext(Arc::new(Mutex::new(data)))
     }
     fn lock(self: &Self) -> MutexGuard<RenderContextData<'a>> {
         self.0.lock().unwrap()

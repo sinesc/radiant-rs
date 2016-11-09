@@ -71,12 +71,12 @@ pub struct Scene<'a> {
     layers          : AVec<Layer>,
     sprites         : AVec<Sprite<'a>>,
     fonts           : AVec<Font<'a>>,
-    context         : Arc<RenderContext<'a>>,
+    context         : RenderContext<'a>,
 }
 
 impl<'a> Scene<'a> {
     /// Create a new scene instance.
-    pub fn new(context: &Arc<RenderContext<'a>>) -> Scene<'a> {
+    pub fn new(context: &RenderContext<'a>) -> Scene<'a> {
         Scene {
             operations  : AVec::new(1024),
             layers      : AVec::new(64),

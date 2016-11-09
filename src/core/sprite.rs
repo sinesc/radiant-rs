@@ -24,7 +24,7 @@ pub struct Sprite<'a> {
     texture_id      : u32,
     u_max           : f32,
     v_max           : f32,
-    context         : Arc<RenderContext<'a>>,
+    context         : RenderContext<'a>,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -40,7 +40,7 @@ impl<'a> Sprite<'a> {
     /// Creates a new sprite texture
     ///
     /// The given filename is epected to end on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
-    pub fn from_file(context: &Arc<RenderContext<'a>>, file: &str) -> Sprite<'a> {
+    pub fn from_file(context: &RenderContext<'a>, file: &str) -> Sprite<'a> {
 
         let (bucket_id, texture_size, frame_width, frame_height, raw_frames) = load_spritesheet(file);
         let num_frames = raw_frames.len() as u32;
