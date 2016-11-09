@@ -24,9 +24,8 @@ To compile the examples, use e.g. `cargo run --release --example blobs`. See exa
 
 ## Multi-threaded environments
 
-1. Stick fonts, sprites, and layers or scenes into `Arc`s.  
-The context received from `Renderer::context()` is already wrapped in `Arc`.
-2. Clone the `Arc`s for each thread that needs their contents.
+1. Stick fonts, sprites, and layers or scenes into `Arc`s.
+2. Clone the `Arc`s for each thread that needs their contents. The rendercontext can be cloned directly.
 3. Move the clones into the thread.
 4. Draw onto your layers, load sprites etc. from however many threads you like. Layers are non-blocking for drawing operations, blocking for other manipulations (e.g. matrix modification).
 5. Perform steps 7-10 from the above list in the thread that created the `Renderer`; both it and `Display` do not implement `Send`

@@ -4,11 +4,11 @@ pub use core::{BlendMode, blendmodes, Display, DisplayInfo, Monitor, Layer, Rend
 pub use maths::{Mat4, Vec2, Vec3, VecType};
 
 pub mod utils {
-    //! Various optional utility features including a Scene and mainloop helpers.
+    //! Optional utility features.
     pub use misc::{renderloop, mainloop, Rng};
 }
 
 pub mod scene {
-    //! Optional ultility wrapper to simplify scene handling.
+    //! Optional scene abstraction.
     pub use core::{OpId, LayerId, SpriteId, FontId, Op, Scene};
 }
