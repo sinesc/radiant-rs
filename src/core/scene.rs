@@ -1,7 +1,7 @@
 use prelude::*;
 use misc::AVec;
 use maths::{Mat4, Vec2};
-use graphics::{Renderer, RenderContext, Layer, Font, Sprite, Color};
+use core::{Renderer, RenderContext, Layer, Font, Sprite, Color};
 use BlendMode;
 
 /// An operation-id returned from Scene::op.

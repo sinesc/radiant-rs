@@ -8,7 +8,7 @@ extern crate unicode_normalization;
 extern crate font_loader;
 
 mod prelude;
-mod graphics;
+mod core;
 mod maths;
 mod misc;
 

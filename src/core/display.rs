@@ -2,8 +2,8 @@ use glium;
 use glium::DisplayBuild;
 use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton/*, VirtualKeyCode*/};
 use prelude::*;
-use graphics::Display;
-use graphics::input::{InputState, ButtonState};
+use core::Display;
+use core::input::{InputState, ButtonState};
 
 /// An individual monitor, returned from [`Display::monitors()`](struct.Display.html#method.monitors).
 pub struct Monitor {

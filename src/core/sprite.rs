@@ -1,5 +1,5 @@
 use prelude::*;
-use graphics::{renderer, layer, Layer, Point, Rect, RenderContext};
+use core::{renderer, layer, Layer, Point, Rect, RenderContext};
 use Color;
 use image;
 use image::GenericImage;

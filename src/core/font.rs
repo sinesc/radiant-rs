@@ -1,5 +1,5 @@
 use prelude::*;
-use graphics::{layer, Layer, Point, Rect, RenderContext};
+use core::{layer, Layer, Point, Rect, RenderContext};
 use Color;
 use rusttype;
 use glium;

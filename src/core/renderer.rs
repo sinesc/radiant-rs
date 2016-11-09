@@ -1,7 +1,7 @@
 use prelude::*;
 use glium;
 use glium::Surface;
-use graphics::{Display, RenderContext, RenderContextData, layer, Layer, blendmode, scene, Color};
+use core::{Display, RenderContext, RenderContextData, layer, Layer, blendmode, scene, Color};
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
 /// [`Display`](struct.Display.html).

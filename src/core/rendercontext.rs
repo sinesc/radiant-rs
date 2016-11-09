@@ -1,5 +1,5 @@
 use glium;
-use graphics::{Display, font};
+use core::{Display, font};
 
 /// Texture data for a single texture array
 pub struct RenderContextTextureArray<'a> {

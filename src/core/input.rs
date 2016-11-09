@@ -1,6 +1,6 @@
 use prelude::*;
 use std::ops::Not;
-use graphics::Display;
+use core::Display;
 
 /// The current state of a key or mousebutton.
 #[derive(PartialEq, Copy, Clone)]

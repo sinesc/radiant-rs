@@ -2,7 +2,7 @@ use glium;
 use prelude::*;
 use misc::AVec;
 use maths::Mat4;
-use graphics::{blendmodes, BlendMode, Point, Rect, RenderContextData, Color};
+use core::{blendmodes, BlendMode, Point, Rect, RenderContextData, Color};
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {

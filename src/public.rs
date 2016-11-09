@@ -1,6 +1,6 @@
 
 
-pub use graphics::{BlendMode, blendmodes, Display, DisplayInfo, Monitor, Layer, Renderer, RenderContext, Sprite, Font, FontInfo, Input, ButtonState, Color};
+pub use core::{BlendMode, blendmodes, Display, DisplayInfo, Monitor, Layer, Renderer, RenderContext, Sprite, Font, FontInfo, Input, ButtonState, Color};
 pub use maths::{Mat4, Vec2, Vec3, VecType};
 
 pub mod utils {
@@ -10,5 +10,5 @@ pub mod utils {
 
 pub mod scene {
     //! Optional ultility wrapper to simplify scene handling.
-    pub use graphics::{OpId, LayerId, SpriteId, FontId, Op, Scene};
+    pub use core::{OpId, LayerId, SpriteId, FontId, Op, Scene};
 }
