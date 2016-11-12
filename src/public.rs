@@ -1,5 +1,3 @@
-
-
 pub use core::{BlendMode, blendmodes, Display, DisplayInfo, Monitor, Layer, Renderer, RenderContext, Sprite, Font, FontInfo, Input, ButtonState, Color};
 pub use maths::{Mat4, Vec2, Vec3, VecType};
 
