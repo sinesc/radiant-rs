@@ -7,7 +7,7 @@ This is work-in-progress. The API is incomplete and will likely still change som
 
 To compile the examples, use e.g. `cargo run --release --example blobs`. See examples folder for other available examples.
 
-![Screenshot](https://raw.githubusercontent.com/sinesc/radiant-rs/master/res/screenshot.jpg "Screenshot")
+![Screenshot](https://sinesc.github.io/images/radiant-rs.jpg "Screenshot")
 
 ## 10 lines to the first frame
 

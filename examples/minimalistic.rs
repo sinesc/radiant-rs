@@ -8,7 +8,7 @@ fn main() {
     let renderer = Renderer::new(&display);
 
     // create a sprite, a font (here from a known systemfont) and a layer
-    let sprite = Sprite::from_file(&renderer.context(), r"res/ball_v2_32x32x18.jpg");
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/ball_v2_32x32x18.jpg");
     let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 16.0, ..FontInfo::default() } );
     let layer = Layer::new(640, 480);
 
