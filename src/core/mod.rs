@@ -12,7 +12,7 @@ mod monitor;
 
 pub use self::blendmode::{blendmodes, BlendMode};
 pub use self::input::{Input, ButtonState};
-pub use self::display::DisplayInfo;
+pub use self::display::{Display, DisplayInfo};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
 pub use self::font::{Font, FontInfo, FontCache};
@@ -25,13 +25,6 @@ pub use self::monitor::Monitor;
 use prelude::*;
 use glium;
 use self::input::InputState;
-
-/// A target to render to, e.g. a window or full screen.
-#[derive(Clone)]
-pub struct Display {
-    handle: glium::Display,
-    input_state: Arc<RwLock<InputState>>,
-}
 
 #[derive(Copy, Clone)]
 pub struct Point {

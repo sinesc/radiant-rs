@@ -1,7 +1,7 @@
 use prelude::*;
 use glium;
 use glium::Surface;
-use core::{Display, rendercontext, RenderContext, RenderContextData, layer, Layer, blendmode, scene, Color};
+use core::{Display, rendercontext, RenderContext, RenderContextData, layer, Layer, blendmode, scene, Color, display};
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
 /// [`Display`](struct.Display.html).
@@ -41,14 +41,14 @@ impl<'a> Renderer<'a> {
     /// Prepares a new target for drawing without clearing it.
     pub fn prepare_target(&self) {
         let mut context = rendercontext::lock(&self.context);
-        context.target = Some(context.display.handle.draw());
+        context.target = Some(display::handle(&context.display).draw());
     }
 
     /// Prepares a new target and clears it with given color.
     pub fn clear_target(&self, color: Color) {
         let mut context = rendercontext::lock(&self.context);
         let (r, g, b, a) = color.as_tuple();
-        let mut target = context.display.handle.draw();
+        let mut target = display::handle(&context.display).draw();
         target.clear_color(r, g, b, a);
         context.target = Some(target);
     }

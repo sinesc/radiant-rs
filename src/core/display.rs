@@ -2,7 +2,6 @@ use glium;
 use glium::DisplayBuild;
 use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton/*, VirtualKeyCode*/};
 use prelude::*;
-use core::Display;
 use core::input::{InputState, ButtonState};
 use core::monitor;
 
@@ -30,6 +29,21 @@ impl Default for DisplayInfo {
             vsync       : false,
         }
    }
+}
+
+/// A target to render to, e.g. a window or full screen.
+#[derive(Clone)]
+pub struct Display {
+    handle: glium::Display,
+    input_state: Arc<RwLock<InputState>>,
+}
+
+pub fn handle(display: &Display) -> &glium::Display {
+    &display.handle
+}
+
+pub fn input_state(display: &Display) -> &Arc<RwLock<InputState>> {
+    &display.input_state
 }
 
 impl Display {

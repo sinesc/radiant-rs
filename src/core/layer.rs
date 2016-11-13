@@ -2,7 +2,7 @@ use glium;
 use prelude::*;
 use misc::AVec;
 use maths::Mat4;
-use core::{blendmodes, BlendMode, Point, Rect, RenderContextData, Color};
+use core::{blendmodes, BlendMode, Point, Rect, RenderContextData, Color, display};
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
@@ -204,7 +204,7 @@ pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<
         // prepare vertexbuffer if not already done
 
         if vertex_buffer.is_none() {
-            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, layer.vertex_data.capacity()).unwrap());
+            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.vertex_data.capacity()).unwrap());
         }
 
         // copy layer data to vertexbuffer
@@ -215,7 +215,7 @@ pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<
             if num_vertices > 0 {
                 // resize as neccessary
                 if num_vertices > vertex_buffer.as_ref().unwrap().len() {
-                    *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(&context.display.handle, layer.vertex_data.capacity()).unwrap());
+                    *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.vertex_data.capacity()).unwrap());
                 }
                 // copy data to buffer
                 let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();

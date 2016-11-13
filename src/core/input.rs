@@ -1,6 +1,6 @@
 use prelude::*;
 use std::ops::Not;
-use core::Display;
+use core::{display, Display};
 
 /// The current state of a key or mousebutton.
 #[derive(PartialEq, Copy, Clone)]
@@ -57,7 +57,7 @@ impl Input {
     /// Creates a new instance.
     pub fn new(display: &Display) -> Self {
         Input {
-            input_state: display.input_state.clone(),
+            input_state: display::input_state(display).clone(),
         }
     }
 

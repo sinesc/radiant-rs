@@ -1,5 +1,5 @@
 use glium;
-use core::{Display, font};
+use core::{display, Display, font};
 use prelude::*;
 
 /// A thread-safe render-context.
@@ -28,7 +28,7 @@ impl<'a> RenderContextTextureArray<'a> {
     pub fn new(display: &Display) -> Self {
         RenderContextTextureArray {
             dirty   : false,
-            data    : glium::texture::SrgbTexture2dArray::empty(&display.handle, 2, 2, 1).unwrap(),
+            data    : glium::texture::SrgbTexture2dArray::empty(display::handle(&display), 2, 2, 1).unwrap(),
             raw     : Vec::new(),
         }
     }
@@ -57,13 +57,13 @@ impl<'a> RenderContextData<'a> {
         }
 
         RenderContextData {
-            index_buffer    : Self::create_index_buffer(&display.handle, initial_capacity),
-            program         : Self::create_program(&display.handle),
+            index_buffer    : Self::create_index_buffer(&display::handle(&display), initial_capacity),
+            program         : Self::create_program(&display::handle(&display)),
             tex_array       : tex_array,
             target          : Option::None,
             display         : display.clone(),
             font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
-            font_texture    : font::create_cache_texture(&display.handle, 512, 512),
+            font_texture    : font::create_cache_texture(&display::handle(&display), 512, 512),
         }
     }
 
@@ -87,9 +87,9 @@ impl<'a> RenderContextData<'a> {
                             format: frame.format,
                         });
                     }
-                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::new(&self.display.handle, raw_images).unwrap();
+                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::new(display::handle(&self.display), raw_images).unwrap();
                 } else {
-                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::empty(&self.display.handle, 2, 2, 1).unwrap();
+                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::empty(display::handle(&self.display), 2, 2, 1).unwrap();
                 }
             }
         }
@@ -98,7 +98,7 @@ impl<'a> RenderContextData<'a> {
     /// Update index buffer to given size
     pub fn update_index_buffer(self: &mut Self, max_sprites: usize) {
         if max_sprites * 6 > self.index_buffer.len() {
-            self.index_buffer = Self::create_index_buffer(&self.display.handle, max_sprites);
+            self.index_buffer = Self::create_index_buffer(&display::handle(&self.display), max_sprites);
         }
     }
 
