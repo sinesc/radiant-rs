@@ -14,8 +14,7 @@ use core::{Display, rendercontext, RenderContext, RenderContextData, layer, Laye
 /// level abstraction.
 #[derive(Clone)]
 pub struct Renderer<'a> {
-    capacity    : usize,
-    context     : RenderContext<'a>,
+    context: RenderContext<'a>,
 }
 
 impl<'a> Renderer<'a> {
@@ -26,8 +25,7 @@ impl<'a> Renderer<'a> {
         let context_data = RenderContextData::new(display, 1024);  // todo: "1024" add some sort of configurable?
 
         Renderer {
-            capacity: 1024,
-            context : rendercontext::new(context_data),
+            context: rendercontext::new(context_data),
         }
     }
 

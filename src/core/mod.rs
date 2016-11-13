@@ -23,8 +23,6 @@ pub use self::scene::*;
 pub use self::monitor::Monitor;
 
 use prelude::*;
-use glium;
-use self::input::InputState;
 
 #[derive(Copy, Clone)]
 pub struct Point {
