@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{layer, Layer, Point, Rect, RenderContext};
+use core::{layer, Layer, Point, Rect, rendercontext, RenderContext};
 use Color;
 use rusttype;
 use glium;
@@ -217,7 +217,7 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
 
     let bucket_id = 0;
     let glyphs = layout_paragraph(&font.font, rusttype::Scale::uniform(font.size), max_width, &text);
-    let context = font.context.lock();
+    let context = rendercontext::lock(&font.context);
 
     context.font_cache.queue(font.font_id, &glyphs);
 

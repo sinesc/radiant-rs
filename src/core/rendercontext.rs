@@ -1,5 +1,21 @@
 use glium;
 use core::{Display, font};
+use prelude::*;
+
+/// A thread-safe render-context.
+///
+/// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
+#[derive(Clone)]
+pub struct RenderContext<'a> (Arc<Mutex<RenderContextData<'a>>>);
+unsafe impl<'a> Send for RenderContext<'a> { }
+unsafe impl<'a> Sync for RenderContext<'a> { }
+
+pub fn new(data: RenderContextData) -> RenderContext {
+    RenderContext(Arc::new(Mutex::new(data)))
+}
+pub fn lock<'a, 'b>(context: &'b RenderContext<'a>) -> MutexGuard<'b, RenderContextData<'a>> {
+    context.0.lock().unwrap()
+}
 
 /// Texture data for a single texture array
 pub struct RenderContextTextureArray<'a> {

@@ -1,7 +1,7 @@
 use prelude::*;
 use glium;
 use glium::Surface;
-use core::{Display, RenderContext, RenderContextData, layer, Layer, blendmode, scene, Color};
+use core::{Display, rendercontext, RenderContext, RenderContextData, layer, Layer, blendmode, scene, Color};
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
 /// [`Display`](struct.Display.html).
@@ -27,7 +27,7 @@ impl<'a> Renderer<'a> {
 
         Renderer {
             capacity: 1024,
-            context : RenderContext::new(context_data),
+            context : rendercontext::new(context_data),
         }
     }
 
@@ -40,13 +40,13 @@ impl<'a> Renderer<'a> {
 
     /// Prepares a new target for drawing without clearing it.
     pub fn prepare_target(&self) {
-        let mut context = self.context.lock();
+        let mut context = rendercontext::lock(&self.context);
         context.target = Some(context.display.handle.draw());
     }
 
     /// Prepares a new target and clears it with given color.
     pub fn clear_target(&self, color: Color) {
-        let mut context = self.context.lock();
+        let mut context = rendercontext::lock(&self.context);
         let (r, g, b, a) = color.as_tuple();
         let mut target = context.display.handle.draw();
         target.clear_color(r, g, b, a);
@@ -55,7 +55,7 @@ impl<'a> Renderer<'a> {
 
     /// Finishes drawing and swaps the drawing target to front.
     pub fn swap_target(&self) {
-        let mut context = self.context.lock();
+        let mut context = rendercontext::lock(&self.context);
         context.target.take().unwrap().finish().unwrap();
     }
 /*
@@ -76,7 +76,7 @@ impl<'a> Renderer<'a> {
 
         // open context
 
-        let mut context = self.context.lock();
+        let mut context = rendercontext::lock(&self.context);
         let mut context = context.deref_mut();
 
         // update sprite texture arrays, font texture and vertex buffer as required

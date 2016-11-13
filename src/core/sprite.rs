@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{renderer, layer, Layer, Point, Rect, RenderContext};
+use core::{renderer, layer, Layer, Point, Rect, rendercontext, RenderContext};
 use Color;
 use image;
 use image::GenericImage;
@@ -44,7 +44,7 @@ impl<'a> Sprite<'a> {
 
         let (bucket_id, texture_size, frame_width, frame_height, raw_frames) = load_spritesheet(file);
         let num_frames = raw_frames.len() as u32;
-        let texture_id = context.lock().store_frames(bucket_id, raw_frames);
+        let texture_id = rendercontext::lock(context).store_frames(bucket_id, raw_frames);
 
         Sprite::<'a> {
             width       : frame_width as f32,
