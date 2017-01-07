@@ -22,7 +22,7 @@ impl<'a> Renderer<'a> {
     /// Returns a new renderer instance.
     pub fn new(display: &Display) -> Self {
 
-        let context_data = RenderContextData::new(display, 1024);  // todo: "1024" add some sort of configurable?
+        let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY);
 
         Renderer {
             context: rendercontext::new(context_data),
@@ -95,10 +95,11 @@ impl<'a> Renderer<'a> {
                 model_matrix    : *layer.model_matrix().deref_mut(),
                 global_color    : *layer.color().deref_mut(),
                 font_cache      : context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
-                tex1            : &context.tex_array[1].data,
-                tex2            : &context.tex_array[2].data,
-                tex3            : &context.tex_array[3].data,
-                tex4            : &context.tex_array[4].data,
+                tex1            : &context.tex_array[1].data,   // 32
+                tex2            : &context.tex_array[2].data,   // 64
+                tex3            : &context.tex_array[3].data,   // 128
+                tex4            : &context.tex_array[4].data,   // 256
+                tex5            : &context.tex_array[5].data,   // 512
             };
 
             // set up draw parameters for given blend options
@@ -125,5 +126,6 @@ pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     let size = 2u32.pow(ln2);
     // skip first five sizes 1x1 to 16x16, use id 0 for font-cache
     let bucket_id = cmp::max(0, ln2 - 4 + 1);
+    assert!(bucket_id < rendercontext::NUM_BUCKETS as u32, "texture size exceeded configured maximum");
     (bucket_id, size)
 }

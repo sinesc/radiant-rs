@@ -5,6 +5,7 @@ uniform sampler2DArray tex1;
 uniform sampler2DArray tex2;
 uniform sampler2DArray tex3;
 uniform sampler2DArray tex4;
+uniform sampler2DArray tex5;
 uniform vec4 global_color;
 
 in vec2 v_tex_coords;
@@ -30,5 +31,7 @@ void main() {
         f_color = texture(tex3, vec3(v_tex_coords, float(v_texture_id))) * color;
     } else if (v_bucket_id == 4u) {
         f_color = texture(tex4, vec3(v_tex_coords, float(v_texture_id))) * color;
+    } else if (v_bucket_id == 5u) {
+        f_color = texture(tex5, vec3(v_tex_coords, float(v_texture_id))) * color;
     }
 }

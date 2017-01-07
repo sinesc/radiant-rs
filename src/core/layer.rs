@@ -2,7 +2,7 @@ use glium;
 use prelude::*;
 use misc::AVec;
 use maths::Mat4;
-use core::{blendmodes, BlendMode, Point, Rect, RenderContextData, Color, display};
+use core::{blendmodes, BlendMode, Point, Rect, rendercontext, RenderContextData, Color, display};
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
@@ -46,7 +46,7 @@ impl Layer {
             model_matrix    : Mutex::new(Mat4::<f32>::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
-            vertex_data     : AVec::new(1024 * 4),  // todo: "1024" add some sort of configurable?
+            vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
             vertex_buffer   : Mutex::new(None),
             dirty           : AtomicBool::new(true),
         }

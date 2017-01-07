@@ -2,6 +2,12 @@ use glium;
 use core::{display, Display, font};
 use prelude::*;
 
+// Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
+pub const NUM_BUCKETS: usize = 6;
+
+// Initial sprite capacity. Automatically increases.
+pub const INITIAL_CAPACITY: usize = 512;
+
 /// A thread-safe render-context.
 ///
 /// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
@@ -52,7 +58,7 @@ impl<'a> RenderContextData<'a> {
 
         let mut tex_array = Vec::new();
 
-        for _ in 0..5 {
+        for _ in 0..NUM_BUCKETS {
             tex_array.push(RenderContextTextureArray::new(display));
         }
 
