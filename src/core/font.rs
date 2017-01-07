@@ -118,18 +118,18 @@ static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 /// to each font object. Instead of modifying these properties, you can clone a new font
 /// with modified values using [`Font::with_color()`](struct.Font.html#method.with_color) and/or [`Font::with_size()`](struct.Font.html#method.with_size).
 #[derive(Clone)]
-pub struct Font<'a> {
-    font    : Arc<rusttype::Font<'a>>,
+pub struct Font {
+    data    : Vec<u8>,
     font_id : usize,
     size    : f32,
     color   : Color,
     context : RenderContext,
 }
 
-impl<'a> Font<'a> {
+impl Font {
 
     /// Creates a font instance from a file
-    pub fn from_file<'b>(context: &RenderContext, file: &str) -> Font<'b> {
+    pub fn from_file(context: &RenderContext, file: &str) -> Font {
         let mut f = File::open(Path::new(file)).unwrap();
         let mut font_data = Vec::new();
         f.read_to_end(&mut font_data).unwrap();
@@ -137,7 +137,7 @@ impl<'a> Font<'a> {
     }
 
     /// Creates a new font instance from given FontInfo struct
-    pub fn from_info<'b>(context: &RenderContext, info: FontInfo) -> Font<'b> {
+    pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
         let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
         create_font(context, font_data, info.size)
     }
@@ -153,33 +153,33 @@ impl<'a> Font<'a> {
     }
 
     /// Returns a new font instance with given size
-    pub fn with_size(self: &Self, size: f32) -> Font<'a> {
+    pub fn with_size(self: &Self, size: f32) -> Font {
         let mut font = (*self).clone();
         font.size = size;
         font
     }
 
     /// Returns a new font instance with given color
-    pub fn with_color(self: &Self, color: Color) -> Font<'a> {
+    pub fn with_color(self: &Self, color: Color) -> Font {
         let mut font = (*self).clone();
         font.color = color;
         font
     }
 
     /// Write to given layer
-    pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32) -> &Font<'a> {
+    pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32) -> &Font {
         write(self, layer, text, x, y, 0.0, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels.
-    pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32) -> &Font<'a> {
+    pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32) -> &Font {
         write(self, layer, text, x, y, max_width, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels and applies given rotation and scaling.
-    pub fn write_transformed(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, rotation: f32, scale_x: f32, scale_y: f32) -> &Font<'a> {
+    pub fn write_transformed(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, rotation: f32, scale_x: f32, scale_y: f32) -> &Font {
         write(self, layer, text, x, y, max_width, &self.color, rotation, scale_x, scale_y);
         self
     }
@@ -202,9 +202,9 @@ pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -
 }
 
 /// creates a new unique font
-fn create_font<'a>(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font<'a> {
+fn create_font(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
     Font {
-        font    : Arc::new(rusttype::FontCollection::from_bytes(font_data).into_font().unwrap()),
+        data    : font_data,
         font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
         size    : size,
         color   : Color::white(),
@@ -215,8 +215,11 @@ fn create_font<'a>(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Fo
 /// write text to given layer using given font
 fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: &Color, rotation: f32, scale_x: f32, scale_y: f32) {
 
+    // !todo probably expensive, but rusttype is completely opaque. would be nice to be able to store Font::info outside of a "may or may not own" container
+    let rt_font = rusttype::FontCollection::from_bytes(&font.data[..]).into_font().unwrap();
+
     let bucket_id = 0;
-    let glyphs = layout_paragraph(&font.font, rusttype::Scale::uniform(font.size), max_width, &text);
+    let glyphs = layout_paragraph(&rt_font, rusttype::Scale::uniform(font.size), max_width, &text);
     let context = rendercontext::lock(&font.context);
 
     context.font_cache.queue(font.font_id, &glyphs);

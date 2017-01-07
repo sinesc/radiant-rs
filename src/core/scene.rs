@@ -66,15 +66,15 @@ impl Default for Op {
 }
 
 /// A container for layers, sprites and fonts intended to simplify usage.
-pub struct Scene<'a> {
+pub struct Scene {
     operations      : AVec<Op>,
     layers          : AVec<Layer>,
     sprites         : AVec<Sprite>,
-    fonts           : AVec<Font<'a>>,
+    fonts           : AVec<Font>,
     context         : RenderContext,
 }
 
-impl<'a> Scene<'a> {
+impl Scene {
     /// Create a new scene instance.
     pub fn new(context: &RenderContext) -> Self {
         Scene {
@@ -148,7 +148,7 @@ impl<'a> Scene<'a> {
     }
 
     /// Register a font for the scene.
-    pub fn register_font(self: &Self, font: Font<'a>) -> FontId {
+    pub fn register_font(self: &Self, font: Font) -> FontId {
         let insert_position = self.fonts.push(font);
         FontId(insert_position)
     }
