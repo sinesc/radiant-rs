@@ -123,13 +123,13 @@ pub struct Font<'a> {
     font_id : usize,
     size    : f32,
     color   : Color,
-    context : RenderContext<'a>,
+    context : RenderContext,
 }
 
 impl<'a> Font<'a> {
 
     /// Creates a font instance from a file
-    pub fn from_file<'b>(context: &RenderContext<'b>, file: &str) -> Font<'b> {
+    pub fn from_file<'b>(context: &RenderContext, file: &str) -> Font<'b> {
         let mut f = File::open(Path::new(file)).unwrap();
         let mut font_data = Vec::new();
         f.read_to_end(&mut font_data).unwrap();
@@ -137,7 +137,7 @@ impl<'a> Font<'a> {
     }
 
     /// Creates a new font instance from given FontInfo struct
-    pub fn from_info<'b>(context: &RenderContext<'b>, info: FontInfo) -> Font<'b> {
+    pub fn from_info<'b>(context: &RenderContext, info: FontInfo) -> Font<'b> {
         let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
         create_font(context, font_data, info.size)
     }
@@ -202,7 +202,7 @@ pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -
 }
 
 /// creates a new unique font
-fn create_font<'a>(context: &RenderContext<'a>, font_data: Vec<u8>, size: f32) -> Font<'a> {
+fn create_font<'a>(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font<'a> {
     Font {
         font    : Arc::new(rusttype::FontCollection::from_bytes(font_data).into_font().unwrap()),
         font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),

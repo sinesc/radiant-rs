@@ -69,14 +69,14 @@ impl Default for Op {
 pub struct Scene<'a> {
     operations      : AVec<Op>,
     layers          : AVec<Layer>,
-    sprites         : AVec<Sprite<'a>>,
+    sprites         : AVec<Sprite>,
     fonts           : AVec<Font<'a>>,
-    context         : RenderContext<'a>,
+    context         : RenderContext,
 }
 
 impl<'a> Scene<'a> {
     /// Create a new scene instance.
-    pub fn new(context: &RenderContext<'a>) -> Scene<'a> {
+    pub fn new(context: &RenderContext) -> Self {
         Scene {
             operations  : AVec::new(1024),
             layers      : AVec::new(64),
@@ -143,7 +143,7 @@ impl<'a> Scene<'a> {
     }
 
     /// Register a sprite for the scene.
-    pub fn register_sprite(self: &Self, sprite: Sprite<'a>) -> SpriteId {
+    pub fn register_sprite(self: &Self, sprite: Sprite) -> SpriteId {
         SpriteId(self.sprites.push(sprite))
     }
 

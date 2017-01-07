@@ -17,7 +17,7 @@ pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
 pub use self::font::{Font, FontInfo, FontCache};
 pub use self::layer::Layer;
-pub use self::rendercontext::{RenderContext, RenderContextData, RenderContextTextureArray};
+pub use self::rendercontext::{RenderContext, RenderContextData, RenderContextTexture, RenderContextTextureArray};
 pub use self::color::Color;
 pub use self::scene::*;
 pub use self::monitor::Monitor;

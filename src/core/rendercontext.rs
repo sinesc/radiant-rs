@@ -1,6 +1,7 @@
 use glium;
 use core::{display, Display, font};
 use prelude::*;
+use std::borrow::Cow;
 
 // Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
 pub const NUM_BUCKETS: usize = 6;
@@ -12,25 +13,45 @@ pub const INITIAL_CAPACITY: usize = 512;
 ///
 /// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
 #[derive(Clone)]
-pub struct RenderContext<'a> (Arc<Mutex<RenderContextData<'a>>>);
-unsafe impl<'a> Send for RenderContext<'a> { }
-unsafe impl<'a> Sync for RenderContext<'a> { }
+pub struct RenderContext (Arc<Mutex<RenderContextData>>);
+unsafe impl<'a> Send for RenderContext { }
+unsafe impl<'a> Sync for RenderContext { }
 
 pub fn new(data: RenderContextData) -> RenderContext {
     RenderContext(Arc::new(Mutex::new(data)))
 }
-pub fn lock<'a, 'b>(context: &'b RenderContext<'a>) -> MutexGuard<'b, RenderContextData<'a>> {
+pub fn lock<'b>(context: &'b RenderContext) -> MutexGuard<'b, RenderContextData> {
     context.0.lock().unwrap()
 }
 
-/// Texture data for a single texture array
-pub struct RenderContextTextureArray<'a> {
-    pub dirty   : bool,
-    pub data    : glium::texture::SrgbTexture2dArray,
-    pub raw     : Vec<glium::texture::RawImage2d<'a, u8>>,
+/// Individual Texture
+#[derive(Clone)]
+pub struct RenderContextTexture {
+    pub data    : Vec<u8>,
+    pub width   : u32,
+    pub height  : u32,
 }
 
-impl<'a> RenderContextTextureArray<'a> {
+impl<'a> glium::texture::Texture2dDataSource<'a> for RenderContextTexture {
+    type Data = u8;
+    fn into_raw(self) -> glium::texture::RawImage2d<'a, Self::Data> {
+        glium::texture::RawImage2d {
+            data: Cow::Owned(self.data),
+            width: self.width,
+            height: self.height,
+            format: glium::texture::ClientFormat::U8U8U8U8,
+        }
+    }
+}
+
+/// Texture data for a single texture array
+pub struct RenderContextTextureArray {
+    pub dirty   : bool,
+    pub data    : glium::texture::SrgbTexture2dArray,
+    pub raw     : Vec<RenderContextTexture>,
+}
+
+impl RenderContextTextureArray {
     pub fn new(display: &Display) -> Self {
         RenderContextTextureArray {
             dirty   : false,
@@ -41,17 +62,17 @@ impl<'a> RenderContextTextureArray<'a> {
 }
 
 /// Internal data of a RenderContext
-pub struct RenderContextData<'a> {
+pub struct RenderContextData {
     pub index_buffer    : glium::IndexBuffer<u32>,
     pub program         : glium::Program,
-    pub tex_array       : Vec<RenderContextTextureArray<'a>>,
+    pub tex_array       : Vec<RenderContextTextureArray>,
     pub target          : Option<glium::Frame>,
     pub display         : Display,
     pub font_cache      : font::FontCache,
     pub font_texture    : glium::texture::Texture2d,
 }
 
-impl<'a> RenderContextData<'a> {
+impl RenderContextData {
 
     /// Create a new instance
     pub fn new(display: &Display, initial_capacity: usize) -> Self {
@@ -80,22 +101,13 @@ impl<'a> RenderContextData<'a> {
 
     /// Update texture arrays from registered textures
     pub fn update_tex_array(self: &mut Self) {
-        for bucket_id in 0..self.tex_array.len() {
-            if self.tex_array[bucket_id].dirty {
-                self.tex_array[bucket_id].dirty = false;
-                if self.tex_array[bucket_id].raw.len() > 0 {
-                    let mut raw_images = Vec::new();
-                    for ref frame in self.tex_array[bucket_id].raw.iter() {
-                        raw_images.push(glium::texture::RawImage2d {
-                            data: frame.data.clone(),
-                            width: frame.width,
-                            height: frame.height,
-                            format: frame.format,
-                        });
-                    }
-                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::new(display::handle(&self.display), raw_images).unwrap();
+        for ref mut array in self.tex_array.iter_mut() {
+            if array.dirty {
+                array.dirty = false;
+                if array.raw.len() > 0 {
+                    array.data = glium::texture::SrgbTexture2dArray::new(display::handle(&self.display), array.raw.clone()).unwrap();
                 } else {
-                    self.tex_array[bucket_id].data = glium::texture::SrgbTexture2dArray::empty(display::handle(&self.display), 2, 2, 1).unwrap();
+                    array.data = glium::texture::SrgbTexture2dArray::empty(display::handle(&self.display), 2, 2, 1).unwrap();
                 }
             }
         }
@@ -109,7 +121,7 @@ impl<'a> RenderContextData<'a> {
     }
 
     /// Store given frames to texture arrays
-    pub fn store_frames(self: &mut Self, bucket_id: u32, raw_frames: Vec<glium::texture::RawImage2d<'a, u8>>) -> u32 {
+    pub fn store_frames<'a>(self: &mut Self, bucket_id: u32, raw_frames: Vec<RenderContextTexture>) -> u32 {
         let texture_id = self.tex_array[bucket_id as usize].raw.len() as u32;
         for frame in raw_frames {
             self.tex_array[bucket_id as usize].raw.push(frame);

@@ -13,11 +13,11 @@ use core::{Display, rendercontext, RenderContext, RenderContextData, layer, Laye
 /// Alternatively to directly drawing on layers, [`Scene`](struct.Scene.html) provides a higher
 /// level abstraction.
 #[derive(Clone)]
-pub struct Renderer<'a> {
-    context: RenderContext<'a>,
+pub struct Renderer {
+    context: RenderContext,
 }
 
-impl<'a> Renderer<'a> {
+impl<'a> Renderer {
 
     /// Returns a new renderer instance.
     pub fn new(display: &Display) -> Self {
@@ -32,7 +32,7 @@ impl<'a> Renderer<'a> {
     /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext)
     /// is thread-safe and required by [`Font`](struct.Font) and [`Sprite`](struct.Sprite) to
     /// create new instances.
-    pub fn context(&self) -> RenderContext<'a> {
+    pub fn context(&self) -> RenderContext {
         self.context.clone()
     }
 
