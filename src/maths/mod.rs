@@ -8,23 +8,23 @@ pub use maths::vec3::Vec3;
 
 use prelude::*;
 
-pub trait VecType<T: Copy + fmt::Display + Float> {
+pub trait VecType<T: Copy + fmt::Debug + Float> {
     fn as_vec3(self: &Self, neutral: T) -> Vec3<T>;
 }
 
-impl<T: Copy + fmt::Display + Float> VecType<T> for (T, T, T) {
+impl<T: Copy + fmt::Debug + Float> VecType<T> for (T, T, T) {
     fn as_vec3(self: &Self, _: T) -> Vec3<T> {
         Vec3::<T>(self.0, self.1, self.2)
     }
 }
 
-impl<T: Copy + fmt::Display + Float> VecType<T> for (T, T) {
+impl<T: Copy + fmt::Debug + Float> VecType<T> for (T, T) {
     fn as_vec3(self: &Self, neutral: T) -> Vec3<T> {
         Vec3::<T>(self.0, self.1, neutral)
     }
 }
 
-impl<T: Copy + fmt::Display + Float> VecType<T> for T {
+impl<T: Copy + fmt::Debug + Float> VecType<T> for T {
     fn as_vec3(self: &Self, _: T) -> Vec3<T> {
         Vec3::<T>(*self, *self, *self)
     }

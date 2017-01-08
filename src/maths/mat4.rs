@@ -4,8 +4,8 @@ use maths::VecType;
 use glium::uniforms::{AsUniformValue, UniformValue};
 
 /// A 4x4 matrix.
-#[derive(Copy, Clone, Debug)]
-pub struct Mat4<T: Copy + fmt::Display + Float + FromPrimitive> {
+#[derive(Copy, Clone)]
+pub struct Mat4<T: Copy + fmt::Debug + Float + FromPrimitive> {
     data: [ T; 16 ],
 }
 
@@ -26,7 +26,7 @@ const E31: usize = 13;
 const E32: usize = 14;
 const E33: usize = 15;
 
-impl<T: Copy + fmt::Display + Float + FromPrimitive> Mat4<T> {
+impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mat4<T> {
 
     /// Creates a zero matrix.
     pub fn new() -> Mat4<T> {
@@ -293,7 +293,7 @@ impl<T: Copy + fmt::Display + Float + FromPrimitive> Mat4<T> {
     }
 }
 
-impl<T: Copy + fmt::Display + Float + FromPrimitive> Mul<T> for Mat4<T> {
+impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mul<T> for Mat4<T> {
     type Output = Mat4<T>;
     fn mul(self, other: T) -> Mat4<T> {
         let a = &self.data;
@@ -321,7 +321,7 @@ impl<T: Copy + fmt::Display + Float + FromPrimitive> Mul<T> for Mat4<T> {
     }
 }
 
-impl<T: Copy + fmt::Display + Float + FromPrimitive> Mul<Mat4<T>> for Mat4<T> {
+impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mul<Mat4<T>> for Mat4<T> {
     type Output = Mat4<T>;
     fn mul(self, other: Mat4<T>) -> Mat4<T> {
         let a = &self.data;
@@ -352,14 +352,14 @@ impl<T: Copy + fmt::Display + Float + FromPrimitive> Mul<Mat4<T>> for Mat4<T> {
     }
 }
 
-impl<T: Copy + fmt::Display + Float + FromPrimitive> fmt::Display for Mat4<T> {
+impl<T: Copy + fmt::Debug + Float + FromPrimitive> fmt::Debug for Mat4<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let a = self.data;
         write!(f, "Mat4(
-  {}, {}, {}, {}
-  {}, {}, {}, {}
-  {}, {}, {}, {}
-  {}, {}, {}, {}
+  {:?}, {:?}, {:?}, {:?}
+  {:?}, {:?}, {:?}, {:?}
+  {:?}, {:?}, {:?}, {:?}
+  {:?}, {:?}, {:?}, {:?}
 )",
 a[E00], a[E01], a[E02], a[E03],
 a[E10], a[E11], a[E12], a[E13],

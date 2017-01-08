@@ -3,10 +3,10 @@ use maths::{Vec3, VecType};
 use glium::uniforms::{AsUniformValue, UniformValue};
 
 /// A 2-dimensional vector.
-#[derive(Copy, Clone, Debug)]
-pub struct Vec2<T: Copy + fmt::Display + Float>(pub T, pub T);
+#[derive(Copy, Clone)]
+pub struct Vec2<T: Copy + fmt::Debug + Float>(pub T, pub T);
 
-impl<T: Copy + fmt::Display + Float> Vec2<T> {
+impl<T: Copy + fmt::Debug + Float> Vec2<T> {
     /// Creates a new instances.
     pub fn new() -> Vec2<T> {
         Vec2::<T>(T::zero(), T::zero())
@@ -33,13 +33,13 @@ impl<T: Copy + fmt::Display + Float> Vec2<T> {
     }
 }
 
-impl<T: Copy + fmt::Display + Float> VecType<T> for Vec2<T> {
+impl<T: Copy + fmt::Debug + Float> VecType<T> for Vec2<T> {
     fn as_vec3(&self, neutral: T) -> Vec3<T> {
         Vec3::<T>(self.0, self.1, neutral)
     }
 }
 
-impl<T: Copy + fmt::Display + Float> Neg for Vec2<T> {
+impl<T: Copy + fmt::Debug + Float> Neg for Vec2<T> {
     type Output = Vec2<T>;
 
     fn neg(self) -> Vec2<T> {
@@ -47,14 +47,14 @@ impl<T: Copy + fmt::Display + Float> Neg for Vec2<T> {
     }
 }
 
-impl<T: Copy + fmt::Display + Float> Add for Vec2<T> {
+impl<T: Copy + fmt::Debug + Float> Add for Vec2<T> {
     type Output = Vec2<T>;
     fn add(self, other: Vec2<T>) -> Vec2<T> {
         Vec2::<T>(self.0 + other.0, self.1 + other.1)
     }
 }
 
-impl<T: Copy + fmt::Display + Float> Mul<T> for Vec2<T> {
+impl<T: Copy + fmt::Debug + Float> Mul<T> for Vec2<T> {
     type Output = Vec2<T>;
     fn mul(self, other: T) -> Vec2<T> {
         Vec2::<T>(self.0 * other, self.1 * other)
@@ -75,8 +75,8 @@ impl AsUniformValue for Vec2<f64> {
     }
 }
 
-impl<T: Copy + fmt::Display + Float> fmt::Display for Vec2<T> {
+impl<T: Copy + fmt::Debug + Float> fmt::Debug for Vec2<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Vec2({}, {})", self.0, self.1)
+        write!(f, "Vec2({:?}, {:?})", self.0, self.1)
     }
 }
