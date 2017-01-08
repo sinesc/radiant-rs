@@ -1,7 +1,8 @@
 [root]
 name = "radiant-rs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
+ "avec 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "font-loader 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -33,6 +34,11 @@ dependencies = [
  "nodrop 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "odds 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "avec"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "backtrace"
@@ -840,6 +846,7 @@ dependencies = [
 "checksum aho-corasick 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ca972c2ea5f742bfce5687b9aef75506a764f61d37f8f649047846a9686ddb66"
 "checksum android_glue 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "155b8329ec4be0063f1b581350514969fb3560a73e8e6b1b8150ce28bb1db6b4"
 "checksum arrayvec 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)" = "295abbcf8112693d74fa426186926b50d67105c88d4d0d94dd8222e51da9755a"
+"checksum avec 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0c03ee6cd8958605c03b9853a95eaac3aab4bbb07e9eb48aa2d16aeae99afd06"
 "checksum backtrace 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "346d7644f0b5f9bc73082d3b2236b69a05fd35cce0cfa3724e184e6a5c9e2a2f"
 "checksum backtrace-sys 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "ff73785ae8e06bb4a7b09e09f06d7434f9748b86d2f67bdf334b603354497e08"
 "checksum bitflags 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "32866f4d103c4e438b1db1158aa1b1a80ee078e5d77a59a2f906fd62a577389c"

@@ -130,14 +130,14 @@ impl Scene {
         self
     }
 
-    /// Create and add a layer to the scene.
-    pub fn create_layer(&self, width: u32, height: u32) -> LayerId {
+    /// Create and register a layer to the scene.
+    pub fn register_layer(&self, width: u32, height: u32) -> LayerId {
         let insert_position = self.layers.push(Layer::new(width, height));
         LayerId(insert_position)
     }
 
-    /// Create and add a sprite to the scene
-    pub fn create_sprite_from_file(self: &Self, file: &str) -> SpriteId {
+    /// Create and register a sprite to the scene
+    pub fn register_sprite_from_file(self: &Self, file: &str) -> SpriteId {
         let sprite = Sprite::from_file(&self.context, file);
         SpriteId(self.sprites.push(sprite))
     }

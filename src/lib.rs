@@ -6,6 +6,7 @@ extern crate num;
 extern crate rusttype;
 extern crate unicode_normalization;
 extern crate font_loader;
+extern crate avec;
 
 mod prelude;
 mod core;
