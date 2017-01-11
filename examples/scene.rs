@@ -10,8 +10,8 @@ fn main() {
 
     // create a scene with one layer and load a sprite for later use
     let scene = Scene::new(&renderer.context());
-    let layer_id = scene.create_layer(640, 480);
-    let sprite_id = scene.create_sprite_from_file("examples/res/sparkles_64x64x1.png");
+    let layer_id = scene.register_layer(640, 480);
+    let sprite_id = scene.register_sprite_from_file("examples/res/sparkles_64x64x1.png");
 
     // define a few scene operations to be run each frame
     scene.op(Op::SetBlendmode(layer_id, blendmodes::MAX));
