@@ -114,7 +114,7 @@ impl<'a> Sprite {
     }
 }
 
-/// loads a spritesheet and returns a vector of frames
+/// Loads a spritesheet and returns a vector of frames
 pub fn load_spritesheet<'b>(file: &str) -> (u32, u32, u32, u32, Vec<RenderContextTexture>) {
 
     // load image file
@@ -138,7 +138,7 @@ pub fn load_spritesheet<'b>(file: &str) -> (u32, u32, u32, u32, Vec<RenderContex
     (bucket_id, pad_size, frame_width, frame_height, raw_frames)
 }
 
-/// parses sprite-sheet filename for dimensions and frame count
+/// Parses sprite-sheet filename for dimensions and frame count
 fn parse_parameters(dimensions: (u32, u32), path: &Path) -> FrameParameters {
 
     lazy_static! { static ref MATCHER: Regex = Regex::new(r"_(\d+)x(\d+)x(\d+)\.").unwrap(); }
@@ -160,9 +160,19 @@ fn parse_parameters(dimensions: (u32, u32), path: &Path) -> FrameParameters {
     }
 }
 
-/// constructs a RawFrame for a single frame of a spritesheet
+/// Multiplies image color channels with alpha channel
+fn premultiply_alpha(mut image: image::RgbaImage) -> image::RgbaImage {
+    for (_, _, pixel) in image.enumerate_pixels_mut() {
+        pixel[0] = (pixel[3] as u32 * pixel[0] as u32 / 255) as u8;
+        pixel[1] = (pixel[3] as u32 * pixel[1] as u32 / 255) as u8;
+        pixel[2] = (pixel[3] as u32 * pixel[2] as u32 / 255) as u8;
+    }
+    image
+}
+
+/// Constructs a RawFrame for a single frame of a spritesheet
 ///
-/// if neccessary, pads the image up to the next power of two
+/// If neccessary, pads the image up to the next power of two
 fn build_frame_texture<'b>(image: &mut image::DynamicImage, image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32, pad_size: u32) -> RenderContextTexture {
 
     let FrameParameters(frame_width, frame_height, _, _) = *frame_parameters;
@@ -175,7 +185,7 @@ fn build_frame_texture<'b>(image: &mut image::DynamicImage, image_dimensions: (u
         let mut dest = image::DynamicImage::new_rgba8(pad_size, pad_size);
         dest.copy_from(&subimage, 0, 0);
         RenderContextTexture {
-            data: dest.to_rgba().into_raw(),
+            data: premultiply_alpha(dest.to_rgba()).into_raw(),
             width: pad_size,
             height: pad_size,
         }
@@ -184,14 +194,14 @@ fn build_frame_texture<'b>(image: &mut image::DynamicImage, image_dimensions: (u
 
         // perfect fit
         RenderContextTexture {
-            data: subimage.to_rgba().into_raw(),
+            data: premultiply_alpha(subimage.to_rgba()).into_raw(),
             width: frame_width,
             height: frame_height,
         }
     }
 }
 
-/// computes top/left frame coordinates for the given frame_id in a sprite-sheet
+/// Computes top/left frame coordinates for the given frame_id in a sprite-sheet
 fn get_frame_coordinates(image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32) -> (u32, u32) {
 
     let (img_width, img_height) = image_dimensions;

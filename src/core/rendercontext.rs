@@ -55,9 +55,19 @@ impl RenderContextTextureArray {
     pub fn new(display: &Display) -> Self {
         RenderContextTextureArray {
             dirty   : false,
-            data    : glium::texture::SrgbTexture2dArray::empty(display::handle(&display), 2, 2, 1).unwrap(),
+            data    : texture_array(display, Vec::new()),
             raw     : Vec::new(),
         }
+    }
+}
+
+/// Generates glium texture array from given vector of textures
+fn texture_array(display: &Display, raw: Vec<RenderContextTexture>) -> glium::texture::SrgbTexture2dArray {
+    use glium::texture;
+    if raw.len() > 0 {
+        texture::SrgbTexture2dArray::with_format(display::handle(display), raw.clone(), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
+    } else {
+        texture::SrgbTexture2dArray::empty_with_format(display::handle(display), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
     }
 }
 
@@ -104,11 +114,7 @@ impl RenderContextData {
         for ref mut array in self.tex_array.iter_mut() {
             if array.dirty {
                 array.dirty = false;
-                if array.raw.len() > 0 {
-                    array.data = glium::texture::SrgbTexture2dArray::new(display::handle(&self.display), array.raw.clone()).unwrap();
-                } else {
-                    array.data = glium::texture::SrgbTexture2dArray::empty(display::handle(&self.display), 2, 2, 1).unwrap();
-                }
+                array.data = texture_array(&self.display, array.raw.clone());
             }
         }
     }
