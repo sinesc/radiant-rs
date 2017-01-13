@@ -1,5 +1,5 @@
 use prelude::*;
-use misc::AVec;
+use avec::AVec;
 use maths::{Mat4, Vec2};
 use core::{Renderer, RenderContext, Layer, Font, Sprite, Color};
 use BlendMode;

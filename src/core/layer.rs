@@ -1,6 +1,6 @@
 use glium;
 use prelude::*;
-use misc::AVec;
+use avec::AVec;
 use maths::Mat4;
 use core::{blendmodes, BlendMode, Point, Rect, rendercontext, RenderContextData, Color, display};
 
