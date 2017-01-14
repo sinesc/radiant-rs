@@ -38,7 +38,7 @@ impl<'a> Sprite {
 
     /// Creates a new sprite texture
     ///
-    /// The given filename is epected to end on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
+    /// The given filename is expected to end on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
     pub fn from_file(context: &RenderContext, file: &str) -> Sprite {
 
         let (bucket_id, texture_size, frame_width, frame_height, raw_frames) = load_spritesheet(file);
@@ -115,12 +115,12 @@ impl<'a> Sprite {
 }
 
 /// Loads a spritesheet and returns a vector of frames
-pub fn load_spritesheet<'b>(file: &str) -> (u32, u32, u32, u32, Vec<RenderContextTexture>) {
+pub fn load_spritesheet(file: &str) -> (u32, u32, u32, u32, Vec<RenderContextTexture>) {
 
     // load image file
 
     let path = Path::new(file);
-    let mut image = image::open(&path).unwrap();
+    let mut image = image::open(&path).unwrap();    // !note extremely slow in debug compile
     let image_dimensions = image.dimensions();
 
     // compute frame parameters
@@ -173,7 +173,7 @@ fn premultiply_alpha(mut image: image::RgbaImage) -> image::RgbaImage {
 /// Constructs a RawFrame for a single frame of a spritesheet
 ///
 /// If neccessary, pads the image up to the next power of two
-fn build_frame_texture<'b>(image: &mut image::DynamicImage, image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32, pad_size: u32) -> RenderContextTexture {
+fn build_frame_texture(image: &mut image::DynamicImage, image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32, pad_size: u32) -> RenderContextTexture {
 
     let FrameParameters(frame_width, frame_height, _, _) = *frame_parameters;
     let (x, y) = get_frame_coordinates(image_dimensions, frame_parameters, frame_id);
