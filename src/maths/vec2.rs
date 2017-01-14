@@ -4,7 +4,7 @@ use glium::uniforms::{AsUniformValue, UniformValue};
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone)]
-pub struct Vec2<T: Copy + fmt::Debug + Float>(pub T, pub T);
+pub struct Vec2<T: Copy + fmt::Debug + Float = f32>(pub T, pub T);
 
 impl<T: Copy + fmt::Debug + Float> Vec2<T> {
     /// Creates a new instances.

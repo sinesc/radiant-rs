@@ -5,7 +5,7 @@ use glium::uniforms::{AsUniformValue, UniformValue};
 
 /// A 4x4 matrix.
 #[derive(Copy, Clone)]
-pub struct Mat4<T: Copy + fmt::Debug + Float + FromPrimitive> {
+pub struct Mat4<T: Copy + fmt::Debug + Float + FromPrimitive = f32> {
     data: [ T; 16 ],
 }
 
