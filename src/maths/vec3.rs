@@ -6,7 +6,7 @@ use glium::uniforms::{AsUniformValue, UniformValue};
 #[derive(Copy, Clone)]
 pub struct Vec3<T: Copy + fmt::Debug + Float = f32>(pub T, pub T, pub T);
 
-impl<T: Copy + fmt::Debug + Float> Vec3<T> {
+impl<T> Vec3<T> where T: Copy + fmt::Debug + Float {
     /// Creates a new instances.
     pub fn new() -> Vec3<T> {
         Vec3::<T>(T::zero(), T::zero(), T::zero())
@@ -17,13 +17,13 @@ impl<T: Copy + fmt::Debug + Float> Vec3<T> {
     }
 }
 
-impl<T: Copy + fmt::Debug + Float> VecType<T> for Vec3<T> {
+impl<T> VecType<T> for Vec3<T> where T: Copy + fmt::Debug + Float{
     fn as_vec3(&self, _: T) -> Vec3<T> {
         *self
     }
 }
 
-impl<T: Copy + fmt::Debug + Float> Neg for Vec3<T> {
+impl<T> Neg for Vec3<T> where T: Copy + fmt::Debug + Float {
     type Output = Vec3<T>;
 
     fn neg(self) -> Vec3<T> {
@@ -31,17 +31,48 @@ impl<T: Copy + fmt::Debug + Float> Neg for Vec3<T> {
     }
 }
 
-impl<T: Copy + fmt::Debug + Float> Add for Vec3<T> {
+impl<T> Add for Vec3<T> where T: Copy + fmt::Debug + Float {
     type Output = Vec3<T>;
     fn add(self, other: Vec3<T>) -> Vec3<T> {
         Vec3::<T>(self.0 + other.0, self.1 + other.1, self.2 + other.2)
     }
 }
 
-impl<T: Copy + fmt::Debug + Float> Mul<T> for Vec3<T> {
+impl<T> AddAssign for Vec3<T> where T: Copy + fmt::Debug + Float{
+    fn add_assign(self: &mut Self, other: Vec3<T>) {
+        *self = Vec3::<T> (
+            self.0 + other.0,
+            self.1 + other.1,
+            self.2 + other.2
+        )
+    }
+}
+
+impl<T> Mul<T> for Vec3<T> where T: Copy + fmt::Debug + Float {
     type Output = Vec3<T>;
     fn mul(self, other: T) -> Vec3<T> {
         Vec3::<T>(self.0 * other, self.1 * other, self.2 * other)
+    }
+}
+
+impl<T> Mul<Vec3<T>> for Vec3<T> where T: Copy + fmt::Debug + Float {
+    type Output = Vec3<T>;
+    fn mul(self, other: Vec3<T>) -> Vec3<T> {
+        Vec3::<T>(self.0 * other.0, self.1 * other.1, self.1 * other.2)
+    }
+}
+
+impl Mul<Vec3<f32>> for f32 {
+    type Output = Vec3<f32>;
+    fn mul(self, other: Vec3<f32>) -> Vec3<f32> {
+        Vec3::<f32>(self * other.0, self * other.1, self * other.2)
+    }
+}
+
+impl Mul<Vec3<f64>> for f64 {
+    type Output = Vec3<f64>;
+    fn mul(self, other: Vec3<f64>) -> Vec3<f64> {
+        Vec3::<f64>(self * other.0, self * other.1, self * other.2)
     }
 }
 
@@ -59,7 +90,7 @@ impl AsUniformValue for Vec3<f64> {
     }
 }
 
-impl<T: Copy + fmt::Debug + Float> fmt::Debug for Vec3<T> {
+impl<T> fmt::Debug for Vec3<T> where T: Copy + fmt::Debug + Float {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Vec3({:?}, {:?}, {:?})", self.0, self.1, self.2)
     }
