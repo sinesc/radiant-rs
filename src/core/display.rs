@@ -2,7 +2,7 @@ use glium;
 use glium::DisplayBuild;
 use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton/*, VirtualKeyCode*/};
 use prelude::*;
-use core::input::{InputState, ButtonState};
+use core::input::{InputData, InputState};
 use core::monitor;
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
@@ -35,15 +35,15 @@ impl Default for DisplayInfo {
 #[derive(Clone)]
 pub struct Display {
     handle: glium::Display,
-    input_state: Arc<RwLock<InputState>>,
+    input_data: Arc<RwLock<InputData>>,
 }
 
 pub fn handle(display: &Display) -> &glium::Display {
     &display.handle
 }
 
-pub fn input_state(display: &Display) -> &Arc<RwLock<InputState>> {
-    &display.input_state
+pub fn input_data(display: &Display) -> &Arc<RwLock<InputData>> {
+    &display.input_data
 }
 
 impl Display {
@@ -70,7 +70,7 @@ impl Display {
 
         Display {
             handle: builder.build_glium().unwrap(),
-            input_state: Arc::new(RwLock::new(InputState::new())),
+            input_data: Arc::new(RwLock::new(InputData::new())),
         }
     }
 
@@ -98,20 +98,20 @@ impl Display {
     pub fn grab_cursor(self: &Self) {
         let window = self.window();
         window.set_cursor_state(glium::glutin::CursorState::Grab).unwrap();
-        self.input_state.write().unwrap().cursor_grabbed = true;
+        self.input_data.write().unwrap().cursor_grabbed = true;
         window.set_cursor_position(100, 100).unwrap();
     }
 
     /// Hides the mouse cursor while it is inside the window.
     pub fn hide_cursor(self: &Self) {
         self.window().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
-        self.input_state.write().unwrap().cursor_grabbed = false;
+        self.input_data.write().unwrap().cursor_grabbed = false;
     }
 
     /// Releases a previously grabbed or hidden cursor and makes it visible again.
     pub fn free_cursor(self: &Self) {
         self.window().set_cursor_state(glium::glutin::CursorState::Normal).unwrap();
-        self.input_state.write().unwrap().cursor_grabbed = false;
+        self.input_data.write().unwrap().cursor_grabbed = false;
     }
 
     /// Returns the window dimensions.
@@ -143,7 +143,7 @@ impl Display {
     pub fn from_window_builder(builder: WindowBuilder<'static>) -> Display {
         Display {
             handle: builder.build_glium().unwrap(),
-            input_state: Arc::new(RwLock::new(InputState::new())),
+            input_data: Arc::new(RwLock::new(InputData::new())),
         }
     }
 */
@@ -151,7 +151,7 @@ impl Display {
     /// Polls for events like keyboard or mouse input and changes to the window. See
     /// [`Input`](struct.Input.html) for basic keyboard and mouse support.
     pub fn poll_events(self: &Self) -> &Self {
-        let mut input_state = self.input_state.write().unwrap();
+        let mut input_data = self.input_data.write().unwrap();
         let window = self.window();
 
         for event in self.handle.poll_events() {
@@ -187,13 +187,13 @@ impl Display {
                     }
                 },*/
                 Event::KeyboardInput(element_state, scan_code, _) => {
-                    let new_state = if element_state == ElementState::Pressed { ButtonState::Down } else { ButtonState::Up };
-                    let current_state = input_state.key[scan_code as usize];
+                    let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
+                    let current_state = input_data.key[scan_code as usize];
 
-                    input_state.key[scan_code as usize] = if current_state == ButtonState::Up && new_state == ButtonState::Down {
-                        ButtonState::Pressed
-                    } else if current_state == ButtonState::Down && new_state == ButtonState::Up {
-                        ButtonState::Released
+                    input_data.key[scan_code as usize] = if current_state == InputState::Up && new_state == InputState::Down {
+                        InputState::Pressed
+                    } else if current_state == InputState::Down && new_state == InputState::Up {
+                        InputState::Released
                     } else {
                         new_state
                     };
@@ -201,15 +201,15 @@ impl Display {
                     //println!("key: {}", scan_code);
                 },
                 Event::MouseMoved(x, y) => {
-                    if input_state.cursor_grabbed {
-                        let center = ((input_state.dimensions.0 / 2) as i32, (input_state.dimensions.1 / 2) as i32);
-                        let old_mouse = input_state.mouse;
+                    if input_data.cursor_grabbed {
+                        let center = ((input_data.dimensions.0 / 2) as i32, (input_data.dimensions.1 / 2) as i32);
+                        let old_mouse = input_data.mouse;
                         let delta = (x - center.0, y - center.1);
-                        input_state.mouse = (old_mouse.0 + delta.0, old_mouse.1 + delta.1);
-                        input_state.mouse_delta = delta;
+                        input_data.mouse = (old_mouse.0 + delta.0, old_mouse.1 + delta.1);
+                        input_data.mouse_delta = delta;
                         window.set_cursor_position(center.0, center.1).unwrap();
                     } else {
-                        input_state.mouse = (x, y);
+                        input_data.mouse = (x, y);
                     }
                 },
                 Event::MouseInput(element_state, button) => {
@@ -219,41 +219,41 @@ impl Display {
                         MouseButton::Right => 3,
                         MouseButton::Other(x) => x,
                     };
-                    let new_state = if element_state == ElementState::Pressed { ButtonState::Down } else { ButtonState::Up };
-                    let current_state = input_state.button[button_id as usize];
+                    let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
+                    let current_state = input_data.button[button_id as usize];
 
-                    input_state.button[button_id as usize] = if current_state == ButtonState::Up && new_state == ButtonState::Down {
-                        ButtonState::Pressed
-                    } else if current_state == ButtonState::Down && new_state == ButtonState::Up {
-                        ButtonState::Released
+                    input_data.button[button_id as usize] = if current_state == InputState::Up && new_state == InputState::Down {
+                        InputState::Pressed
+                    } else if current_state == InputState::Down && new_state == InputState::Up {
+                        InputState::Released
                     } else {
                         new_state
                     };
                 },
                 Event::Focused(true) => {
                     // restore grab after focus loss
-                    if input_state.cursor_grabbed {
+                    if input_data.cursor_grabbed {
                         window.set_cursor_state(glium::glutin::CursorState::Normal).unwrap();
                         window.set_cursor_state(glium::glutin::CursorState::Grab).unwrap();
                     }
                 }
                 Event::Closed => {
-                    input_state.should_close = true;
+                    input_data.should_close = true;
                 }
                 _ => ()
             }
         }
 
-        input_state.dimensions = window.get_inner_size_pixels().unwrap_or((0, 0));
+        input_data.dimensions = window.get_inner_size_pixels().unwrap_or((0, 0));
 
         self
     }
 
     /// Returns true once after the attached window was closed
     pub fn was_closed(self: &Self) -> bool {
-        let mut input_state = self.input_state.write().unwrap();
-        let result = input_state.should_close;
-        input_state.should_close = false;
+        let mut input_data = self.input_data.write().unwrap();
+        let result = input_data.should_close;
+        input_data.should_close = false;
         result
     }
 

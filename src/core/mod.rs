@@ -11,7 +11,7 @@ mod color;
 mod monitor;
 
 pub use self::blendmode::{blendmodes, BlendMode};
-pub use self::input::{Input, ButtonState};
+pub use self::input::{Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator};
 pub use self::display::{Display, DisplayInfo};
 pub use self::sprite::Sprite;
 pub use self::renderer::Renderer;
