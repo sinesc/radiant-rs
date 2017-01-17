@@ -2,7 +2,7 @@ use glium;
 use glium::DisplayBuild;
 use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton/*, VirtualKeyCode*/};
 use prelude::*;
-use core::input::{InputData, InputState};
+use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
@@ -156,37 +156,22 @@ impl Display {
 
         for event in self.handle.poll_events() {
             match event {
-                // !todo vkeys seem broken
-                /*Event::KeyboardInput(element_state, scan_code, Some(virtual_code)) => {
-                    let new_state = if element_state == ElementState::Pressed { true } else { false };
-                    match virtual_code {
-                        VirtualKeyCode::LAlt => {
-                            self.alt_left = new_state;
-                        },
-                        VirtualKeyCode::RAlt => {
-                            self.alt_right = new_state;
-                        },
-                        VirtualKeyCode::LShift => {
-                            self.shift_left = new_state;
-                        },
-                        VirtualKeyCode::RShift => {
-                            self.shift_right = new_state;
-                        },
-                        VirtualKeyCode::LControl => {
-                            self.ctrl_left = new_state;
-                        },
-                        VirtualKeyCode::RControl => {
-                            self.ctrl_right = new_state;
-                        },
-                        VirtualKeyCode::Escape => {
-                            self.escape = new_state;
-                        },
-                        _ => {
-                            println!("no idea");
-                        }
+                Event::KeyboardInput(element_state, _, Some(virtual_code)) => {
+                    let key_id = input_id_from_glutin(virtual_code) as usize;
+                    if key_id < NUM_KEYS {
+                        let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
+                        let current_state = input_data.key[key_id];
+
+                        input_data.key[key_id] = if current_state == InputState::Up && new_state == InputState::Down {
+                            InputState::Pressed
+                        } else if current_state == InputState::Down && new_state == InputState::Up {
+                            InputState::Released
+                        } else {
+                            new_state
+                        };
                     }
-                },*/
-                Event::KeyboardInput(element_state, scan_code, _) => {
+                },
+                /*Event::KeyboardInput(element_state, scan_code, _) => {
                     let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
                     let current_state = input_data.key[scan_code as usize];
 
@@ -197,9 +182,7 @@ impl Display {
                     } else {
                         new_state
                     };
-
-                    //println!("key: {}", scan_code);
-                },
+                },*/
                 Event::MouseMoved(x, y) => {
                     if input_data.cursor_grabbed {
                         let center = ((input_data.dimensions.0 / 2) as i32, (input_data.dimensions.1 / 2) as i32);
@@ -214,21 +197,23 @@ impl Display {
                 },
                 Event::MouseInput(element_state, button) => {
                     let button_id = match button {
-                        MouseButton::Left => 1,
-                        MouseButton::Middle => 2,
-                        MouseButton::Right => 3,
-                        MouseButton::Other(x) => x,
+                        MouseButton::Left => 0,
+                        MouseButton::Middle => 1,
+                        MouseButton::Right => 2,
+                        MouseButton::Other(x) => (x - 1) as usize,
                     };
-                    let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
-                    let current_state = input_data.button[button_id as usize];
+                    if button_id < NUM_BUTTONS {
+                        let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
+                        let current_state = input_data.button[button_id];
 
-                    input_data.button[button_id as usize] = if current_state == InputState::Up && new_state == InputState::Down {
-                        InputState::Pressed
-                    } else if current_state == InputState::Down && new_state == InputState::Up {
-                        InputState::Released
-                    } else {
-                        new_state
-                    };
+                        input_data.button[button_id] = if current_state == InputState::Up && new_state == InputState::Down {
+                            InputState::Pressed
+                        } else if current_state == InputState::Down && new_state == InputState::Up {
+                            InputState::Released
+                        } else {
+                            new_state
+                        };
+                    }
                 },
                 Event::Focused(true) => {
                     // restore grab after focus loss

@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Input, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Input, InputId, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
 
 pub fn main() {
 
@@ -58,6 +58,6 @@ pub fn main() {
         renderer.draw_layer(&fps_layer);
         renderer.swap_target();
 
-        !display.poll_events().was_closed() && !input.escape()
+        !display.poll_events().was_closed() && !input.down(InputId::Escape)
     });
 }
