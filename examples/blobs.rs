@@ -9,7 +9,7 @@ pub fn main() {
     let input = Input::new(&display);
     let context = renderer.context();
 
-    // create three layers, change one to use an overlay blend mode
+    // create three layers, change one to use the "lighten" blend mode
     let text_layer = Layer::new(640, 480);
     let spark_layer = Layer::new(640, 480);
     let fps_layer = Layer::new(640, 480);

@@ -6,7 +6,7 @@ use std::sync::{Arc, Barrier};
 pub fn main() {
 
     // create a window, a renderer and a threadsafe context (required for sprite/font creation)
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
+    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display);
 
     // create a single layer and a font
@@ -30,7 +30,7 @@ pub fn main() {
             let pos = 120.0 + (i as f32) * 20.0;
             loop {
                 big_font.write_transformed(&layer, &format!("Thread {} !", i+1), pos, pos, 0.0, rot, 1.0, 1.0);
-                rot += 0.0001;
+                rot += 0.01;
 
                 // wait until all other threads have also drawn, then wait until the layers have been rendered
                 draw_start.wait();
