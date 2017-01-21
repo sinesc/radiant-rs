@@ -1,5 +1,4 @@
 use prelude::*;
-//use std::ops::Not;
 use core::{display, Display};
 use glium::glutin;
 
@@ -19,13 +18,6 @@ pub enum InputState {
     Released,
 }
 
-/*impl Not for InputState {
-    type Output = bool;
-    fn not(self) -> bool {
-        self == InputState::Up || self == InputState::Released
-    }
-}*/
-
 pub struct InputData {
     pub mouse           : (i32, i32),
     pub mouse_delta     : (i32, i32),
@@ -35,20 +27,6 @@ pub struct InputData {
     pub cursor_grabbed  : bool,
     pub dimensions      : (u32, u32),
 }
-
-/*impl Clone for InputData {
-    fn clone(self: &Self) -> InputData {
-        InputData {
-            mouse           : self.mouse,
-            mouse_delta     : self.mouse_delta,
-            button          : self.button,
-            key             : self.key,
-            should_close    : self.should_close,
-            cursor_grabbed  : self.cursor_grabbed,
-            dimensions      : self.dimensions,
-        }
-    }
-}*/
 
 impl InputData {
     pub fn new() -> InputData {
@@ -62,37 +40,6 @@ impl InputData {
             dimensions      : (0, 0),
         }
     }
-/*
-    /// Returns current mouse coordinates relative to the window.
-    pub fn mouse(self: &Self) -> (i32, i32) {
-        self.mouse
-    }
-
-    /// Returns mouse delta coordinates since last [`Display::poll_events()`](struct.Display.html#method.poll_events).
-    pub fn mouse_delta(self: &Self) -> (i32, i32) {
-        self.mouse_delta
-    }
-
-    /// Returns true if given key is down/pressed
-    pub fn down(self: &Self, key: InputId) -> bool {
-        let id = key as usize;
-        if id < NUM_KEYS {
-            (self.key[id] == InputState::Pressed) | (self.key[id] == InputState::Down)
-        } else {
-            (self.button[id - NUM_KEYS] == InputState::Pressed) | (self.key[id - NUM_KEYS] == InputState::Down)
-        }
-    }
-
-    /// Returns true if given key is up/released
-    pub fn up(self: &Self, key: InputId) -> bool {
-        let id = key as usize;
-        if id < NUM_KEYS {
-            (self.key[id] == InputState::Released) | (self.key[id] == InputState::Up)
-        } else {
-            (self.button[id - NUM_KEYS] == InputState::Released) | (self.key[id - NUM_KEYS] == InputState::Up)
-        }
-    }
-*/
 }
 
 enum_from_primitive! {
@@ -454,8 +401,13 @@ pub struct InputIterator<'a> {
 }
 
 impl<'a> InputIterator<'a> {
+    /// Returns an iterator over all keys currently pressed.
     pub fn down(self: Self) -> InputDownIterator<'a> {
         InputDownIterator(self)
+    }
+    /// Returns an iterator over all keys not currently pressed.
+    pub fn up(self: Self) -> InputUpIterator<'a> {
+        InputUpIterator(self)
     }
 }
 
@@ -533,11 +485,6 @@ impl Input {
             position: 0,
         }
     }
-
-    /// Returns a copy of the current input data
-    /*pub fn snapshot(self: &Self) -> InputData {
-        (*self.get().deref()).clone()
-    }*/
 
     /// Returns current mouse coordinates relative to the window.
     pub fn mouse(self: &Self) -> (i32, i32) {
