@@ -16,20 +16,36 @@ impl<T> Vec2<T> where T: Copy + fmt::Debug + Float {
         (self.0*self.0 + self.1*self.1).sqrt()
     }
     /// Returns the direction of the vector in radians.
-    pub fn to_rad(self: &Self) -> T {
+    pub fn to_radians(self: &Self) -> T {
         self.1.atan2(self.0)
     }
     /// Returns the direction of the vector in degrees.
-    pub fn to_deg(self: &Self) -> T {
-        self.to_rad().to_degrees()
+    pub fn to_degrees(self: &Self) -> T {
+        self.to_radians().to_degrees()
     }
     /// Creates a unit-vector from the angle given in radians.
-    pub fn from_rad(radians: T) -> Vec2<T> {
+    pub fn from_radians(radians: T) -> Vec2<T> {
         Vec2::<T>(radians.cos(), radians.sin())
     }
     /// Creates a unit-vector from the angle given in degrees.
-    pub fn from_deg(degrees: T) -> Vec2<T> {
-        Self::from_rad(degrees.to_radians())
+    pub fn from_degrees(degrees: T) -> Vec2<T> {
+        Self::from_radians(degrees.to_radians())
+    }
+    /// Normalizes the vector.
+    pub fn normalize(mut self: Self) -> Self {
+        let len = self.len();
+        self.0 = self.0 / len;
+        self.1 = self.1 / len;
+        self
+    }
+    /// Extends the vector by given length.
+    pub fn extend(mut self: Self, extension_len: T) -> Self {
+        let base_len = self.len();
+        let new_len = base_len + extension_len;
+        let factor = new_len / base_len;
+        self.0 = self.0 * factor;
+        self.1 = self.1 * factor;
+        self
     }
 }
 
