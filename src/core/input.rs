@@ -438,7 +438,7 @@ impl<'a> Iterator for InputDownIterator<'a> {
     fn next(self: &mut Self) -> Option<InputId> {
         while let Some(current) = self.0.next() {
             let (input_id, button_state) = current;
-            if (button_state == InputState::Down) | (button_state == InputState::Pressed) {
+            if (button_state == InputState::Down) || (button_state == InputState::Pressed) {
                 return Some(input_id);
             }
         }
@@ -455,7 +455,7 @@ impl<'a> Iterator for InputUpIterator<'a> {
     fn next(self: &mut Self) -> Option<InputId> {
         while let Some(current) = self.0.next() {
             let (input_id, button_state) = current;
-            if (button_state == InputState::Up) | (button_state == InputState::Released) {
+            if (button_state == InputState::Up) || (button_state == InputState::Released) {
                 return Some(input_id);
             }
         }
@@ -512,9 +512,9 @@ impl Input {
         let id = key as usize;
         let data = self.get();
         if id < NUM_KEYS {
-            (data.key[id] == InputState::Pressed) | (data.key[id] == InputState::Down)
+            (data.key[id] == InputState::Pressed) || (data.key[id] == InputState::Down)
         } else {
-            (data.button[id - NUM_KEYS] == InputState::Pressed) | (data.key[id - NUM_KEYS] == InputState::Down)
+            (data.button[id - NUM_KEYS] == InputState::Pressed) || (data.key[id - NUM_KEYS] == InputState::Down)
         }
     }
 
@@ -523,9 +523,9 @@ impl Input {
         let id = key as usize;
         let data = self.get();
         if id < NUM_KEYS {
-            (data.key[id] == InputState::Released) | (data.key[id] == InputState::Up)
+            (data.key[id] == InputState::Released) || (data.key[id] == InputState::Up)
         } else {
-            (data.button[id - NUM_KEYS] == InputState::Released) | (data.key[id - NUM_KEYS] == InputState::Up)
+            (data.button[id - NUM_KEYS] == InputState::Released) || (data.key[id - NUM_KEYS] == InputState::Up)
         }
     }
 
