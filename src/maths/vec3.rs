@@ -15,6 +15,10 @@ impl<T> Vec3<T> where T: Debug + Float {
     pub fn len(self: &Self) -> T {
         (self.0*self.0 + self.1*self.1 + self.2*self.2).sqrt()
     }
+    /// Returns the dot-product of the vectors.
+    pub fn dot(self: &Self, other: &Vec3<T>) -> T {
+        self.0 * other.0 + self.1 * other.1 + self.1 * other.2
+    }
 }
 
 impl<T> VecType<T> for Vec3<T> where T: Debug + Float {
@@ -66,17 +70,17 @@ impl<T> SubAssign for Vec3<T> where T: Debug + Float {
 }
 
 impl<T> Mul<Vec3<T>> for Vec3<T> where T: Debug + Float {
-    type Output = T;
-    /// Returns the dot-product of the vectors.
-    fn mul(self, other: Vec3<T>) -> T {
-        self.0 * other.0 + self.1 * other.1 + self.2 * other.2
+    type Output = Vec3<T>;
+    /// Multiplies individual vector components with those of the given vector.
+    fn mul(self, other: Vec3<T>) -> Vec3<T> {
+        Vec3::<T>(self.0 * other.0, self.1 * other.1, self.2 * other.2)
     }
 }
 
-impl<T> MulAssign<T> for Vec3<T> where T: Debug + Float {
-    /// Mutates the vector by multiplying it with given scalar.
-    fn mul_assign(&mut self, other: T) {
-        *self = Vec3::<T>(self.0 * other, self.1 * other, self.2 * other)
+impl<T> MulAssign<Vec3<T>> for Vec3<T> where T: Debug + Float {
+    /// Mutates the vector by multiplying its components with those of the given vector.
+    fn mul_assign(&mut self, other: Vec3<T>) {
+        *self = Vec3::<T>(self.0 * other.0, self.1 * other.1, self.2 * other.2)
     }
 }
 
@@ -88,10 +92,25 @@ impl<T> Mul<T> for Vec3<T> where T: Debug + Float {
     }
 }
 
-impl<T> DivAssign<T> for Vec3<T> where T: Debug + Float {
-    /// Mutates the vector by dividing it by given scalar.
-    fn div_assign(&mut self, other: T) {
-        *self = Vec3::<T>(self.0 / other, self.1 / other, self.2 / other)
+impl<T> MulAssign<T> for Vec3<T> where T: Debug + Float {
+    /// Mutates the vector by multiplying it with the scalar operand.
+    fn mul_assign(&mut self, other: T) {
+        *self = Vec3::<T>(self.0 * other, self.1 * other, self.2 * other)
+    }
+}
+
+impl<T> Div<Vec3<T>> for Vec3<T> where T: Debug + Float {
+    type Output = Vec3<T>;
+    /// Divides individual vector components with those of the given vector.
+    fn div(self, other: Vec3<T>) -> Vec3<T> {
+        Vec3::<T>(self.0 / other.0, self.1 / other.1, self.2 / other.2)
+    }
+}
+
+impl<T> DivAssign<Vec3<T>> for Vec3<T> where T: Debug + Float {
+    /// Mutates the vector by dividing its components with those of the given vector.
+    fn div_assign(&mut self, other: Vec3<T>) {
+        *self = Vec3::<T>(self.0 / other.0, self.1 / other.1, self.2 / other.2)
     }
 }
 
@@ -100,6 +119,13 @@ impl<T> Div<T> for Vec3<T> where T: Debug + Float {
     /// Divides the vector by given scalar operand.
     fn div(self, other: T) -> Vec3<T> {
         Vec3::<T>(self.0 / other, self.1 / other, self.2 / other)
+    }
+}
+
+impl<T> DivAssign<T> for Vec3<T> where T: Debug + Float {
+    /// Mutates the vector by dividing it by given scalar.
+    fn div_assign(&mut self, other: T) {
+        *self = Vec3::<T>(self.0 / other, self.1 / other, self.2 / other)
     }
 }
 
