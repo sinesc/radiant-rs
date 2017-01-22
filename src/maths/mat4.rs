@@ -5,7 +5,7 @@ use glium::uniforms::{AsUniformValue, UniformValue};
 
 /// A 4x4 matrix.
 #[derive(Copy, Clone)]
-pub struct Mat4<T: Copy + fmt::Debug + Float + FromPrimitive = f32> {
+pub struct Mat4<T: Debug + Float + NumCast = f32> {
     data: [ T; 16 ],
 }
 
@@ -26,7 +26,7 @@ const E31: usize = 13;
 const E32: usize = 14;
 const E33: usize = 15;
 
-impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mat4<T> {
+impl<T> Mat4<T> where T: Debug + Float + NumCast {
 
     /// Creates a zero matrix.
     pub fn new() -> Mat4<T> {
@@ -266,6 +266,7 @@ impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mat4<T> {
     }
 
     /// Get rotation matrix euler angles
+    #[allow(non_snake_case)]
     pub fn get_euler(self: &Self) -> Vec3<T> {
         use std;
         let a = &self.data;
@@ -273,15 +274,15 @@ impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mat4<T> {
         let z: T;
         let x: T;
 
-        let half_pi = T::from_f64(std::f64::consts::PI).unwrap() / (T::one()+T::one());
+        let half_PI = NumCast::from(std::f64::consts::PI / 2.0).unwrap();
 
-    	if a[E01] > T::from_f32(0.998).unwrap() { // singularity at north pole
+    	if a[E01] > NumCast::from(0.998).unwrap() { // singularity at north pole
     		y = a[E20].atan2(a[E22]);
-    		z = half_pi;
+    		z = half_PI;
     		x = T::zero();
-    	} else if a[E01] < T::from_f32(-0.998).unwrap() { // singularity at south pole
+    	} else if a[E01] < NumCast::from(-0.998).unwrap() { // singularity at south pole
     		y = a[E20].atan2(a[E22]);
-    		z = -half_pi;
+    		z = -half_PI;
     		x = T::zero();
     	} else {
         	y = (-a[E02]).atan2(a[E00]);
@@ -293,7 +294,7 @@ impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mat4<T> {
     }
 }
 
-impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mul<T> for Mat4<T> {
+impl<T: Debug + Float> Mul<T> for Mat4<T> {
     type Output = Mat4<T>;
     fn mul(self, other: T) -> Mat4<T> {
         let a = &self.data;
@@ -321,7 +322,7 @@ impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mul<T> for Mat4<T> {
     }
 }
 
-impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mul<Mat4<T>> for Mat4<T> {
+impl<T: Debug + Float> Mul<Mat4<T>> for Mat4<T> {
     type Output = Mat4<T>;
     fn mul(self, other: Mat4<T>) -> Mat4<T> {
         let a = &self.data;
@@ -352,7 +353,7 @@ impl<T: Copy + fmt::Debug + Float + FromPrimitive> Mul<Mat4<T>> for Mat4<T> {
     }
 }
 
-impl<T: Copy + fmt::Debug + Float + FromPrimitive> fmt::Debug for Mat4<T> {
+impl<T: Debug + Float> Debug for Mat4<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let a = self.data;
         write!(f, "Mat4(

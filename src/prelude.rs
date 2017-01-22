@@ -2,13 +2,13 @@ pub use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering, ATOMIC_USIZE_INIT
 pub use std::sync::{Arc, Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 pub use std::cell::RefCell;
 pub use std::rc::Rc;
-pub use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, Neg, Deref, DerefMut};
+pub use std::ops::{Neg, Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Deref, DerefMut};
 pub use std::collections::HashMap;
 pub use std::path::Path;
 pub use std::{fmt, cmp, mem, f32, f64};
+pub use std::fmt::Debug;
 pub use std::io;
 pub use std::io::prelude::*;
 pub use std::fs::File;
 
-pub use num::traits::Float;
-pub use num::traits::FromPrimitive;
+pub use num::traits::{Float, FromPrimitive, ToPrimitive, NumCast};
