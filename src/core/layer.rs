@@ -1,8 +1,8 @@
 use glium;
 use prelude::*;
 use avec::AVec;
-use maths::Mat4;
-use core::{blendmodes, BlendMode, Point, Rect, rendercontext, RenderContextData, Color, display};
+use maths::{Mat4, Point2, Rect};
+use core::{blendmodes, BlendMode, rendercontext, RenderContextData, Color, display};
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
@@ -132,62 +132,62 @@ impl Layer {
 }
 
 /// Draws a rectangle on given layer
-pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point, anchor: Point, dim: Point, color: Color, rotation: f32, scale: Point) {
+pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Point2) {
 
     layer.dirty.store(true, Ordering::Relaxed);
 
     // corner positions relative to x/y
 
-    let anchor_x = anchor.x * dim.x;
-    let anchor_y = anchor.y * dim.y;
+    let anchor_x = anchor.0 * dim.0;
+    let anchor_y = anchor.1 * dim.1;
 
-    let offset_x0 = -anchor_x * scale.x;
-    let offset_x1 = (dim.x - anchor_x) * scale.x;
-    let offset_y0 = -anchor_y * scale.y;
-    let offset_y1 = (dim.y - anchor_y) * scale.y;
+    let offset_x0 = -anchor_x * scale.0;
+    let offset_x1 = (dim.0 - anchor_x) * scale.0;
+    let offset_y0 = -anchor_y * scale.1;
+    let offset_y1 = (dim.1 - anchor_y) * scale.1;
 
     // get vertex_data slice and draw into it
 
     let map = layer.vertex_data.map(4);
 
     map.set(0, Vertex {
-        position    : [pos.x, pos.y],
+        position    : [pos.0, pos.1],
         offset      : [offset_x0, offset_y0],
         rotation    : rotation,
         color       : color,
         bucket_id   : bucket_id,
         texture_id  : texture_id,
-        texture_uv  : [uv.0.x, uv.0.y],
+        texture_uv  : [(uv.0).0, (uv.0).1],
     });
 
     map.set(1, Vertex {
-        position    : [pos.x, pos.y],
+        position    : [pos.0, pos.1],
         offset      : [offset_x1, offset_y0],
         rotation    : rotation,
         color       : color,
         bucket_id   : bucket_id,
         texture_id  : texture_id,
-        texture_uv  : [uv.1.x, uv.0.y],
+        texture_uv  : [(uv.1).0, (uv.0).1],
     });
 
     map.set(2, Vertex {
-        position    : [pos.x, pos.y],
+        position    : [pos.0, pos.1],
         offset      : [offset_x0, offset_y1],
         rotation    : rotation,
         color       : color,
         bucket_id   : bucket_id,
         texture_id  : texture_id,
-        texture_uv  : [uv.0.x, uv.1.y],
+        texture_uv  : [(uv.0).0, (uv.1).1],
     });
 
     map.set(3, Vertex {
-        position    : [pos.x, pos.y],
+        position    : [pos.0, pos.1],
         offset      : [offset_x1, offset_y1],
         rotation    : rotation,
         color       : color,
         bucket_id   : bucket_id,
         texture_id  : texture_id,
-        texture_uv  : [uv.1.x, uv.1.y],
+        texture_uv  : [(uv.1).0, (uv.1).1],
     });
 }
 

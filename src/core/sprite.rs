@@ -1,5 +1,6 @@
 use prelude::*;
-use core::{renderer, layer, Layer, Point, Rect, rendercontext, RenderContext, RenderContextTexture};
+use core::{renderer, layer, Layer, rendercontext, RenderContext, RenderContextTexture};
+use maths::{Point2, Vec2, Rect};
 use Color;
 use image;
 use image::GenericImage;
@@ -15,7 +16,7 @@ pub struct Sprite {
     /// Defines the sprite origin. Defaults to (0.5, 0.5), meaning that the center of the
     /// sprite would be drawn at the coordinates given to [`Sprite::draw()`](#method.draw). Likewise, (0.0, 0.0)
     /// would mean that the sprite's top left corner would be drawn at the given coordinates.
-    pub anchor      : (f32, f32),
+    pub anchor      : Point2,
     width           : f32,
     height          : f32,
     num_frames      : u32,
@@ -49,7 +50,7 @@ impl<'a> Sprite {
             width       : frame_width as f32,
             height      : frame_height as f32,
             num_frames  : num_frames,
-            anchor      : (0.5, 0.5),
+            anchor      : Point2(0.5, 0.5),
             bucket_id   : bucket_id,
             texture_id  : texture_id,
             u_max       : (frame_width as f32 / texture_size as f32),
@@ -64,32 +65,28 @@ impl<'a> Sprite {
 
 
     /// Draws a sprite onto the given layer.
-    pub fn draw(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color) -> &Self {
+    pub fn draw(self: &Self, layer: &Layer, frame_id: u32, position: Point2, color: Color) -> &Self {
 
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let anchor = Point::new(self.anchor.0, self.anchor.1);
-        let pos = Point::new(x, y);
-        let dim = Point::new(self.width, self.height);
-        let scale = Point::new(1.0, 1.0);
+        let dim = Point2(self.width, self.height);
+        let scale = Point2(1.0, 1.0);
 
-        layer::add_rect(layer, bucket_id, texture_id, uv, pos, anchor, dim, color, 0.0, scale);
+        layer::add_rect(layer, bucket_id, texture_id, uv, position, self.anchor, dim, color, 0.0, scale);
         self
     }
 
     /// Draws a sprite onto the given layer and applies given color, rotation and scaling.
-    pub fn draw_transformed(self: &Self, layer: &Layer, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+    pub fn draw_transformed(self: &Self, layer: &Layer, frame_id: u32, position: Point2, color: Color, rotation: f32, scale: Vec2) -> &Self {
 
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let anchor = Point::new(self.anchor.0, self.anchor.1);
-        let pos = Point::new(x, y);
-        let dim = Point::new(self.width, self.height);
-        let scale = Point::new(scale_x, scale_y);
+        let anchor = Point2(self.anchor.0, self.anchor.1);
+        let dim = Point2(self.width, self.height);
 
-        layer::add_rect(layer, bucket_id, texture_id, uv, pos, anchor, dim, color, rotation, scale);
+        layer::add_rect(layer, bucket_id, texture_id, uv, position, anchor, dim, color, rotation, scale);
         self
     }
 

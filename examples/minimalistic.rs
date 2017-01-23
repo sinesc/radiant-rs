@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Font, FontInfo, Color, Point2, blendmodes, utils};
 
 fn main() {
 
@@ -29,11 +29,11 @@ fn main() {
         layer.view_matrix().rotate_at((320.0, 200.0), -state.delta_f32);
 
         // write some text
-        font.write(&layer, &format!("It works. {} FPS", state.fps), 260.0, 140.0);
+        font.write(&layer, &format!("It works. {} FPS", state.fps), Point2(260.0, 140.0));
 
         // draw a sprite (going though the spritesheet frames at 30 fps)
         let frame_id = (state.elapsed_f32 * 30.0) as u32;
-        sprite.draw(&layer, frame_id, 320.0, 200.0, Color::white());
+        sprite.draw(&layer, frame_id, Point2(320.0, 200.0), Color::white());
 
         // draw the layer
         renderer.clear_target(Color::black());

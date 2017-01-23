@@ -22,7 +22,7 @@ fn main() {
     // randomly draw some sprites onto the scene's layer
     let mut rand = utils::Rng::new(5339.0);
     for _ in 0..10000 {
-        scene.sprite(layer_id, sprite_id, 0, rand.range(-160.0, 800.0), rand.range(-160.0, 800.0), Color(rand.get(), rand.get(), rand.get(), rand.get()));
+        scene.sprite(layer_id, sprite_id, 0, Point2(rand.range(-160.0, 800.0), rand.range(-160.0, 800.0)), Color(rand.get(), rand.get(), rand.get(), rand.get()));
     }
 
     // keep drawing the scene

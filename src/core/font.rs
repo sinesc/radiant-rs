@@ -1,5 +1,6 @@
 use prelude::*;
-use core::{layer, Layer, Point, Rect, rendercontext, RenderContext};
+use core::{layer, Layer, rendercontext, RenderContext};
+use maths::{Point2, Vec2, Rect};
 use Color;
 use rusttype;
 use glium;
@@ -93,12 +94,12 @@ impl FontCache {
         }
     }
 
-    pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point, Point)> {
+    pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point2, Point2)> {
         let cache = self.cache.lock().unwrap();
         if let Ok(Some((uv_rect, screen_rect))) = cache.rect_for(font_id, glyph) {
             let uv = Rect::new(uv_rect.min.x, uv_rect.min.y, uv_rect.max.x, uv_rect.max.y);
-            let pos = Point::new(screen_rect.min.x as f32, screen_rect.min.y as f32);
-            let dim = Point::new((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
+            let pos = Point2(screen_rect.min.x as f32, screen_rect.min.y as f32);
+            let dim = Point2((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
             Some((uv, pos, dim))
         } else {
             None
@@ -167,20 +168,20 @@ impl Font {
     }
 
     /// Write to given layer
-    pub fn write(self: &Self, layer: &Layer, text: &str, x: f32, y: f32) -> &Font {
-        write(self, layer, text, x, y, 0.0, &self.color, 0.0, 1.0, 1.0);
+    pub fn write(self: &Self, layer: &Layer, text: &str, position: Point2) -> &Font {
+        write(self, layer, text, position.0, position.1, 0.0, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels.
-    pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32) -> &Font {
-        write(self, layer, text, x, y, max_width, &self.color, 0.0, 1.0, 1.0);
+    pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, position: Point2, max_width: f32) -> &Font {
+        write(self, layer, text, position.0, position.1, max_width, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels and applies given rotation and scaling.
-    pub fn write_transformed(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, rotation: f32, scale_x: f32, scale_y: f32) -> &Font {
-        write(self, layer, text, x, y, max_width, &self.color, rotation, scale_x, scale_y);
+    pub fn write_transformed(self: &Self, layer: &Layer, text: &str, position: Point2, max_width: f32, rotation: f32, scale: Vec2) -> &Font {
+        write(self, layer, text, position.0, position.1, max_width, &self.color, rotation, scale.0, scale.1);
         self
     }
 
@@ -224,18 +225,18 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
 
     context.font_cache.queue(font.font_id, &glyphs);
 
-    let anchor = Point::new(0.0, 0.0);
-    let scale = Point::new(scale_x, scale_y);
+    let anchor = Point2(0.0, 0.0);
+    let scale = Point2(scale_x, scale_y);
     let cos_rot = rotation.cos();
     let sin_rot = rotation.sin();
 
     for glyph in &glyphs {
         if let Some((uv, pos, dim)) = context.font_cache.rect_for(font.font_id, glyph) {
-            let dist_x = pos.x * scale_x;
-            let dist_y = pos.y * scale_y;
+            let dist_x = pos.0 * scale_x;
+            let dist_y = pos.1 * scale_y;
             let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;
             let offset_y = y + dist_x * sin_rot + dist_y * cos_rot;
-            layer::add_rect(layer, bucket_id, 0, uv, Point::new(offset_x, offset_y), anchor, dim, *color, rotation, scale);
+            layer::add_rect(layer, bucket_id, 0, uv, Point2(offset_x, offset_y), anchor, dim, *color, rotation, scale);
         }
     }
 }

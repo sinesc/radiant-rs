@@ -21,24 +21,3 @@ pub use self::rendercontext::{RenderContext, RenderContextData, RenderContextTex
 pub use self::color::Color;
 pub use self::scene::*;
 pub use self::monitor::Monitor;
-
-use prelude::*;
-
-#[derive(Copy, Clone)]
-pub struct Point {
-    x: f32,
-    y: f32,
-}
-impl Point {
-    pub fn new(x: f32, y: f32) -> Point {
-        Point { x: x, y: y }
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct Rect (Point, Point);
-impl Rect {
-    pub fn new(x1: f32, y1: f32, x2: f32, y2: f32) -> Rect {
-        Rect(Point { x: x1, y: y1 }, Point { x: x2, y: y2 })
-    }
-}

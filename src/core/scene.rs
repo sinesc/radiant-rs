@@ -1,6 +1,6 @@
 use prelude::*;
 use avec::AVec;
-use maths::{Mat4, Vec2};
+use maths::{Mat4, Vec2, Point2};
 use core::{Renderer, RenderContext, Layer, Font, Sprite, Color};
 use BlendMode;
 
@@ -107,26 +107,26 @@ impl Scene {
     }
 
     /// Draws a sprite onto given layer.
-    pub fn sprite(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, x: f32, y: f32, color: Color) -> &Self {
+    pub fn sprite(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: Point2, color: Color) -> &Self {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
-        sprites[sprite_id.0].draw(&layers[layer_id.0], frame_id, x, y, color);
+        sprites[sprite_id.0].draw(&layers[layer_id.0], frame_id, position, color);
         self
     }
 
     /// Draws a sprite with given rotation and scaling onto given layer.
-    pub fn sprite_transformed(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, x: f32, y: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) -> &Self {
+    pub fn sprite_transformed(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: Point2, color: Color, rotation: f32, scale: Vec2) -> &Self {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
-        sprites[sprite_id.0].draw_transformed(&layers[layer_id.0], frame_id, x, y, color, rotation, scale_x, scale_y);
+        sprites[sprite_id.0].draw_transformed(&layers[layer_id.0], frame_id, position, color, rotation, scale);
         self
     }
 
     /// Writes a string onto given layer.
-    pub fn write(&self, layer_id: LayerId, font_id: FontId, text: &str, x: f32, y: f32) -> &Self {
+    pub fn write(&self, layer_id: LayerId, font_id: FontId, text: &str, position: Point2) -> &Self {
         let layers = self.layers.get();
         let fonts = self.fonts.get();
-        fonts[font_id.0].write(&layers[layer_id.0], text, x, y);
+        fonts[font_id.0].write(&layers[layer_id.0], text, position);
         self
     }
 

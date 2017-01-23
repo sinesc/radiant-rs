@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Input, InputId, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Input, InputId, Layer, Sprite, Font, FontInfo, Color, blendmodes, Point2, utils};
 
 pub fn main() {
 
@@ -21,8 +21,8 @@ pub fn main() {
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 
     // write text to layer only once and reuse every frame
-    big_red_font.write(&text_layer, "examples/blobs.rs", 355.0, 330.0);
-    font.write(&text_layer, "rotating colorful blobs since 2016", 370.0, 350.0);
+    big_red_font.write(&text_layer, "examples/blobs.rs", Point2(355.0, 330.0));
+    font.write(&text_layer, "rotating colorful blobs since 2016", Point2(370.0, 350.0));
 
     // clone a couple of layer matrices to play around with
     let mut view1 = spark_layer.view_matrix().clone();
@@ -37,7 +37,7 @@ pub fn main() {
         spark_layer.clear();
         spark_layer.set_model_matrix(*model.rotate(-state.delta_f32 * 4.0));
 
-        font.write(&fps_layer.clear(), &format!("{}FPS", state.fps), 10.0, 10.0);
+        font.write(&fps_layer.clear(), &format!("{}FPS", state.fps), Point2(10.0, 10.0));
 
         // rotate the three viewmatrix clones at different rates
         view1.rotate_at((320.0, 200.0), state.delta_f32 * 1.0);
@@ -45,9 +45,9 @@ pub fn main() {
         view3.rotate_at((320.0, 200.0), state.delta_f32 * 2.0);
 
         // draw the sprite three times, tinted red, green and blue
-        sprite.draw(&spark_layer, 0, 320.0, 180.0, Color::red().scale(1.5));
-        sprite.draw(&spark_layer, 0, 300.0, 200.0, Color::green().scale(1.5));
-        sprite.draw(&spark_layer, 0, 340.0, 200.0, Color::blue().scale(1.5));
+        sprite.draw(&spark_layer, 0, Point2(320.0, 180.0), Color::red().scale(1.5));
+        sprite.draw(&spark_layer, 0, Point2(300.0, 200.0), Color::green().scale(1.5));
+        sprite.draw(&spark_layer, 0, Point2(340.0, 200.0), Color::blue().scale(1.5));
 
         // draw the spark layer three times with different matrices and alpha levels as well as the text layer
         renderer.clear_target(Color::black());
