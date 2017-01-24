@@ -1,4 +1,5 @@
 use prelude::*;
+use super::vec2::Vec2;
 use std;
 
 /// An Angle between -PI and PI
@@ -13,6 +14,10 @@ impl<T> Angle<T> where T: Debug + Float + NumCast {
     /// Returns the angle's value in degrees.
     pub fn to_degrees(self: &Self) -> T {
         self.0.to_degrees()
+    }
+    /// Returns a vector pointing in the direction of the angle.
+    pub fn to_vec2(self: &Self) -> Vec2<T> {
+        Vec2::from_angle(*self)
     }
     /// Creates an angle from a radians value.
     pub fn from_radians(radians: T) -> Angle<T> {

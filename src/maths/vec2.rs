@@ -1,5 +1,5 @@
 use prelude::*;
-use maths::{Vec3, VecType, Angle};
+use maths::{Vec3, VecType, Angle, Rect};
 use glium::uniforms::{AsUniformValue, UniformValue};
 
 /// A 2-dimensional vector.
@@ -46,18 +46,51 @@ impl<T> Vec2<T> where T: Debug + Float {
     /// Normalizes the vector.
     pub fn normalize(mut self: Self) -> Self {
         let len = self.len();
-        self.0 = self.0 / len;
-        self.1 = self.1 / len;
+        if len > T::zero() {
+            self.0 = self.0 / len;
+            self.1 = self.1 / len;
+        }
+        self
+    }
+    /// The left pointing normal of the vector.
+    pub fn left(mut self: Self) -> Self {
+        let x = self.0;
+        self.0 = -self.1;
+        self.1 = x;
+        self
+    }
+    /// The right pointing normal of the vector.
+    pub fn right(mut self: Self) -> Self {
+        let x = self.0;
+        self.0 = self.1;
+        self.1 = -x;
         self
     }
     /// Extends the vector by given length.
     pub fn extend(mut self: Self, extension_len: T) -> Self {
         let base_len = self.len();
-        let new_len = base_len + extension_len;
-        let factor = new_len / base_len;
-        self.0 = self.0 * factor;
-        self.1 = self.1 * factor;
+        if base_len > T::zero() {
+            let new_len = base_len + extension_len;
+            let factor = new_len / base_len;
+            self.0 = self.0 * factor;
+            self.1 = self.1 * factor;
+        }
         self
+    }
+    /// Returns outbound vector for this point and given bounding box. Subtracting
+    /// it from this point will result in a point on the bounding box.
+    pub fn outbound(self: &Self, bounding: Rect<T>) -> Option<Self> {
+        let min = bounding.0;
+        let max = bounding.1;
+        let outside = Vec2(
+            if self.0 < min.0 { self.0 - min.0 } else if self.0 > max.0 { self.0 - max.0 } else { T::zero() },
+            if self.1 < min.1 { self.1 - min.1 } else if self.1 > max.1 { self.1 - max.1 } else { T::zero() }
+        );
+        if (outside.0 != T::zero()) || (outside.1 != T::zero()) { Some(outside) } else { None }
+    }
+    /// Returns true if the vecor is a zero-vector.
+    pub fn is_zero(self: &Self) -> bool {
+        self.0 == T::zero() && self.1 == T::zero()
     }
 }
 
