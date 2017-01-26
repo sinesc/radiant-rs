@@ -1,5 +1,5 @@
 use glium;
-use core::{display, Display, font};
+use core::{display, Display, target, Target, font};
 use prelude::*;
 use std::borrow::Cow;
 
@@ -76,7 +76,7 @@ pub struct RenderContextData {
     pub index_buffer    : glium::IndexBuffer<u32>,
     pub program         : glium::Program,
     pub tex_array       : Vec<RenderContextTextureArray>,
-    pub target          : Option<glium::Frame>,
+    pub target          : Target,
     pub display         : Display,
     pub font_cache      : font::FontCache,
     pub font_texture    : glium::texture::Texture2d,
@@ -97,7 +97,7 @@ impl RenderContextData {
             index_buffer    : Self::create_index_buffer(&display::handle(&display), initial_capacity),
             program         : Self::create_program(&display::handle(&display)),
             tex_array       : tex_array,
-            target          : Option::None,
+            target          : target::from_display(display),
             display         : display.clone(),
             font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
             font_texture    : font::create_cache_texture(&display::handle(&display), 512, 512),

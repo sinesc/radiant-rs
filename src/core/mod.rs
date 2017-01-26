@@ -9,6 +9,7 @@ mod rendercontext;
 mod scene;
 mod color;
 mod monitor;
+mod target;
 
 pub use self::blendmode::{blendmodes, BlendMode};
 pub use self::input::{Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator};
@@ -21,3 +22,4 @@ pub use self::rendercontext::{RenderContext, RenderContextData, RenderContextTex
 pub use self::color::Color;
 pub use self::scene::*;
 pub use self::monitor::Monitor;
+pub use self::target::Target;

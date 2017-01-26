@@ -1,9 +1,10 @@
 use glium;
 use glium::DisplayBuild;
-use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton/*, VirtualKeyCode*/};
+use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton};
 use prelude::*;
 use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
+use core::{target, Target};
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
 #[derive(Clone)]
@@ -139,14 +140,14 @@ impl Display {
         }
         result
     }
-/*
-    pub fn from_window_builder(builder: WindowBuilder<'static>) -> Display {
+
+    /// Takes a glium::Display and returns a radiant::Display.
+    pub fn from_glium(display: glium::Display) -> Display {
         Display {
-            handle: builder.build_glium().unwrap(),
+            handle: display,
             input_data: Arc::new(RwLock::new(InputData::new())),
         }
     }
-*/
 
     /// Polls for events like keyboard or mouse input and changes to the window. See
     /// [`Input`](struct.Input.html) for basic keyboard and mouse support.

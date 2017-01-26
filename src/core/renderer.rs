@@ -1,7 +1,6 @@
 use prelude::*;
 use glium;
-use glium::Surface;
-use core::{Display, rendercontext, RenderContext, RenderContextData, layer, Layer, blendmode, scene, Color, display};
+use core::{Display, rendercontext, RenderContext, RenderContextData, target, Target, layer, Layer, blendmode, scene, Color};
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
 /// [`Display`](struct.Display.html).
@@ -32,45 +31,43 @@ impl<'a> Renderer {
     /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext)
     /// is thread-safe and required by [`Font`](struct.Font) and [`Sprite`](struct.Sprite) to
     /// create new instances.
-    pub fn context(&self) -> RenderContext {
+    pub fn context(self: &Self) -> RenderContext {
         self.context.clone()
     }
 
-    /// Prepares a new target for drawing without clearing it.
-    pub fn prepare_target(&self) {
+    /// Sets the rendering target to given display- or texture-target. [WIP]
+    /*pub*/ fn set_target<T>(self: &Self, target: Target) {
         let mut context = rendercontext::lock(&self.context);
-        context.target = Some(display::handle(&context.display).draw());
+        context.target = target;
     }
 
-    /// Prepares a new target and clears it with given color.
-    pub fn clear_target(&self, color: Color) {
+    /// Prepares the target for drawing without clearing it.
+    pub fn prepare_target(self: &Self) {
         let mut context = rendercontext::lock(&self.context);
-        let (r, g, b, a) = color.as_tuple();
-        let mut target = display::handle(&context.display).draw();
-        target.clear_color(r, g, b, a);
-        context.target = Some(target);
+        target::prepare(&mut context.target);
     }
 
-    /// Finishes drawing and swaps the drawing target to front.
-    pub fn swap_target(&self) {
+    /// Prepares the target and clears it with given color.
+    pub fn clear_target(self: &Self, color: Color) {
         let mut context = rendercontext::lock(&self.context);
-        context.target.take().unwrap().finish().unwrap();
+        target::prepare(&mut context.target);
+        target::clear(&mut context.target, &color);
     }
-/*
-    /// Takes the target frame from the renderer.
-    pub fn take_target(&self) -> glium::Frame {
-        let mut context = self.context.lock();
-        context.target.take().unwrap()
+
+    /// Finishes drawing and swaps front with backbuffer.
+    pub fn swap_target(self: &Self) {
+        let mut context = rendercontext::lock(&self.context);
+        target::finish(&mut context.target);
     }
-*/
+
     /// Draws given scene.
-    pub fn draw_scene(&self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
+    pub fn draw_scene(self: &Self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
         scene::draw(scene, self, per_frame_multiplier);
         self
     }
 
     /// Draws given layer.
-    pub fn draw_layer(&self, layer: &Layer) -> &Self {
+    pub fn draw_layer(self: &Self, layer: &Layer) -> &Self {
 
         // open context
 
@@ -113,11 +110,17 @@ impl<'a> Renderer {
             // draw up to container.size
 
             let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
-            context.target.as_mut().unwrap().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
+            target::draw(&mut context.target, vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
         }
 
         self
     }
+
+    /* /// Takes the target frame from the renderer.
+    pub fn take_target(&self) -> glium::Frame {
+        let mut context = rendercontext::lock(&self.context);
+        context.target.take().unwrap()
+    }*/
 }
 
 /// returns the appropriate bucket_id and padded texture size for the given texture size

@@ -2,7 +2,7 @@ use prelude::*;
 use super::vec2::Vec2;
 use std;
 
-/// An Angle between -PI and PI
+/// An Angle between -PI and PI.
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
 pub struct Angle<T: Debug + Float + NumCast = f32>(pub T);
 
@@ -27,7 +27,7 @@ impl<T> Angle<T> where T: Debug + Float + NumCast {
     pub fn from_degrees(degrees: T) -> Angle<T> {
         Self::from_radians(degrees.to_radians())
     }
-    /// Mutates self to its normalized representation
+    /// Mutates self to its normalized representation.
     #[allow(non_snake_case)]
     pub fn normalize(self: &mut Self) -> &mut Self {
         let PI = NumCast::from(std::f64::consts::PI).unwrap();
@@ -37,7 +37,7 @@ impl<T> Angle<T> where T: Debug + Float + NumCast {
         }
         self
     }
-    /// Mutates self so that subtracting the target will yield the smallest directional angle between self and target
+    /// Mutates self so that subtracting the target will yield the smallest directional angle between self and target.
     #[allow(non_snake_case)]
     pub fn align_with(self: &mut Self, target: &Angle<T>) -> &mut Self {
 

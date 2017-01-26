@@ -27,6 +27,7 @@ pub fn Point3<T: Debug + Float>(x: T, y: T, z: T) -> Point3<T> {
     Vec3(x, y, z)
 }
 
+/// A rectangle.
 #[derive(Copy, Clone)]
 pub struct Rect<T: Debug + Float = f32>(pub Point2<T>, pub Point2<T>);
 
