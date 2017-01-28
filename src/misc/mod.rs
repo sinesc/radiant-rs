@@ -1,15 +1,25 @@
 use prelude::*;
 mod loops;
 mod rng;
+use std::cmp::PartialOrd;
+use std::convert::From;
 
 pub use misc::loops::{renderloop, mainloop};
 pub use misc::rng::Rng;
 
-/// Mutates source_value to approach target_value at the rate_of_change
+/// Mutates source_value to approach target_value at the rate_of_change.
 pub fn approach<T, S>(source_value: &mut T, target_value: T, rate_of_change: S)
-    where T: FromPrimitive + ToPrimitive + Clone, S: ToPrimitive
+    where T: Add + Mul<S> + From<<<T as Mul<S>>::Output as Add>::Output> + Copy, S: Float, <T as Mul<S>>::Output: Add
 {
-    let rate_of_change = rate_of_change.to_f64().unwrap();
-    let new_source_value = (*source_value).to_f64().unwrap() * (1.0 - rate_of_change) + (target_value.to_f64().unwrap() * rate_of_change);
-    *source_value = T::from_f64(new_source_value).unwrap();
+    *source_value = T::from( (*source_value) * (S::one() - rate_of_change) + (target_value * rate_of_change) );
+}
+
+/// Returns the smaller of the two given values, ignoring edge-cases like NaN.
+pub fn min<T>(a: T, b: T) -> T where T: PartialOrd {
+    if a.lt(&b) { a } else { b }
+}
+
+/// Returns the greater of the two given values, ignoring edge-cases like NaN.
+pub fn max<T>(a: T, b: T) -> T where T: PartialOrd {
+    if a.gt(&b) { a } else { b }
 }
