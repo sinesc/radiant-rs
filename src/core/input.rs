@@ -43,7 +43,7 @@ impl InputData {
 }
 
 enum_from_primitive! {
-    #[derive(Debug, PartialEq)]
+    #[derive(Clone, Copy, Debug, PartialEq)]
     /// Input key and mousebutton ids
     pub enum InputId {
         Key1,
