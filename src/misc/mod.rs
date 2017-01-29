@@ -1,11 +1,12 @@
-use prelude::*;
 mod loops;
 mod rng;
-use std::cmp::PartialOrd;
-use std::convert::From;
+mod periodic;
 
-pub use misc::loops::{renderloop, mainloop};
-pub use misc::rng::Rng;
+use prelude::*;
+
+pub use self::loops::{renderloop, mainloop};
+pub use self::rng::Rng;
+pub use self::periodic::Periodic;
 
 /// Mutates source_value to approach target_value at the rate_of_change.
 pub fn approach<T, S>(source_value: &mut T, target_value: T, rate_of_change: S)
