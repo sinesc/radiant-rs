@@ -8,7 +8,7 @@ pub struct Vec2<T: Debug + Float = f32>(pub T, pub T);
 
 impl<T> Vec2<T> where T: Debug + Float {
     /// Creates a new instances.
-    pub fn new() -> Vec2<T> {
+    pub fn new() -> Self {
         Vec2::<T>(T::zero(), T::zero())
     }
     /// Returns the length of the vector
@@ -16,7 +16,7 @@ impl<T> Vec2<T> where T: Debug + Float {
         (self.0*self.0 + self.1*self.1).sqrt()
     }
     /// Returns the dot-product of the vectors.
-    pub fn dot(self: &Self, other: &Vec2<T>) -> T {
+    pub fn dot(self: &Self, other: &Self) -> T {
         self.0 * other.0 + self.1 * other.1
     }
     /// Returns the direction of the vector in radians.
@@ -32,15 +32,15 @@ impl<T> Vec2<T> where T: Debug + Float {
         Angle(self.to_radians())
     }
     /// Creates a unit-vector from the angle given in radians.
-    pub fn from_radians(radians: T) -> Vec2<T> {
+    pub fn from_radians(radians: T) -> Self {
         Vec2::<T>(radians.cos(), radians.sin())
     }
     /// Creates a unit-vector from the angle given in degrees.
-    pub fn from_degrees(degrees: T) -> Vec2<T> {
+    pub fn from_degrees(degrees: T) -> Self {
         Self::from_radians(degrees.to_radians())
     }
     /// Creates a unit-vector from given angle.
-    pub fn from_angle(angle: Angle<T>) -> Vec2<T> {
+    pub fn from_angle(angle: Angle<T>) -> Self {
         Self::from_radians(angle.to_radians())
     }
     /// Normalizes the vector.
@@ -91,6 +91,11 @@ impl<T> Vec2<T> where T: Debug + Float {
     /// Returns true if the vecor is a zero-vector.
     pub fn is_zero(self: &Self) -> bool {
         self.0 == T::zero() && self.1 == T::zero()
+    }
+    /// Returns distance to other point.
+    pub fn distance(self: &Self, other: &Self) -> T{
+        let dv = *self - *other;
+        (dv.0 * dv.0 + dv.1 * dv.1).sqrt()
     }
 }
 
