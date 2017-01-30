@@ -35,10 +35,12 @@ impl<'a> Renderer {
         self.context.clone()
     }
 
-    /// Sets the rendering target to given display- or texture-target. [WIP]
-    /*pub*/ fn set_target<T>(self: &Self, target: Target) {
+    /// Sets the rendering target to given display- or texture-target.
+    #[doc(hidden)]
+    pub fn set_target(self: &Self, target: &Target) {
+        self.swap_target();
         let mut context = rendercontext::lock(&self.context);
-        context.target = target;
+        context.target = target.clone();
     }
 
     /// Prepares the target for drawing without clearing it.
@@ -56,8 +58,17 @@ impl<'a> Renderer {
 
     /// Finishes drawing and swaps front with backbuffer.
     pub fn swap_target(self: &Self) {
-        let mut context = rendercontext::lock(&self.context);
-        target::finish(&mut context.target);
+        let frame = {
+            let mut context = rendercontext::lock(&self.context);
+            if context.target.is_display() {
+                target::take(&mut context.target)
+            } else {
+                None
+            }
+        };
+        if let Some(frame) = frame {
+            frame.finish().unwrap();
+        }
     }
 
     /// Draws given scene.
@@ -122,7 +133,6 @@ impl<'a> Renderer {
         context.target.take().unwrap()
     }*/
 }
-
 /// returns the appropriate bucket_id and padded texture size for the given texture size
 pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;

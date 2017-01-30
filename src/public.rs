@@ -1,4 +1,11 @@
-pub use core::{BlendMode, blendmodes, Display, DisplayInfo, Monitor, Layer, Renderer, RenderContext, Target, Sprite, Font, FontInfo, Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator, Color};
+pub use core::{
+    blendmodes, BlendMode,
+    Display, DisplayInfo, Monitor,
+    Renderer, RenderContext,
+    Layer, Sprite, Font, FontInfo, Target,
+    Color,
+    Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator,
+};
 pub use maths::{Mat4, Vec2, Vec3, Angle, Point2, Point3, Rect, VecType};
 
 pub mod utils {

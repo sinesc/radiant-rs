@@ -4,7 +4,6 @@ use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton};
 use prelude::*;
 use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
-use core::{target, Target};
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
 #[derive(Clone)]

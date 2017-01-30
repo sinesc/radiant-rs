@@ -61,25 +61,17 @@ impl RenderContextTextureArray {
     }
 }
 
-/// Generates glium texture array from given vector of textures
-fn texture_array(display: &Display, raw: Vec<RenderContextTexture>) -> glium::texture::SrgbTexture2dArray {
-    use glium::texture;
-    if raw.len() > 0 {
-        texture::SrgbTexture2dArray::with_format(display::handle(display), raw.clone(), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
-    } else {
-        texture::SrgbTexture2dArray::empty_with_format(display::handle(display), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
-    }
-}
-
 /// Internal data of a RenderContext
 pub struct RenderContextData {
-    pub index_buffer    : glium::IndexBuffer<u32>,
-    pub program         : glium::Program,
-    pub tex_array       : Vec<RenderContextTextureArray>,
-    pub target          : Target,
-    pub display         : Display,
-    pub font_cache      : font::FontCache,
-    pub font_texture    : glium::texture::Texture2d,
+    pub index_buffer        : glium::IndexBuffer<u32>,
+    pub program             : glium::Program,
+    pub tex_array           : Vec<RenderContextTextureArray>,
+    pub target              : Target,
+    pub display             : Display,
+    pub font_cache          : font::FontCache,
+    pub font_texture        : glium::texture::Texture2d,
+    pub vertex_buffer_single: glium::VertexBuffer<Vertex>,
+    pub program_single      : glium::Program,
 }
 
 impl RenderContextData {
@@ -88,19 +80,22 @@ impl RenderContextData {
     pub fn new(display: &Display, initial_capacity: usize) -> Self {
 
         let mut tex_array = Vec::new();
+        let glium_handle = &display::handle(&display);
 
         for _ in 0..NUM_BUCKETS {
             tex_array.push(RenderContextTextureArray::new(display));
         }
 
         RenderContextData {
-            index_buffer    : Self::create_index_buffer(&display::handle(&display), initial_capacity),
-            program         : Self::create_program(&display::handle(&display)),
-            tex_array       : tex_array,
-            target          : target::from_display(display),
-            display         : display.clone(),
-            font_cache      : font::FontCache::new(512, 512, 0.01, 0.01),
-            font_texture    : font::create_cache_texture(&display::handle(&display), 512, 512),
+            index_buffer        : Self::create_index_buffer(glium_handle, initial_capacity),
+            program             : Self::create_program(glium_handle),
+            tex_array           : tex_array,
+            target              : target::from_display(display),
+            display             : display.clone(),
+            font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
+            font_texture        : font::create_cache_texture(glium_handle, 512, 512),
+            vertex_buffer_single: Self::create_vertex_buffer_single(glium_handle),
+            program_single      : Self::create_program_single(glium_handle),
         }
     }
 
@@ -154,7 +149,7 @@ impl RenderContextData {
         glium::index::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &ib_data).unwrap()
     }
 
-    /// creates the shader program
+    /// creates the sprite shader program
     fn create_program(display: &glium::Display) -> glium::Program {
         program!(display,
             140 => {
@@ -162,5 +157,45 @@ impl RenderContextData {
                 fragment: include_str!("../shader/default.fs")
             }
         ).unwrap()
+    }
+
+    /// creates the single rectangle shader program
+    fn create_program_single(display: &glium::Display) -> glium::Program {
+        program!(display,
+            140 => {
+                vertex: include_str!("../shader/single.vs"),
+                fragment: include_str!("../shader/single.fs")
+            }
+        ).unwrap()
+    }
+
+    /// creates a single rectangle vertex buffer
+    fn create_vertex_buffer_single(display: &glium::Display) -> glium::VertexBuffer<Vertex> {
+        glium::VertexBuffer::new(display,
+            &[
+                Vertex { position: [-0.5, -0.5], texture_uv: [ 0.0, 0.0 ] },
+                Vertex { position: [-0.5,  0.5], texture_uv: [ 0.0, 1.0 ] },
+                Vertex { position: [ 0.5, -0.5], texture_uv: [ 1.0, 0.0 ] },
+                Vertex { position: [ 0.5,  0.5], texture_uv: [ 1.0, 1.0 ] },
+            ]
+        ).unwrap()
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct Vertex {
+    position: [f32; 2],
+    texture_uv: [f32; 2],
+}
+
+implement_vertex!(Vertex, position, texture_uv);
+
+/// Generates glium texture array from given vector of textures
+fn texture_array(display: &Display, raw: Vec<RenderContextTexture>) -> glium::texture::SrgbTexture2dArray {
+    use glium::texture;
+    if raw.len() > 0 {
+        texture::SrgbTexture2dArray::with_format(display::handle(display), raw.clone(), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
+    } else {
+        texture::SrgbTexture2dArray::empty_with_format(display::handle(display), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
     }
 }
