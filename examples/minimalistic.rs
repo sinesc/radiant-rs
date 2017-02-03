@@ -1,7 +1,7 @@
 extern crate radiant_rs;
 use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Font, FontInfo, Color, Point2, blendmodes, utils};
 
-fn main() {
+pub fn main() {
 
     // create a display to render to, a renderer to do the rendering
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
@@ -10,7 +10,7 @@ fn main() {
     // create a sprite, a font (here from a known systemfont) and a layer
     let sprite = Sprite::from_file(&renderer.context(), r"examples/res/ball_v2_32x32x18.jpg");
     let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 16.0, ..FontInfo::default() } );
-    let layer = Layer::new(640, 480);
+    let layer = Layer::new(640, 480, 0);
 
     // set how to blend the layer with the background
     layer.set_blendmode(blendmodes::LIGHTEN);
@@ -36,9 +36,9 @@ fn main() {
         sprite.draw(&layer, frame_id, Point2(320.0, 200.0), Color::white());
 
         // draw the layer
-        renderer.clear_target(Color::black());
+        display.clear_frame(Color::black());
         renderer.draw_layer(&layer);
-        renderer.swap_target();
+        display.swap_frame();
 
         // poll for new events on the display, exit loop if the window was closed
         !display.poll_events().was_closed()

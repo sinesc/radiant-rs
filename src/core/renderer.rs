@@ -1,6 +1,7 @@
 use prelude::*;
 use glium;
-use core::{Display, rendercontext, RenderContext, RenderContextData, target, Target, layer, Layer, blendmode, scene, Color};
+use core::{Display, rendercontext, RenderContext, RenderContextData, texture, Texture, layer, Layer, blendmode, BlendMode, scene, Color, RenderTarget};
+use maths::{Vec2, Point2, Mat4};
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
 /// [`Display`](struct.Display.html).
@@ -35,49 +36,25 @@ impl<'a> Renderer {
         self.context.clone()
     }
 
-    /// Sets the rendering target to given display- or texture-target.
-    #[doc(hidden)]
-    pub fn set_target(self: &Self, target: &Target) {
-        self.swap_target();
+    /// Sets a new rendering target. Valid targets are the display and textures.
+    pub fn set_target<T>(self: &Self, target: &T) where T: RenderTarget {
         let mut context = rendercontext::lock(&self.context);
-        context.target = target.clone();
+        context.render_target = target.get_target().clone();
     }
 
-    /// Prepares the target for drawing without clearing it.
-    pub fn prepare_target(self: &Self) {
-        let mut context = rendercontext::lock(&self.context);
-        target::prepare(&mut context.target);
+    /// Clears the current target.
+    pub fn clear(self: &Self, color: &Color) {
+        let context = rendercontext::lock(&self.context);
+        context.render_target.clear(color);
     }
 
-    /// Prepares the target and clears it with given color.
-    pub fn clear_target(self: &Self, color: Color) {
-        let mut context = rendercontext::lock(&self.context);
-        target::prepare(&mut context.target);
-        target::clear(&mut context.target, &color);
-    }
-
-    /// Finishes drawing and swaps front with backbuffer.
-    pub fn swap_target(self: &Self) {
-        let frame = {
-            let mut context = rendercontext::lock(&self.context);
-            if context.target.is_display() {
-                target::take(&mut context.target)
-            } else {
-                None
-            }
-        };
-        if let Some(frame) = frame {
-            frame.finish().unwrap();
-        }
-    }
-
-    /// Draws given scene.
+    /// Draws given scene to the current target..
     pub fn draw_scene(self: &Self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
         scene::draw(scene, self, per_frame_multiplier);
         self
     }
 
-    /// Draws given layer.
+    /// Draws given layer to the current target..
     pub fn draw_layer(self: &Self, layer: &Layer) -> &Self {
 
         // open context
@@ -121,16 +98,50 @@ impl<'a> Renderer {
             // draw up to container.size
 
             let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
-            target::draw(&mut context.target, vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
+            context.render_target.draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
         }
 
         self
     }
 
-    /* /// Takes the target frame from the renderer.
-    pub fn take_target(&self) -> glium::Frame {
+    /* /// Draws given texture to the current target.
+    pub fn draw_texture(self: &Self, texture: &Texture, position: Point2, size: Vec2, blendmode: BlendMode, time: f32, horizontal: bool) -> &Self {
+
+        // open context
+
         let mut context = rendercontext::lock(&self.context);
-        context.target.take().unwrap()
+        let mut context = context.deref_mut();
+
+        context.update_index_buffer(1);
+
+        let texture = texture::handle(texture);
+
+        // set up uniforms
+
+        let uniforms = uniform! {
+            view_matrix     : Mat4::<f32>::viewport(640.0, 480.0),
+            global_color    : Color::white(),
+            offset          : position,
+            size            : size,
+            tex             : texture,
+            time            : time,
+            horizontal      : horizontal,
+        };
+
+        // set up draw parameters for given blend options
+
+        let draw_parameters = glium::draw_parameters::DrawParameters {
+            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
+            blend           : blendmode::access_blendmode(&blendmode),
+            .. Default::default()
+        };
+
+        // draw up to container.size
+
+        let ib_slice = context.index_buffer.slice(0..6).unwrap();
+        context.render_target.draw(&context.vertex_buffer_single, &ib_slice, &context.program_single, &uniforms, &draw_parameters).unwrap();
+
+        self
     }*/
 }
 /// returns the appropriate bucket_id and padded texture size for the given texture size

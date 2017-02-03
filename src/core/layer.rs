@@ -33,22 +33,26 @@ pub struct Layer {
     vertex_data     : AVec<Vertex>,
     vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
     dirty           : AtomicBool,
+    channel_id      : u32,
 }
 unsafe impl Send for Layer { }
 unsafe impl Sync for Layer { }
 
 impl Layer {
 
-    /// Creates a new layer with given dimensions and object limit.
-    pub fn new(width: u32, height: u32) -> Self {
+    /// Creates a new layer with given dimensions. The channel determines
+    /// which sprite channel is drawn. All sprites support at least channel 0.
+    /// Nothing will be drawn if the sprite does not contain given channel.
+    pub fn new(width: u32, height: u32, channel_id: u32) -> Self {
         Layer {
-            view_matrix     : Mutex::new(Mat4::<f32>::viewport(width as f32, height as f32)),
-            model_matrix    : Mutex::new(Mat4::<f32>::identity()),
+            view_matrix     : Mutex::new(Mat4::viewport(width as f32, height as f32)),
+            model_matrix    : Mutex::new(Mat4::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
             vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
             vertex_buffer   : Mutex::new(None),
             dirty           : AtomicBool::new(true),
+            channel_id      : channel_id,
         }
     }
 
@@ -129,6 +133,10 @@ impl Layer {
     pub fn len(self: &Self) -> usize {
         self.vertex_data.len() / 4
     }
+}
+
+pub fn channel_id(layer: &Layer) -> u32 {
+    layer.channel_id
 }
 
 /// Draws a rectangle on given layer

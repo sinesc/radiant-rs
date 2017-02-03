@@ -20,6 +20,7 @@ pub struct Sprite {
     width           : f32,
     height          : f32,
     num_frames      : u32,
+    num_channels    : u32,
     bucket_id       : u32,
     texture_id      : u32,
     u_max           : f32,
@@ -27,13 +28,19 @@ pub struct Sprite {
     context         : RenderContext,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 enum SpriteLayout {
     VERTICAL,
     HORIZONTAL,
 }
 
-struct FrameParameters (u32, u32, u32, SpriteLayout);
+#[derive(Copy, Clone, Debug)]
+struct SpriteParameters {
+    dimensions  : (u32, u32),
+    num_frames  : u32,
+    num_channels: u32,
+    layout      : SpriteLayout
+}
 
 impl<'a> Sprite {
 
@@ -42,14 +49,15 @@ impl<'a> Sprite {
     /// The given filename is expected to end on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
     pub fn from_file(context: &RenderContext, file: &str) -> Sprite {
 
-        let (bucket_id, texture_size, frame_width, frame_height, raw_frames) = load_spritesheet(file);
-        let num_frames = raw_frames.len() as u32;
+        let (bucket_id, texture_size, frame_width, frame_height, num_channels, raw_frames) = load_spritesheet(file);
+        let num_frames = (raw_frames.len() as u32 / num_channels) as u32;
         let texture_id = rendercontext::lock(context).store_frames(bucket_id, raw_frames);
 
         Sprite {
             width       : frame_width as f32,
             height      : frame_height as f32,
             num_frames  : num_frames,
+            num_channels: num_channels,
             anchor      : Point2(0.5, 0.5),
             bucket_id   : bucket_id,
             texture_id  : texture_id,
@@ -67,26 +75,38 @@ impl<'a> Sprite {
     /// Draws a sprite onto the given layer.
     pub fn draw(self: &Self, layer: &Layer, frame_id: u32, position: Point2, color: Color) -> &Self {
 
-        let bucket_id = self.bucket_id;
-        let texture_id = self.texture_id(frame_id);
-        let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let dim = Point2(self.width, self.height);
-        let scale = Point2(1.0, 1.0);
+        let layer_channel_id = layer::channel_id(&layer);
 
-        layer::add_rect(layer, bucket_id, texture_id, uv, position, self.anchor, dim, color, 0.0, scale);
+        if layer_channel_id < self.num_channels {
+
+            let bucket_id = self.bucket_id;
+            let texture_id = self.texture_id(frame_id) + self.num_frames * layer_channel_id;
+            let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
+            let dim = Point2(self.width, self.height);
+            let scale = Point2(1.0, 1.0);
+
+            layer::add_rect(layer, bucket_id, texture_id, uv, position, self.anchor, dim, color, 0.0, scale);
+        }
+
         self
     }
 
     /// Draws a sprite onto the given layer and applies given color, rotation and scaling.
     pub fn draw_transformed(self: &Self, layer: &Layer, frame_id: u32, position: Point2, color: Color, rotation: f32, scale: Vec2) -> &Self {
 
-        let bucket_id = self.bucket_id;
-        let texture_id = self.texture_id(frame_id);
-        let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let anchor = Point2(self.anchor.0, self.anchor.1);
-        let dim = Point2(self.width, self.height);
+        let layer_channel_id = layer::channel_id(&layer);
 
-        layer::add_rect(layer, bucket_id, texture_id, uv, position, anchor, dim, color, rotation, scale);
+        if layer_channel_id < self.num_channels {
+
+            let bucket_id = self.bucket_id;
+            let texture_id = self.texture_id(frame_id) + self.num_frames * layer_channel_id;
+            let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
+            let anchor = Point2(self.anchor.0, self.anchor.1);
+            let dim = Point2(self.width, self.height);
+
+            layer::add_rect(layer, bucket_id, texture_id, uv, position, anchor, dim, color, rotation, scale);
+        }
+
         self
     }
 
@@ -112,7 +132,7 @@ impl<'a> Sprite {
 }
 
 /// Loads a spritesheet and returns a vector of frames
-pub fn load_spritesheet(file: &str) -> (u32, u32, u32, u32, Vec<RenderContextTexture>) {
+pub fn load_spritesheet(file: &str) -> (u32, u32, u32, u32, u32, Vec<RenderContextTexture>) {
 
     // load image file
 
@@ -122,23 +142,25 @@ pub fn load_spritesheet(file: &str) -> (u32, u32, u32, u32, Vec<RenderContextTex
 
     // compute frame parameters
 
-    let frame_parameters = parse_parameters(image_dimensions, path);
-    let FrameParameters(frame_width, frame_height, frame_count, _) = frame_parameters;
+    let sprite_parameters = parse_parameters(image_dimensions, path);
+    let SpriteParameters { dimensions: (frame_width, frame_height), num_frames, num_channels, .. } = sprite_parameters;
     let (bucket_id, pad_size) = renderer::bucket_info(frame_width, frame_height);
 
     let mut raw_frames = Vec::new();
 
-    for frame_id in 0..frame_count {
-        raw_frames.push(build_frame_texture(&mut image, image_dimensions, &frame_parameters, frame_id, pad_size));
+    for channel_id in 0..num_channels {
+        for frame_id in 0..num_frames {
+            raw_frames.push(build_frame_texture(&mut image, image_dimensions, &sprite_parameters, frame_id, channel_id, pad_size));
+        }
     }
 
-    (bucket_id, pad_size, frame_width, frame_height, raw_frames)
+    (bucket_id, pad_size, frame_width, frame_height, num_channels, raw_frames)
 }
 
 /// Parses sprite-sheet filename for dimensions and frame count
-fn parse_parameters(dimensions: (u32, u32), path: &Path) -> FrameParameters {
+fn parse_parameters(dimensions: (u32, u32), path: &Path) -> SpriteParameters {
 
-    lazy_static! { static ref MATCHER: Regex = Regex::new(r"_(\d+)x(\d+)x(\d+)\.").unwrap(); }
+    lazy_static! { static ref MATCHER: Regex = Regex::new(r"_(\d+)x(\d+)x(\d+)(?:x(\d+))?\.").unwrap(); }
 
     let filename = path.file_name().unwrap().to_str().unwrap();
     let captures = MATCHER.captures(filename);
@@ -148,12 +170,23 @@ fn parse_parameters(dimensions: (u32, u32), path: &Path) -> FrameParameters {
             let frame_width = captures.at(1).unwrap().parse::<u32>().unwrap();
             let frame_height = captures.at(2).unwrap().parse::<u32>().unwrap();
             let frame_count = captures.at(3).unwrap().parse::<u32>().unwrap();
+            let frame_channels = captures.at(4).unwrap_or("1").parse::<u32>().unwrap();
             let frame_layout = if frame_height == dimensions.1 { SpriteLayout::HORIZONTAL } else { SpriteLayout::VERTICAL };
             assert!(frame_layout == SpriteLayout::VERTICAL || frame_width * frame_count == dimensions.0);
             assert!(frame_layout == SpriteLayout::HORIZONTAL || frame_height * frame_count == dimensions.1);
-            FrameParameters(frame_width, frame_height, frame_count, frame_layout)
+            SpriteParameters {
+                dimensions  : (frame_width, frame_height),
+                num_frames  : frame_count,
+                num_channels: frame_channels,
+                layout      : frame_layout
+            }
         }
-        None => FrameParameters(dimensions.0, dimensions.1, 1, SpriteLayout::HORIZONTAL)
+        None => SpriteParameters {
+            dimensions  : dimensions,
+            num_frames  : 1,
+            num_channels: 1,
+            layout      : SpriteLayout::HORIZONTAL
+        }
     }
 }
 
@@ -170,10 +203,10 @@ fn premultiply_alpha(mut image: image::RgbaImage) -> image::RgbaImage {
 /// Constructs a RawFrame for a single frame of a spritesheet
 ///
 /// If neccessary, pads the image up to the next power of two
-fn build_frame_texture(image: &mut image::DynamicImage, image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32, pad_size: u32) -> RenderContextTexture {
+fn build_frame_texture(image: &mut image::DynamicImage, image_dimensions: (u32, u32), sprite_parameters: &SpriteParameters, frame_id: u32, channel_id: u32, pad_size: u32) -> RenderContextTexture {
 
-    let FrameParameters(frame_width, frame_height, _, _) = *frame_parameters;
-    let (x, y) = get_frame_coordinates(image_dimensions, frame_parameters, frame_id);
+    let SpriteParameters { dimensions: (frame_width, frame_height), .. } = *sprite_parameters;
+    let (x, y) = get_frame_coordinates(image_dimensions, sprite_parameters, frame_id, channel_id);
     let subimage = image.crop(x, y, frame_width, frame_height);
 
     if frame_width != pad_size || frame_height != pad_size {
@@ -199,18 +232,19 @@ fn build_frame_texture(image: &mut image::DynamicImage, image_dimensions: (u32, 
 }
 
 /// Computes top/left frame coordinates for the given frame_id in a sprite-sheet
-fn get_frame_coordinates(image_dimensions: (u32, u32), frame_parameters: &FrameParameters, frame_id: u32) -> (u32, u32) {
+fn get_frame_coordinates(image_dimensions: (u32, u32), sprite_parameters: &SpriteParameters, frame_id: u32, channel_id: u32) -> (u32, u32) {
 
     let (img_width, img_height) = image_dimensions;
-    let FrameParameters(frame_width, frame_height, frame_count, frame_layout) = *frame_parameters;
+    let SpriteParameters { dimensions: (frame_width, frame_height), num_frames, num_channels, layout } = *sprite_parameters;
 
-    assert!(frame_id < frame_count);
+    assert!(frame_id < num_frames);
+    assert!(channel_id < num_channels);
 
-    if frame_layout == SpriteLayout::HORIZONTAL {
-        let spl = img_width / frame_width;
-        ((frame_id % spl) * frame_width, (frame_id / spl) * frame_height)
+    if layout == SpriteLayout::HORIZONTAL {
+        let per_line = img_width / frame_width;
+        ((frame_id % per_line) * frame_width, (frame_id / per_line) * frame_height + channel_id  * frame_height)
     } else {
-        let spl = img_height / frame_height;
-        ((frame_id / spl) * frame_width, (frame_id % spl) * frame_height)
+        let per_row = img_height / frame_height;
+        ((frame_id / per_row) * frame_width + channel_id * frame_width, (frame_id % per_row) * frame_height)
     }
 }

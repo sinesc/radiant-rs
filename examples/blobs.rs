@@ -1,18 +1,18 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Input, InputId, Layer, Sprite, Font, FontInfo, Color, blendmodes, Point2, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Input, InputId, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils, Point2};
 
 pub fn main() {
 
     // create a window, a renderer and some basic input handler for the window
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
+    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display);
     let input = Input::new(&display);
     let context = renderer.context();
 
     // create three layers, change one to use the "lighten" blend mode
-    let text_layer = Layer::new(640, 480);
-    let spark_layer = Layer::new(640, 480);
-    let fps_layer = Layer::new(640, 480);
+    let text_layer = Layer::new(640, 480, 0);
+    let spark_layer = Layer::new(640, 480, 0);
+    let fps_layer = Layer::new(640, 480, 0);
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     // create a sprite and some fonts
@@ -50,13 +50,15 @@ pub fn main() {
         sprite.draw(&spark_layer, 0, Point2(340.0, 200.0), Color::blue().scale(1.5));
 
         // draw the spark layer three times with different matrices and alpha levels as well as the text layer
-        renderer.clear_target(Color::black());
+        display.clear_frame(Color::black());
+
         renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1));
         renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2));
         renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3));
         renderer.draw_layer(&text_layer);
         renderer.draw_layer(&fps_layer);
-        renderer.swap_target();
+
+        display.swap_frame();
 
         !display.poll_events().was_closed() && !input.down(InputId::Escape)
     });

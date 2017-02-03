@@ -2,7 +2,7 @@ extern crate radiant_rs;
 use radiant_rs::*;
 use radiant_rs::scene::*;
 
-fn main() {
+pub fn main() {
 
     // create display and renderer
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
@@ -10,7 +10,7 @@ fn main() {
 
     // create a scene with one layer and load a sprite for later use
     let scene = Scene::new(&renderer.context());
-    let layer_id = scene.register_layer(640, 480);
+    let layer_id = scene.register_layer(640, 480, 0);
     let sprite_id = scene.register_sprite_from_file("examples/res/sparkles_64x64x1.png");
 
     // define a few scene operations to be run each frame
@@ -27,9 +27,9 @@ fn main() {
 
     // keep drawing the scene
     utils::renderloop(|frame| {
-        renderer.clear_target(Color::black());
+        display.clear_frame(Color::black());
         renderer.draw_scene(&scene, frame.delta_f32);
-        renderer.swap_target();
+        display.swap_frame();
         !display.poll_events().was_closed()
     });
 }

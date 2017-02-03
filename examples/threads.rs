@@ -10,7 +10,7 @@ pub fn main() {
     let renderer = Renderer::new(&display);
 
     // create a single layer and a font
-    let layer = Arc::new(Layer::new(640, 480));
+    let layer = Arc::new(Layer::new(640, 480, 0));
     layer.set_blendmode(blendmodes::LIGHTEN);
     let big_font = Arc::new(Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
     let font = big_font.with_size(12.0);
@@ -45,7 +45,7 @@ pub fn main() {
         // this will unblock once all threads have finished drawing
         draw_start.wait();
 
-        renderer.clear_target(Color::black());
+        display.clear_frame(Color::black());
         font.write(&layer, &format!("{}FPS", state.fps), Point2(10.0, 10.0));
         renderer.draw_layer(&layer);
         layer.clear();
@@ -53,7 +53,7 @@ pub fn main() {
         // layer is drawn, let threads render their next frame
         draw_done.wait();
 
-        renderer.swap_target();
+        display.swap_frame();
 
         !display.poll_events().was_closed()
     });

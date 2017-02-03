@@ -1,9 +1,15 @@
 use glium;
-use glium::DisplayBuild;
+use glium::{DisplayBuild, Surface};
 use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton};
 use prelude::*;
 use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
+use core::Color;
+use core::{RenderTarget, RenderTargetType};
+use glium::index::IndicesSource;
+use glium::uniforms::Uniforms;
+use glium::vertex::MultiVerticesSource;
+use glium::{Program, DrawParameters, DrawError};
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
 #[derive(Clone)]
@@ -35,7 +41,14 @@ impl Default for DisplayInfo {
 #[derive(Clone)]
 pub struct Display {
     handle: glium::Display,
+    frame: Rc<RefCell<Option<glium::Frame>>>,
     input_data: Arc<RwLock<InputData>>,
+}
+
+impl RenderTarget for Display {
+    fn get_target(self: &Self) -> RenderTargetType {
+        RenderTargetType::Display(self.clone())
+    }
 }
 
 pub fn handle(display: &Display) -> &glium::Display {
@@ -44,6 +57,21 @@ pub fn handle(display: &Display) -> &glium::Display {
 
 pub fn input_data(display: &Display) -> &Arc<RwLock<InputData>> {
     &display.input_data
+}
+
+pub fn draw<'b, 'v, V, I, U>(display: &Display, vb: V, ib: I, program: &Program, uniforms: &U, draw_parameters: &DrawParameters) -> Result<(), DrawError>
+    where I: Into<IndicesSource<'b>>, U: Uniforms, V: MultiVerticesSource<'v>
+{
+    display.frame.borrow_mut().as_mut().unwrap().draw(vb, ib, program, uniforms, draw_parameters)
+}
+
+pub fn clear(display: &Display, color: &Color) {
+    if let Some(ref mut frame) = display.frame.borrow_mut().as_mut() {
+        let (r, g, b, a) = color.as_tuple();
+        frame.clear_color(r, g, b, a);
+    } else {
+        panic!("Failed to clear frame: None prepared.");
+    }
 }
 
 impl Display {
@@ -70,6 +98,7 @@ impl Display {
 
         Display {
             handle: builder.build_glium().unwrap(),
+            frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(InputData::new())),
         }
     }
@@ -87,6 +116,36 @@ impl Display {
     /// Hides the window.
     pub fn hide(self: &Self) {
         self.window().hide();
+    }
+
+    /// Prepares a frame for rendering.
+    pub fn prepare_frame(self: &Self) {
+        if self.frame.borrow().is_some() {
+            panic!("Current frame needs to be swapped before a new frame can be prepared.");
+        }
+        *self.frame.borrow_mut() = Some(self.handle.draw());
+    }
+
+    /// Prepares a frame for rendering and clears it.
+    pub fn clear_frame(self: &Self, color: Color) {
+        self.prepare_frame();
+        if let Some(ref mut frame) = self.frame.borrow_mut().as_mut() {
+            let (r, g, b, a) = color.as_tuple();
+            frame.clear_color(r, g, b, a);
+        } else {
+            panic!("Failed to prepare a frame for clear.");
+        }
+    }
+
+    /// Swaps current drawing frame with visible frame.
+    pub fn swap_frame(self: &Self) {
+        use std::mem::replace;
+        let frame = replace(&mut *self.frame.borrow_mut(), None);
+        if let Some(frame) = frame {
+            frame.finish().unwrap();
+        } else {
+            panic!("No frame currently prepared, nothing to swap.");
+        }
     }
 
     /// Enables cursor grab mode. While in this mode, the mouse cursor will be hidden and
@@ -144,6 +203,7 @@ impl Display {
     pub fn from_glium(display: glium::Display) -> Display {
         Display {
             handle: display,
+            frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(InputData::new())),
         }
     }

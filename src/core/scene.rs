@@ -131,8 +131,8 @@ impl Scene {
     }
 
     /// Create and register a layer to the scene.
-    pub fn register_layer(&self, width: u32, height: u32) -> LayerId {
-        let insert_position = self.layers.push(Layer::new(width, height));
+    pub fn register_layer(&self, width: u32, height: u32, channel: u32) -> LayerId {
+        let insert_position = self.layers.push(Layer::new(width, height, channel));
         LayerId(insert_position)
     }
 

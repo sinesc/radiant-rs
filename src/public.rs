@@ -2,7 +2,7 @@ pub use core::{
     blendmodes, BlendMode,
     Display, DisplayInfo, Monitor,
     Renderer, RenderContext,
-    Layer, Sprite, Font, FontInfo, Target,
+    Layer, Sprite, Font, FontInfo, Texture, /*Filter,*/
     Color,
     Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator,
 };
