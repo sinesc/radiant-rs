@@ -1,12 +1,15 @@
 use glium;
-use core::{display, Display, font, RenderTarget, RenderTargetType};
+use core::{display, Display, font, RenderTarget, RenderTargetType, program, Program};
 use prelude::*;
 use std::borrow::Cow;
 
-// Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
+/// Default fragment shader program
+const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
+
+/// Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
 pub const NUM_BUCKETS: usize = 6;
 
-// Initial sprite capacity. Automatically increases.
+/// Initial sprite capacity. Automatically increases.
 pub const INITIAL_CAPACITY: usize = 512;
 
 /// A thread-safe render-context.
@@ -64,13 +67,12 @@ impl RenderContextTextureArray {
 /// Internal data of a RenderContext
 pub struct RenderContextData {
     pub index_buffer        : glium::IndexBuffer<u32>,
-    pub program             : glium::Program,
+    pub program             : Program,
     pub tex_array           : Vec<RenderContextTextureArray>,
     pub display             : Display,
     pub font_cache          : font::FontCache,
     pub font_texture        : glium::texture::Texture2d,
     pub vertex_buffer_single: glium::VertexBuffer<Vertex>,
-    pub program_single      : glium::Program,
     pub render_target       : RenderTargetType,
 }
 
@@ -88,13 +90,12 @@ impl RenderContextData {
 
         RenderContextData {
             index_buffer        : Self::create_index_buffer(glium_handle, initial_capacity),
-            program             : Self::create_program(glium_handle),
+            program             : program::create(display, DEFAULT_FS),
             tex_array           : tex_array,
             display             : display.clone(),
             font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
             font_texture        : font::create_cache_texture(glium_handle, 512, 512),
             vertex_buffer_single: Self::create_vertex_buffer_single(glium_handle),
-            program_single      : Self::create_program_single(glium_handle),
             render_target       : display.get_target(),
         }
     }
@@ -147,26 +148,6 @@ impl RenderContextData {
         }
 
         glium::index::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &ib_data).unwrap()
-    }
-
-    /// creates the sprite shader program
-    fn create_program(display: &glium::Display) -> glium::Program {
-        program!(display,
-            140 => {
-                vertex: include_str!("../shader/default.vs"),
-                fragment: include_str!("../shader/default.fs")
-            }
-        ).unwrap()
-    }
-
-    /// creates the single rectangle shader program
-    fn create_program_single(display: &glium::Display) -> glium::Program {
-        program!(display,
-            140 => {
-                vertex: include_str!("../shader/single.vs"),
-                fragment: include_str!("../shader/single.fs")
-            }
-        ).unwrap()
     }
 
     /// creates a single rectangle vertex buffer

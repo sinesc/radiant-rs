@@ -1,6 +1,5 @@
 use prelude::*;
 use super::vec2::Vec2;
-use std;
 
 /// An Angle between -PI and PI.
 #[derive(Copy, Clone, PartialEq, PartialOrd)]

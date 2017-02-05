@@ -1,6 +1,6 @@
 use prelude::*;
 use glium;
-use core::{Display, rendercontext, RenderContext, RenderContextData, texture, Texture, layer, Layer, blendmode, BlendMode, scene, Color, RenderTarget};
+use core::{Display, rendercontext, RenderContext, RenderContextData, texture, Texture, layer, Layer, blendmode, BlendMode, scene, Color, RenderTarget, program};
 use maths::{Vec2, Point2, Mat4};
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
@@ -98,7 +98,7 @@ impl<'a> Renderer {
             // draw up to container.size
 
             let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
-            context.render_target.draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &context.program, &uniforms, &draw_parameters).unwrap();
+            context.render_target.draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(&context.program), &uniforms, &draw_parameters).unwrap();
         }
 
         self
@@ -139,11 +139,12 @@ impl<'a> Renderer {
         // draw up to container.size
 
         let ib_slice = context.index_buffer.slice(0..6).unwrap();
-        context.render_target.draw(&context.vertex_buffer_single, &ib_slice, &context.program_single, &uniforms, &draw_parameters).unwrap();
+        context.render_target.draw(&context.vertex_buffer_single, &ib_slice, &program::texture(&context.program), &uniforms, &draw_parameters).unwrap();
 
         self
     }*/
 }
+
 /// returns the appropriate bucket_id and padded texture size for the given texture size
 pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
