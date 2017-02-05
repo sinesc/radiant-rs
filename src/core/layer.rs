@@ -83,7 +83,7 @@ impl Layer {
     }
 
     /// Returns a mutex guarded mutable reference to the view matrix.
-    /// See [`set_model_matrix()`](#method.set_model_matrix) for a description of the model matrix.
+    /// See [`set_view_matrix()`](#method.set_view_matrix) for a description of the view matrix.
     pub fn view_matrix(&self) -> MutexGuard<Mat4<f32>> {
         self.view_matrix.lock().unwrap()
     }
@@ -100,7 +100,7 @@ impl Layer {
     }
 
     /// Returns a mutex guarded mutable reference to the model matrix.
-    /// See [`set_view_matrix()`](#method.set_view_matrix) for a description of the view matrix.
+    /// See [`set_model_matrix()`](#method.set_model_matrix) for a description of the model matrix.
     pub fn model_matrix(&self) -> MutexGuard<Mat4<f32>> {
         self.model_matrix.lock().unwrap()
     }
