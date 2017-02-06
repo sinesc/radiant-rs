@@ -10,7 +10,7 @@ pub use maths::{Mat4, Vec2, Vec3, Angle, Point2, Point3, Rect, VecType};
 
 pub mod utils {
     //! Optional utility features.
-    pub use misc::{renderloop, mainloop, approach, min, max, Rng, Periodic};
+    pub use misc::{renderloop, mainloop, lerp, approach, min, max, Rng, Periodic};
 }
 
 pub mod scene {
