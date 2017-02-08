@@ -1,6 +1,6 @@
 use prelude::*;
 use maths::VecType;
-use glium::uniforms::{AsUniformValue, UniformValue};
+use core::{Uniform, AsUniform};
 
 /// A 3-dimensional vector.
 #[derive(Copy, Clone)]
@@ -18,6 +18,10 @@ impl<T> Vec3<T> where T: Debug + Float {
     /// Returns the dot-product of the vectors.
     pub fn dot(self: &Self, other: &Vec3<T>) -> T {
         self.0 * other.0 + self.1 * other.1 + self.1 * other.2
+    }
+    /// Returns the vector as an array.
+    pub fn as_array(self: &Self) -> [ T; 3 ] {
+        [ self.0, self.1, self.2 ]
     }
 }
 
@@ -143,17 +147,15 @@ impl Mul<Vec3<f64>> for f64 {
     }
 }
 
-#[doc(hidden)]
-impl AsUniformValue for Vec3<f32> {
-    fn as_uniform_value(&self) -> UniformValue {
-        UniformValue::Vec3([ self.0, self.1, self.2 ])
+impl AsUniform for Vec3<f32> {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::Vec3([ self.0, self.1, self.2 ])
     }
 }
 
-#[doc(hidden)]
-impl AsUniformValue for Vec3<f64> {
-    fn as_uniform_value(&self) -> UniformValue {
-        UniformValue::DoubleVec3([ self.0, self.1, self.2 ])
+impl AsUniform for Vec3<f64> {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::DoubleVec3([ self.0, self.1, self.2 ])
     }
 }
 

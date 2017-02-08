@@ -159,6 +159,11 @@ impl Color {
         (self.0, self.1, self.2, self.3)
     }
 
+    /// Returns the instance's channels as array.
+    pub fn as_array(self: &Self) -> [ f32; 4 ] {
+        [ self.0, self.1, self.2, self. 3 ]
+    }
+
     pub fn white() -> Color {
         Color(1.0, 1.0, 1.0, 1.0)
     }
@@ -211,6 +216,14 @@ fn hue_to_rgb(p: f32, q: f32, mut hue: f32) -> f32 {
     return p;
 }
 
+use core::{Uniform, AsUniform};
+
+impl AsUniform for Color {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::Vec4([ self.0, self.1, self.2, self.3 ])
+    }
+}
+
 #[doc(hidden)]
 unsafe impl Attribute for Color {
     fn get_type() -> AttributeType {
@@ -225,7 +238,7 @@ impl AsUniformValue for Color {
     }
 }
 
-impl fmt::Display for Color {
+impl fmt::Debug for Color {
     fn fmt(self: &Self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Color({}, {}, {}, {})", self.0, self.1, self.2, self.3)
     }

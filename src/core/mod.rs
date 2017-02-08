@@ -11,6 +11,7 @@ mod color;
 mod monitor;
 mod texture;
 mod program;
+mod uniform;
 
 pub use self::blendmode::{blendmodes, BlendMode};
 pub use self::input::{Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator};
@@ -25,6 +26,7 @@ pub use self::scene::*;
 pub use self::monitor::Monitor;
 pub use self::texture::Texture;
 pub use self::program::Program;
+pub use self::uniform::{Uniform, AsUniform, UniformList, GliumUniform};
 
 use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;

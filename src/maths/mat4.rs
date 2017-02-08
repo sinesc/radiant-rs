@@ -1,7 +1,9 @@
 use prelude::*;
 use maths::vec3::Vec3;
 use maths::VecType;
-use glium::uniforms::{AsUniformValue, UniformValue};
+use core::{Uniform, AsUniform};
+
+// !todo refactor to [ [T; 4]; 4 ] !
 
 /// A 4x4 matrix.
 #[derive(Copy, Clone)]
@@ -268,13 +270,12 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
     /// Get rotation matrix euler angles
     #[allow(non_snake_case)]
     pub fn get_euler(self: &Self) -> Vec3<T> {
-        use std;
         let a = &self.data;
         let y: T;
         let z: T;
         let x: T;
 
-        let half_PI = NumCast::from(std::f64::consts::PI / 2.0).unwrap();
+        let half_PI = NumCast::from(f64::consts::PI / 2.0).unwrap();
 
     	if a[E01] > NumCast::from(0.998).unwrap() { // singularity at north pole
     		y = a[E20].atan2(a[E22]);
@@ -291,6 +292,17 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
         }
 
         Vec3(x, y, z)
+    }
+
+/// Returns the matrix as an array of 4 arrays of 4 Ts.
+    pub fn as_array(self: &Self) -> [ [T; 4]; 4 ] {
+        let a = &self.data;
+        [
+            [ a[0],  a[1],  a[2],  a[3] ],
+            [ a[4],  a[5],  a[6],  a[7] ],
+            [ a[8],  a[9],  a[10], a[11] ],
+            [ a[12], a[13], a[14], a[15] ],
+        ]
     }
 }
 
@@ -353,6 +365,30 @@ impl<T: Debug + Float> Mul<Mat4<T>> for Mat4<T> {
     }
 }
 
+impl AsUniform for Mat4<f32> {
+    fn as_uniform(&self) -> Uniform {
+        let a = &self.data;
+        Uniform::Mat4([
+            [ a[0],  a[1],  a[2],  a[3] ],
+            [ a[4],  a[5],  a[6],  a[7] ],
+            [ a[8],  a[9],  a[10], a[11] ],
+            [ a[12], a[13], a[14], a[15] ],
+        ])
+    }
+}
+
+impl AsUniform for Mat4<f64> {
+    fn as_uniform(&self) -> Uniform {
+        let a = &self.data;
+        Uniform::DoubleMat4([
+            [ a[0],  a[1],  a[2],  a[3] ],
+            [ a[4],  a[5],  a[6],  a[7] ],
+            [ a[8],  a[9],  a[10], a[11] ],
+            [ a[12], a[13], a[14], a[15] ],
+        ])
+    }
+}
+
 impl<T: Debug + Float> Debug for Mat4<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let a = self.data;
@@ -366,31 +402,5 @@ a[E00], a[E01], a[E02], a[E03],
 a[E10], a[E11], a[E12], a[E13],
 a[E20], a[E21], a[E22], a[E23],
 a[E30], a[E31], a[E32], a[E33])
-    }
-}
-
-#[doc(hidden)]
-impl AsUniformValue for Mat4<f32> {
-    fn as_uniform_value(&self) -> UniformValue {
-        let a = &self.data;
-        UniformValue::Mat4([
-            [ a[0],  a[1],  a[2],  a[3] ],
-            [ a[4],  a[5],  a[6],  a[7] ],
-            [ a[8],  a[9],  a[10], a[11] ],
-            [ a[12], a[13], a[14], a[15] ],
-        ])
-    }
-}
-
-#[doc(hidden)]
-impl AsUniformValue for Mat4<f64> {
-    fn as_uniform_value(&self) -> UniformValue {
-        let a = &self.data;
-        UniformValue::DoubleMat4([
-            [ a[0],  a[1],  a[2],  a[3] ],
-            [ a[4],  a[5],  a[6],  a[7] ],
-            [ a[8],  a[9],  a[10], a[11] ],
-            [ a[12], a[13], a[14], a[15] ],
-        ])
     }
 }

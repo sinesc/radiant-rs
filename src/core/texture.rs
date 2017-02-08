@@ -8,7 +8,7 @@ use glium::Surface;
 pub struct Texture (Rc<glium::texture::Texture2d>);
 
 pub fn handle(texture: &Texture) -> &glium::texture::Texture2d {
-    &texture.0.deref()
+    texture.0.deref()
 }
 
 impl Texture {

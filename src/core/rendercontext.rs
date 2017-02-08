@@ -50,7 +50,7 @@ impl<'a> glium::texture::Texture2dDataSource<'a> for RenderContextTexture {
 /// Texture data for a single texture array
 pub struct RenderContextTextureArray {
     pub dirty   : bool,
-    pub data    : glium::texture::SrgbTexture2dArray,
+    pub data    : Rc<glium::texture::SrgbTexture2dArray>,
     pub raw     : Vec<RenderContextTexture>,
 }
 
@@ -58,7 +58,7 @@ impl RenderContextTextureArray {
     pub fn new(display: &Display) -> Self {
         RenderContextTextureArray {
             dirty   : false,
-            data    : texture_array(display, Vec::new()),
+            data    : Rc::new(texture_array(display, Vec::new())),
             raw     : Vec::new(),
         }
     }
@@ -71,7 +71,7 @@ pub struct RenderContextData {
     pub tex_array           : Vec<RenderContextTextureArray>,
     pub display             : Display,
     pub font_cache          : font::FontCache,
-    pub font_texture        : glium::texture::Texture2d,
+    pub font_texture        : Rc<glium::texture::Texture2d>,
     pub vertex_buffer_single: glium::VertexBuffer<Vertex>,
     pub render_target       : RenderTargetType,
 }
@@ -94,15 +94,15 @@ impl RenderContextData {
             tex_array           : tex_array,
             display             : display.clone(),
             font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
-            font_texture        : font::create_cache_texture(glium_handle, 512, 512),
+            font_texture        : Rc::new(font::create_cache_texture(glium_handle, 512, 512)),
             vertex_buffer_single: Self::create_vertex_buffer_single(glium_handle),
             render_target       : display.get_target(),
         }
     }
 
     /// Update font-texture from cache
-    pub fn update_font_cache(self: &mut Self) {
-        self.font_cache.update(&mut self.font_texture);
+    pub fn update_font_cache(self: &Self) {
+        self.font_cache.update(&self.font_texture);
     }
 
     /// Update texture arrays from registered textures
@@ -110,7 +110,7 @@ impl RenderContextData {
         for ref mut array in self.tex_array.iter_mut() {
             if array.dirty {
                 array.dirty = false;
-                array.data = texture_array(&self.display, array.raw.clone());
+                array.data = Rc::new(texture_array(&self.display, array.raw.clone()));
             }
         }
     }

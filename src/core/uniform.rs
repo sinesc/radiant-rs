@@ -1,0 +1,146 @@
+use prelude::*;
+use glium;
+use glium::uniforms::{Uniforms, AsUniformValue};
+use core::texture::{self, Texture};
+
+/// A uniform value.
+#[derive(Clone)]
+pub enum Uniform {
+    Bool(bool),
+    SignedInt(i32),
+    UnsignedInt(u32),
+    Float(f32),
+    Mat4([[f32; 4]; 4]),
+    Vec2([f32; 2]),
+    Vec3([f32; 3]),
+    Vec4([f32; 4]),
+    Double(f64),
+    DoubleMat4([[f64; 4]; 4]),
+    DoubleVec2([f64; 2]),
+    DoubleVec3([f64; 3]),
+    DoubleVec4([f64; 4]),
+    Texture(Texture),
+}
+
+/// A value usable as a uniform.
+pub trait AsUniform {
+    fn as_uniform(&self) -> Uniform;
+}
+
+impl AsUniform for bool {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::Bool(*self)
+    }
+}
+
+/// Multiple uniforms.
+pub struct UniformList (HashMap<String, Uniform>);
+
+impl UniformList {
+    pub fn new() -> Self {
+        UniformList(HashMap::new())
+    }
+    pub fn insert(self: &mut Self, name: &str, uniform: Uniform) {
+        self.0.insert(name.to_string(), uniform);
+    }
+}
+
+pub fn to_glium_uniforms(list: &UniformList) -> GliumUniformList {
+    GliumUniformList::from_uniform_list(list)
+}
+
+// -----------------------------------------------------------------------------
+// Below is a whole buch of crap to work around some lifetimes I don't want the
+// user to have to deal with.
+// Ideally, I want GliumUniformList to be a vector of glium UniformValues but ran into
+// lifetime issues with that.
+// !todo revisit this later. It should really be possible.
+// !todo noticed that texture::handle did a & on the rcs deref, removing that fixed some issues.
+// -----------------------------------------------------------------------------
+
+/// !todo get rid of
+pub enum GliumUniform<'a> {
+    Bool(bool),
+    SignedInt(i32),
+    UnsignedInt(u32),
+    Float(f32),
+    Mat4([[f32; 4]; 4]),
+    Vec2([f32; 2]),
+    Vec3([f32; 3]),
+    Vec4([f32; 4]),
+    Double(f64),
+    DoubleMat4([[f64; 4]; 4]),
+    DoubleVec2([f64; 2]),
+    DoubleVec3([f64; 3]),
+    DoubleVec4([f64; 4]),
+    Texture2d(&'a glium::texture::Texture2d),
+    Texture2dArray(&'a glium::texture::SrgbTexture2dArray),
+    Sampled2d(glium::uniforms::Sampler<'a, glium::texture::Texture2d>),
+}
+
+/// A structure to implement gliums Uniforms trait on. This requires a lifetime
+/// which I don't want in the public interface.
+pub struct GliumUniformList<'a>(Vec<(&'a str, GliumUniform<'a>)>);
+
+impl<'a> GliumUniformList<'a> {
+    pub fn from_uniform_list(list: &'a UniformList) -> Self {
+        let mut result = GliumUniformList(Vec::new());
+        for (name, uniform) in list.0.iter() {
+            result.add(name, uniform);
+        }
+        result
+    }
+    pub fn add_glium(self: &mut Self, name: &'a str, uniform: GliumUniform<'a>) {
+        self.0.push((name, uniform));
+    }
+    pub fn add(self: &mut Self, name: &'a str, uniform: &'a Uniform) {
+        self.0.push((name, match *uniform {
+            Uniform::Bool(val) => { GliumUniform::Bool(val) },
+            Uniform::SignedInt(val) => { GliumUniform::SignedInt(val) },
+            Uniform::UnsignedInt(val) => { GliumUniform::UnsignedInt(val) },
+            Uniform::Float(val) => { GliumUniform::Float(val) },
+            Uniform::Mat4(val) => { GliumUniform::Mat4(val) },
+            Uniform::Vec2(val) => { GliumUniform::Vec2(val) },
+            Uniform::Vec3(val) => { GliumUniform::Vec3(val) },
+            Uniform::Vec4(val) => { GliumUniform::Vec4(val) },
+            Uniform::Double(val) => { GliumUniform::Double(val) },
+            Uniform::DoubleMat4(val) => { GliumUniform::DoubleMat4(val) },
+            Uniform::DoubleVec2(val) => { GliumUniform::DoubleVec2(val) },
+            Uniform::DoubleVec3(val) => { GliumUniform::DoubleVec3(val) },
+            Uniform::DoubleVec4(val) => { GliumUniform::DoubleVec4(val) },
+            Uniform::Texture(ref val) => { GliumUniform::Texture2d(texture::handle(val)) },
+        }));
+    }
+}
+
+impl<'b> Uniforms for GliumUniformList<'b> {
+    fn visit_values<'a, F>(&'a self, mut output: F) where F: FnMut(&str, glium::uniforms::UniformValue<'a>) {
+        use glium::uniforms::UniformValue;
+        for &(name, ref uniform) in &self.0 {
+            output(name, match *uniform {
+                GliumUniform::Bool(val) => { UniformValue::Bool(val) },
+                GliumUniform::SignedInt(val) => { UniformValue::SignedInt(val) },
+                GliumUniform::UnsignedInt(val) => { UniformValue::UnsignedInt(val) },
+                GliumUniform::Float(val) => { UniformValue::Float(val) },
+                GliumUniform::Mat4(val) => { UniformValue::Mat4(val) },
+                GliumUniform::Vec2(val) => { UniformValue::Vec2(val) },
+                GliumUniform::Vec3(val) => { UniformValue::Vec3(val) },
+                GliumUniform::Vec4(val) => { UniformValue::Vec4(val) },
+                GliumUniform::Double(val) => { UniformValue::Double(val) },
+                GliumUniform::DoubleMat4(val) => { UniformValue::DoubleMat4(val) },
+                GliumUniform::DoubleVec2(val) => { UniformValue::DoubleVec2(val) },
+                GliumUniform::DoubleVec3(val) => { UniformValue::DoubleVec3(val) },
+                GliumUniform::DoubleVec4(val) => { UniformValue::DoubleVec4(val) },
+                GliumUniform::Sampled2d(ref val) => {
+                    val.as_uniform_value()
+                }
+                GliumUniform::Texture2d(ref val) => {
+                    val.as_uniform_value()
+                }
+                GliumUniform::Texture2dArray(ref val) => {
+                    val.as_uniform_value()
+                }
+            });
+        }
+    }
+}

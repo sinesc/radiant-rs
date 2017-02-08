@@ -69,7 +69,7 @@ impl FontCache {
         }
     }
 
-    pub fn update(self: &Self, texture: &mut glium::texture::Texture2d) {
+    pub fn update(self: &Self, texture: &glium::texture::Texture2d) {
 
         if self.dirty.load(Ordering::Relaxed) {
             let mut queue = self.queue.lock().unwrap();

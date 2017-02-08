@@ -1,5 +1,6 @@
 use prelude::*;
 use super::vec2::Vec2;
+use core::{Uniform, AsUniform};
 
 /// An Angle between -PI and PI.
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
@@ -29,8 +30,8 @@ impl<T> Angle<T> where T: Debug + Float + NumCast {
     /// Mutates self to its normalized representation.
     #[allow(non_snake_case)]
     pub fn normalize(self: &mut Self) -> &mut Self {
-        let PI = NumCast::from(std::f64::consts::PI).unwrap();
-        let two_PI = NumCast::from(std::f64::consts::PI * 2.0).unwrap();
+        let PI = NumCast::from(f64::consts::PI).unwrap();
+        let two_PI = NumCast::from(f64::consts::PI * 2.0).unwrap();
         if self.0.abs() > PI {
             self.0 = self.0 - two_PI * ((self.0 + PI) / two_PI).floor();
         }
@@ -40,8 +41,8 @@ impl<T> Angle<T> where T: Debug + Float + NumCast {
     #[allow(non_snake_case)]
     pub fn align_with(self: &mut Self, target: &Angle<T>) -> &mut Self {
 
-        let PI = NumCast::from(std::f64::consts::PI).unwrap();
-        let two_PI = NumCast::from(std::f64::consts::PI * 2.0).unwrap();
+        let PI = NumCast::from(f64::consts::PI).unwrap();
+        let two_PI = NumCast::from(f64::consts::PI * 2.0).unwrap();
 
         // normalize
 
@@ -187,6 +188,18 @@ impl<T> Div<T> for Angle<T> where T: Debug + Float {
     type Output = Angle<T>;
     fn div(self, other: T) -> Angle<T> {
         Angle::<T>(self.0 / other)
+    }
+}
+
+impl AsUniform for Angle<f32> {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::Float(self.0)
+    }
+}
+
+impl AsUniform for Angle<f64> {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::Double(self.0)
     }
 }
 

@@ -1,6 +1,6 @@
 use prelude::*;
 use maths::{Vec3, VecType, Angle, Rect};
-use glium::uniforms::{AsUniformValue, UniformValue};
+use core::{Uniform, AsUniform};
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone)]
@@ -96,6 +96,10 @@ impl<T> Vec2<T> where T: Debug + Float {
     pub fn distance(self: &Self, other: &Self) -> T{
         let dv = *self - *other;
         (dv.0 * dv.0 + dv.1 * dv.1).sqrt()
+    }
+    /// Returns the vector as an array.
+    pub fn as_array(self: &Self) -> [ T; 2 ] {
+        [ self.0, self.1 ]
     }
 }
 
@@ -219,17 +223,15 @@ impl Mul<Vec2<f64>> for f64 {
     }
 }
 
-#[doc(hidden)]
-impl AsUniformValue for Vec2<f32> {
-    fn as_uniform_value(&self) -> UniformValue {
-        UniformValue::Vec2([ self.0, self.1 ])
+impl AsUniform for Vec2<f32> {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::Vec2([ self.0, self.1 ])
     }
 }
 
-#[doc(hidden)]
-impl AsUniformValue for Vec2<f64> {
-    fn as_uniform_value(&self) -> UniformValue {
-        UniformValue::DoubleVec2([ self.0, self.1 ])
+impl AsUniform for Vec2<f64> {
+    fn as_uniform(&self) -> Uniform {
+        Uniform::DoubleVec2([ self.0, self.1 ])
     }
 }
 
