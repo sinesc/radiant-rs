@@ -6,19 +6,19 @@ use BlendMode;
 
 /// An operation-id returned from Scene::op.
 #[derive(Copy, Clone)]
-pub struct OpId(usize);
+pub struct OpId(u16, u16);
 
 /// A layer-id returned from layer registration or creation methods.
 #[derive(Copy, Clone)]
-pub struct LayerId(usize);
+pub struct LayerId(u16, u16);
 
 /// A sprite-id returned from sprite registration or creation methods.
 #[derive(Copy, Clone)]
-pub struct SpriteId(usize);
+pub struct SpriteId(u16, u16);
 
 /// A font-id returned from font registration or creation methods.
 #[derive(Copy, Clone)]
-pub struct FontId(usize);
+pub struct FontId(u16, u16);
 
 /// A scene-operation.
 ///
@@ -65,6 +65,8 @@ impl Default for Op {
    }
 }
 
+static SCENE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+
 /// A container for layers, sprites and fonts intended to simplify usage.
 pub struct Scene {
     operations      : AVec<Op>,
@@ -72,6 +74,7 @@ pub struct Scene {
     sprites         : AVec<Sprite>,
     fonts           : AVec<Font>,
     context         : RenderContext,
+    scene_id        : u16,
 }
 
 impl Scene {
@@ -83,13 +86,14 @@ impl Scene {
             sprites     : AVec::new(64),
             fonts       : AVec::new(64),
             context     : context.clone(),
+            scene_id    : SCENE_COUNTER.fetch_add(1, Ordering::Relaxed) as u16,
         }
     }
 
     /// Push a layer operation on the scene operation stack.
     pub fn op(&self, op: Op) -> OpId {
         let insert_position = self.operations.push(op);
-        OpId(insert_position)
+        OpId(insert_position as u16, self.scene_id)
     }
 
     /// Push multiple operations on the scene operation stack.
@@ -110,7 +114,9 @@ impl Scene {
     pub fn sprite(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: Point2, color: Color) -> &Self {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
-        sprites[sprite_id.0].draw(&layers[layer_id.0], frame_id, position, color);
+        assert_eq!(self.scene_id, layer_id.1);
+        assert_eq!(self.scene_id, sprite_id.1);
+        sprites[sprite_id.0 as usize].draw(&layers[layer_id.0 as usize], frame_id, position, color);
         self
     }
 
@@ -118,7 +124,9 @@ impl Scene {
     pub fn sprite_transformed(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: Point2, color: Color, rotation: f32, scale: Vec2) -> &Self {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
-        sprites[sprite_id.0].draw_transformed(&layers[layer_id.0], frame_id, position, color, rotation, scale);
+        assert_eq!(self.scene_id, layer_id.1);
+        assert_eq!(self.scene_id, sprite_id.1);
+        sprites[sprite_id.0 as usize].draw_transformed(&layers[layer_id.0 as usize], frame_id, position, color, rotation, scale);
         self
     }
 
@@ -126,31 +134,33 @@ impl Scene {
     pub fn write(&self, layer_id: LayerId, font_id: FontId, text: &str, position: Point2) -> &Self {
         let layers = self.layers.get();
         let fonts = self.fonts.get();
-        fonts[font_id.0].write(&layers[layer_id.0], text, position);
+        assert_eq!(self.scene_id, layer_id.1);
+        assert_eq!(self.scene_id, font_id.1);
+        fonts[font_id.0 as usize].write(&layers[layer_id.0 as usize], text, position);
         self
     }
 
     /// Create and register a layer to the scene.
     pub fn register_layer(&self, width: u32, height: u32, channel: u32) -> LayerId {
         let insert_position = self.layers.push(Layer::new(width, height, channel));
-        LayerId(insert_position)
+        LayerId(insert_position as u16, self.scene_id)
     }
 
     /// Create and register a sprite to the scene
     pub fn register_sprite_from_file(self: &Self, file: &str) -> SpriteId {
         let sprite = Sprite::from_file(&self.context, file);
-        SpriteId(self.sprites.push(sprite))
+        SpriteId(self.sprites.push(sprite) as u16, self.scene_id)
     }
 
     /// Register a sprite for the scene.
     pub fn register_sprite(self: &Self, sprite: Sprite) -> SpriteId {
-        SpriteId(self.sprites.push(sprite))
+        SpriteId(self.sprites.push(sprite) as u16, self.scene_id)
     }
 
     /// Register a font for the scene.
     pub fn register_font(self: &Self, font: Font) -> FontId {
         let insert_position = self.fonts.push(font);
-        FontId(insert_position)
+        FontId(insert_position as u16, self.scene_id)
     }
 
     // !todo how to deal with fonts "with_xxx" mechanics here?
@@ -166,32 +176,40 @@ pub fn draw(this: &Scene, renderer: &Renderer, per_frame_multiplier: f32) {
     for operation in operations {
         match *operation {
             Op::SetColor(layer_id, color) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 layers[layer_id.0 as usize].set_color(color);
             }
             Op::SetBlendmode(layer_id, blendmode) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 layers[layer_id.0 as usize].set_blendmode(blendmode);
             }
             Op::Draw(layer_id) => {
-                renderer.draw_layer(&layers[layer_id.0]);
+                assert_eq!(this.scene_id, layer_id.1);
+                renderer.draw_layer(&layers[layer_id.0 as usize]);
             }
             Op::Clear(layer_id) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 layers[layer_id.0 as usize].clear();
             }
 
             Op::SetViewMatrix(layer_id, matrix) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 layers[layer_id.0 as usize].set_view_matrix(matrix);
             }
             Op::TranslateViewMatrix(layer_id, delta_factor, vector) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].view_matrix();
                 current.translate(vector * multiplier);
             }
             Op::RotateViewMatrix(layer_id, delta_factor, radians) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].view_matrix();
                 current.rotate(radians * multiplier);
             }
             Op::RotateViewMatrixAt(layer_id, delta_factor, origin, radians) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].view_matrix();
                 current.translate(origin);
@@ -199,25 +217,30 @@ pub fn draw(this: &Scene, renderer: &Renderer, per_frame_multiplier: f32) {
                 current.translate(-origin);
             }
             Op::ScaleViewMatrix(layer_id, delta_factor, vector) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].view_matrix();
                 current.scale(vector * multiplier);
             }
 
             Op::SetModelMatrix(layer_id, matrix) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 layers[layer_id.0 as usize].set_model_matrix(matrix);
             }
             Op::TranslateModelMatrix(layer_id, delta_factor, vector) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].model_matrix();
                 current.translate(vector * multiplier);
             }
             Op::RotateModelMatrix(layer_id, delta_factor, radians) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].model_matrix();
                 current.rotate(radians * multiplier);
             }
             Op::RotateModelMatrixAt(layer_id, delta_factor, origin, radians) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].model_matrix();
                 current.translate(origin);
@@ -225,6 +248,7 @@ pub fn draw(this: &Scene, renderer: &Renderer, per_frame_multiplier: f32) {
                 current.translate(-origin);
             }
             Op::ScaleModelMatrix(layer_id, delta_factor, vector) => {
+                assert_eq!(this.scene_id, layer_id.1);
                 let multiplier = (1.0 - delta_factor) + (delta_factor * per_frame_multiplier);
                 let mut current = layers[layer_id.0 as usize].model_matrix();
                 current.scale(vector * multiplier);
