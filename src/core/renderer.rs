@@ -1,6 +1,11 @@
 use prelude::*;
 use glium;
-use core::{Display, rendercontext, RenderContext, RenderContextData, texture, Texture, layer, Layer, blendmode, BlendMode, scene, Color, RenderTarget, program, uniform, GliumUniform, Program};
+use core::{
+    self, texture, layer, scene, rendercontext, blendmode, program, uniform,
+    Display, Layer, Texture, BlendMode, Color, Program,
+    RenderContext, RenderContextData, RenderTarget,
+    GliumUniform,
+};
 use maths::{Vec2, Point2};
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
@@ -20,13 +25,13 @@ pub struct Renderer {
 impl<'a> Renderer {
 
     /// Returns a new renderer instance.
-    pub fn new(display: &Display) -> Self {
+    pub fn new(display: &Display) -> core::Result<Self> {
 
-        let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY);
+        let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY)?;
 
-        Renderer {
+        Ok(Renderer {
             context: rendercontext::new(context_data),
-        }
+        })
     }
 
     /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext)

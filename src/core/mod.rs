@@ -32,7 +32,7 @@ use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
 use glium::vertex::MultiVerticesSource;
 use glium::{self, Surface, DrawParameters, DrawError};
-use std::rc::Rc;
+use prelude::*;
 
 /// An enum of render target type instances.
 #[derive(Clone)]
@@ -43,7 +43,7 @@ pub enum RenderTargetType {
 
 impl RenderTargetType {
     /// Draws to the target.
-    fn draw<'b, 'v, V, I, U>(self: &Self, vb: V, ib: I, program: &glium::Program, uniforms: &U, draw_parameters: &DrawParameters) -> Result<(), DrawError>
+    fn draw<'b, 'v, V, I, U>(self: &Self, vb: V, ib: I, program: &glium::Program, uniforms: &U, draw_parameters: &DrawParameters) -> result::Result<(), DrawError>
         where I: Into<IndicesSource<'b>>, U: Uniforms, V: MultiVerticesSource<'v> {
 
         match *self {
@@ -74,16 +74,21 @@ pub trait RenderTarget {
     fn get_target(self: &Self) -> RenderTargetType;
 }
 
-/// A postprocessing filter.
-pub trait Filter {
-    /// Returns the filter's fragment shader.
-    fn program() -> String;
+/// Radiant errors.
+#[derive(Debug)]
+pub enum Error {
+    ImageError(String),
+    ShaderError(String),
+    IoError(io::Error),
+    Failed,
+}
 
-    /// Sets the filter's uniforms.
-    fn set_uniforms();
-
-    /// Sets a uniform value.
-    fn set_uniform(_: &str, _: f32) {
-
+impl From<io::Error> for Error {
+    /// Converts io error to radiant error
+    fn from(e: io::Error) -> Error {
+        Error::IoError(e)
     }
 }
+
+/// Input/output result.
+pub type Result<T> = result::Result<T, Error>;

@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{rendercontext, RenderContext, display, Display, AsUniform, UniformList, Color};
+use core::{self, rendercontext, RenderContext, display, Display, AsUniform, UniformList, Color};
 use maths::{Mat4};
 use glium;
 
@@ -17,14 +17,15 @@ pub struct Program {
 
 impl Program {
     /// Creates a program from a fragment shader file.
-    pub fn from_file(context: &RenderContext, file: &str) -> io::Result<Self> {
+    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Self> {
+        use std::io::Read;
         let mut source = String::new();
-        let mut f = try!(File::open(file));
-        try!(f.read_to_string(&mut source));
-        Ok(Program::from_string(context, &source))
+        let mut f = File::open(file)?;
+        f.read_to_string(&mut source)?;
+        Program::from_string(context, &source)
     }
     /// Creates a program from a fragment shader string.
-    pub fn from_string(context: &RenderContext, source: &str) -> Self {
+    pub fn from_string(context: &RenderContext, source: &str) -> core::Result<Self> {
         let context = rendercontext::lock(context);
         create(&context.display, source)
     }
@@ -35,7 +36,7 @@ impl Program {
 }
 
 /// Creates a new program. Used in rendercontext creation when the full context is not yet available.
-pub fn create(display: &Display, source: &str) -> Program {
+pub fn create(display: &Display, source: &str) -> core::Result<Program> {
     let sprite_fs = insert_template(source, SPRITE_INC);
     let texture_fs = insert_template(source, TEXTURE_INC);
     let display_handle = &display::handle(display);
@@ -44,11 +45,11 @@ pub fn create(display: &Display, source: &str) -> Program {
     uniforms.insert("view_matrix", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());
     uniforms.insert("model_matrix", Mat4::<f32>::identity().as_uniform());
     uniforms.insert("global_color", Color::white().as_uniform());
-    Program {
+    Ok(Program {
         uniforms: uniforms,
-        sprite_program: create_program(display_handle, SPRITE_VS, &sprite_fs),
-        texture_program: create_program(display_handle, TEXTURE_VS, &texture_fs),
-    }
+        sprite_program: create_program(display_handle, SPRITE_VS, &sprite_fs)?,
+        texture_program: create_program(display_handle, TEXTURE_VS, &texture_fs)?,
+    })
 }
 
 /// Private accessor to the sprite fragement shader program.
@@ -67,13 +68,13 @@ pub fn uniforms(program: &Program) -> &UniformList {
 }
 
 /// Creates a shader program from given vertex- and fragment-shader sources.
-fn create_program(display: &glium::Display, vertex_shader: &str, fragment_shader: &str) -> glium::Program {
-    program!(display,
-        140 => {
-            vertex: vertex_shader,
-            fragment: fragment_shader
-        }
-    ).unwrap()
+fn create_program(display: &glium::Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<glium::Program> {
+    use glium::program::ProgramCreationError;
+    glium::Program::from_source(display, vertex_shader, fragment_shader, None).map_err(|err| match err {
+        ProgramCreationError::CompilationError(message) => { core::Error::ShaderError(format!("Shader compilation failed with: {}", message)) }
+        ProgramCreationError::LinkingError(message) => { core::Error::ShaderError(format!("Shader linking failed with: {}", message)) }
+        _ => { core::Error::ShaderError("No shader support found".to_string()) }
+    })
 }
 
 /// Inserts program boilterplate code into the shader source.

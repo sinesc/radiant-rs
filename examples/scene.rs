@@ -6,12 +6,12 @@ pub fn main() {
 
     // create display and renderer
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display);
+    let renderer = Renderer::new(&display).unwrap();
 
     // create a scene with one layer and load a sprite for later use
     let scene = Scene::new(&renderer.context());
     let layer_id = scene.register_layer(640, 480, 0);
-    let sprite_id = scene.register_sprite_from_file("examples/res/sparkles_64x64x1.png");
+    let sprite_id = scene.register_sprite_from_file("examples/res/sparkles_64x64x1.png").unwrap();
 
     // define a few scene operations to be run each frame
     scene.op(Op::SetBlendmode(layer_id, blendmodes::MAX));

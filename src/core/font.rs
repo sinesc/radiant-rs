@@ -1,7 +1,6 @@
 use prelude::*;
-use core::{layer, Layer, rendercontext, RenderContext};
+use core::{self, layer, Layer, rendercontext, RenderContext, Color};
 use maths::{Point2, Vec2, Rect};
-use Color;
 use rusttype;
 use glium;
 use font_loader::system_fonts;
@@ -130,11 +129,12 @@ pub struct Font {
 impl Font {
 
     /// Creates a font instance from a file
-    pub fn from_file(context: &RenderContext, file: &str) -> Font {
-        let mut f = File::open(Path::new(file)).unwrap();
+    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Font> {
+        use std::io::Read;
+        let mut f = File::open(Path::new(file))?;
         let mut font_data = Vec::new();
-        f.read_to_end(&mut font_data).unwrap();
-        create_font(context, font_data, 12.0)
+        f.read_to_end(&mut font_data)?;
+        Ok(create_font(context, font_data, 12.0))
     }
 
     /// Creates a new font instance from given FontInfo struct

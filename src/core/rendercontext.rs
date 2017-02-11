@@ -1,5 +1,5 @@
 use glium;
-use core::{display, Display, font, RenderTarget, RenderTargetType, program, Program};
+use core::{self, display, Display, font, RenderTarget, RenderTargetType, program, Program};
 use prelude::*;
 use std::borrow::Cow;
 
@@ -79,7 +79,7 @@ pub struct RenderContextData {
 impl RenderContextData {
 
     /// Create a new instance
-    pub fn new(display: &Display, initial_capacity: usize) -> Self {
+    pub fn new(display: &Display, initial_capacity: usize) -> core::Result<Self> {
 
         let mut tex_array = Vec::new();
         let glium_handle = &display::handle(&display);
@@ -88,16 +88,16 @@ impl RenderContextData {
             tex_array.push(RenderContextTextureArray::new(display));
         }
 
-        RenderContextData {
+        Ok(RenderContextData {
             index_buffer        : Self::create_index_buffer(glium_handle, initial_capacity),
-            program             : program::create(display, DEFAULT_FS),
+            program             : program::create(display, DEFAULT_FS)?,
             tex_array           : tex_array,
             display             : display.clone(),
             font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
             font_texture        : Rc::new(font::create_cache_texture(glium_handle, 512, 512)),
             vertex_buffer_single: Self::create_vertex_buffer_single(glium_handle),
             render_target       : display.get_target(),
-        }
+        })
     }
 
     /// Update font-texture from cache

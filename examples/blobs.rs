@@ -5,7 +5,7 @@ pub fn main() {
 
     // create a window, a renderer and some basic input handler for the window
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display);
+    let renderer = Renderer::new(&display).unwrap();
     let input = Input::new(&display);
     let context = renderer.context();
 
@@ -16,7 +16,7 @@ pub fn main() {
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     // create a sprite and some fonts
-    let sprite = Sprite::from_file(&context, r"examples/res/sparkles_64x64x1.png");
+    let sprite = Sprite::from_file(&context, r"examples/res/sparkles_64x64x1.png").unwrap();
     let font = Font::from_info(&context, FontInfo { family: "Arial".to_string(), size: 12.0, ..FontInfo::default() } );
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 

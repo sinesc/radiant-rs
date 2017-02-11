@@ -7,7 +7,7 @@ pub fn main() {
 
     // create a window, a renderer and a threadsafe context (required for sprite/font creation)
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display);
+    let renderer = Renderer::new(&display).unwrap();
 
     // create a single layer and a font
     let layer = Arc::new(Layer::new(640, 480, 0));

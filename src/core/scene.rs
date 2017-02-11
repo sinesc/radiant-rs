@@ -1,7 +1,7 @@
 use prelude::*;
 use avec::AVec;
 use maths::{Mat4, Vec2, Point2};
-use core::{Renderer, RenderContext, Layer, Font, Sprite, Color};
+use core::{self, Renderer, RenderContext, Layer, Font, Sprite, Color};
 use BlendMode;
 
 /// An operation-id returned from Scene::op.
@@ -147,9 +147,9 @@ impl Scene {
     }
 
     /// Create and register a sprite to the scene
-    pub fn register_sprite_from_file(self: &Self, file: &str) -> SpriteId {
-        let sprite = Sprite::from_file(&self.context, file);
-        SpriteId(self.sprites.push(sprite) as u16, self.scene_id)
+    pub fn register_sprite_from_file(self: &Self, file: &str) -> core::Result<SpriteId> {
+        let sprite = Sprite::from_file(&self.context, file)?;
+        result::Result::Ok(SpriteId(self.sprites.push(sprite) as u16, self.scene_id))
     }
 
     /// Register a sprite for the scene.

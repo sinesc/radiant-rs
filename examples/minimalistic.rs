@@ -5,10 +5,10 @@ pub fn main() {
 
     // create a display to render to, a renderer to do the rendering
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: false, ..DisplayInfo::default() });
-    let renderer = Renderer::new(&display);
+    let renderer = Renderer::new(&display).unwrap();
 
     // create a sprite, a font (here from a known systemfont) and a layer
-    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/ball_v2_32x32x18.jpg");
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/ball_v2_32x32x18.jpg").unwrap();
     let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 16.0, ..FontInfo::default() } );
     let layer = Layer::new(640, 480, 0);
 
