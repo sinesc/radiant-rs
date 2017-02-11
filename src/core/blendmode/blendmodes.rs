@@ -4,7 +4,7 @@
 //! [WIP] These are mostly placeholders for now.
 
 use glium::draw_parameters::*;
-use BlendMode;
+use super::BlendMode;
 
 pub const ALPHA: BlendMode = BlendMode(Blend {
      color: BlendingFunction::Addition {
