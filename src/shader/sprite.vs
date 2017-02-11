@@ -1,7 +1,8 @@
 #version 140
 
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
+uniform mat4 u_view;
+uniform mat4 u_model;
+uniform vec4 _rd_color;
 
 in vec2 position;
 in vec2 offset;
@@ -11,10 +12,10 @@ in uint bucket_id;
 in uint texture_id;
 in vec2 texture_uv;
 
-out vec2 v_tex_coords;
 out vec4 v_color;
-flat out uint v_texture_id;
-flat out uint v_bucket_id;
+out vec2 v_tex_coords;
+flat out uint rd_v_texture_id;
+flat out uint rd_v_bucket_id;
 
 void main() {
 
@@ -28,14 +29,14 @@ void main() {
 
     // apply global per sprite matrix (model)
 
-    vec4 final_trans = model_matrix * vec4(trans, 0.0, 1.0);
+    vec4 final_trans = u_model * vec4(trans, 0.0, 1.0);
 
-    gl_Position = view_matrix * vec4(position + vec2(final_trans), 0.0, 1.0);
+    gl_Position = u_view * vec4(position + vec2(final_trans), 0.0, 1.0);
 
     // pass along to fragment shader
 
-    v_color = color;
-    v_bucket_id = bucket_id;
+    v_color = color * _rd_color;
     v_tex_coords = texture_uv;
-    v_texture_id = texture_id;
+    rd_v_texture_id = texture_id;
+    rd_v_bucket_id = bucket_id;
 }

@@ -1,9 +1,9 @@
-uniform sampler2D tex;
+uniform sampler2D _rd_tex;
 
 vec2 sheetSize() {
-    return textureSize(tex, 0).xy;
+    return textureSize(_rd_tex, 0).xy;
 }
 
 vec4 sheet(in vec2 texture_coords) {
-    return texture(tex, texture_coords);
+    return texture(_rd_tex, texture_coords);
 }

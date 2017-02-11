@@ -33,18 +33,26 @@ impl AsUniform for bool {
     }
 }
 
-/// Multiple uniforms.
+/// Multiple uniforms held by a program.
+#[derive(Clone)]
 pub struct UniformList (HashMap<String, Uniform>);
 
 impl UniformList {
+    /// Creates a new uniform list.
     pub fn new() -> Self {
         UniformList(HashMap::new())
     }
+    /// Inserts a uniform into the list.
     pub fn insert(self: &mut Self, name: &str, uniform: Uniform) {
         self.0.insert(name.to_string(), uniform);
     }
+    /// Removes a uniform from the list and returns whether it existed.
+    pub fn remove(self: &mut Self, name: &str) -> bool {
+        self.0.remove(name).is_some()
+    }
 }
 
+/// Creates a GliumUniformList from the given uniform list.
 pub fn to_glium_uniforms(list: &UniformList) -> GliumUniformList {
     GliumUniformList::from_uniform_list(list)
 }

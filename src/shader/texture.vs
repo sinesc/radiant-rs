@@ -1,12 +1,15 @@
 #version 140
 
-uniform mat4 view_matrix;
+uniform mat4 u_view;
+uniform vec4 _rd_color;
+
 uniform vec2 offset;
 uniform vec2 size;
 
 in vec2 position;
 in vec2 texture_uv;
 
+out vec4 v_color;
 out vec2 v_tex_coords;
 
 void main() {
@@ -29,6 +32,7 @@ void main() {
         f_pos = vec2(1.0, 0.0);
     }
 
-    gl_Position = view_matrix * vec4(v_pos, 0.0, 1.0);
+    gl_Position = u_view * vec4(v_pos, 0.0, 1.0);
     v_tex_coords = f_pos;
+    v_color = _rd_color;
 }

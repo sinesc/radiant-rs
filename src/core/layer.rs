@@ -135,11 +135,12 @@ impl Layer {
     }
 }
 
+/// Returns the layer's channel id.
 pub fn channel_id(layer: &Layer) -> u32 {
     layer.channel_id
 }
 
-/// Draws a rectangle on given layer
+/// Draws a rectangle on given layer.
 pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Point2) {
 
     layer.dirty.store(true, Ordering::Relaxed);

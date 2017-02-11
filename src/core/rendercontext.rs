@@ -3,9 +3,6 @@ use core::{self, display, Display, font, RenderTarget, RenderTargetType, program
 use prelude::*;
 use std::borrow::Cow;
 
-/// Default fragment shader program
-const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
-
 /// Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
 pub const NUM_BUCKETS: usize = 6;
 
@@ -67,13 +64,11 @@ impl RenderContextTextureArray {
 /// Internal data of a RenderContext
 pub struct RenderContextData {
     pub index_buffer        : glium::IndexBuffer<u32>,
-    pub program             : Program,
     pub tex_array           : Vec<RenderContextTextureArray>,
     pub display             : Display,
     pub font_cache          : font::FontCache,
     pub font_texture        : Rc<glium::texture::Texture2d>,
     pub vertex_buffer_single: glium::VertexBuffer<Vertex>,
-    pub render_target       : RenderTargetType,
 }
 
 impl RenderContextData {
@@ -90,15 +85,13 @@ impl RenderContextData {
 
         Ok(RenderContextData {
             index_buffer        : Self::create_index_buffer(glium_handle, initial_capacity),
-            program             : program::create(display, DEFAULT_FS)?,
             tex_array           : tex_array,
             display             : display.clone(),
             font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
             font_texture        : Rc::new(font::create_cache_texture(glium_handle, 512, 512)),
             vertex_buffer_single: Self::create_vertex_buffer_single(glium_handle),
-            render_target       : display.get_target(),
         })
-    }
+        }
 
     /// Update font-texture from cache
     pub fn update_font_cache(self: &Self) {

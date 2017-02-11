@@ -8,11 +8,15 @@ const TEXTURE_INC: &'static str = include_str!("../shader/texture.inc.fs");
 const SPRITE_VS: &'static str = include_str!("../shader/sprite.vs");
 const TEXTURE_VS: &'static str = include_str!("../shader/texture.vs");
 
-/// A fragment shader program.
+/// A shader program and its uniforms.
+///
+/// Cloning a program creates a new program, referencing the internal shaders
+/// of the source program but using its own copy of the uniforms.
+#[derive(Clone)]
 pub struct Program {
     uniforms: UniformList,
-    sprite_program: glium::Program,
-    texture_program: glium::Program,
+    sprite_program: Arc<glium::Program>,
+    texture_program: Arc<glium::Program>,
 }
 
 impl Program {
@@ -33,6 +37,10 @@ impl Program {
     pub fn set_uniform<T>(self: &mut Self, name: &str, value: &T) where T: AsUniform {
         self.uniforms.insert(name, value.as_uniform());
     }
+    /// Removes a uniform value by name.
+    pub fn remove_uniform<T>(self: &mut Self, name: &str) -> bool {
+        self.uniforms.remove(name)
+    }
 }
 
 /// Creates a new program. Used in rendercontext creation when the full context is not yet available.
@@ -42,15 +50,15 @@ pub fn create(display: &Display, source: &str) -> core::Result<Program> {
     let display_handle = &display::handle(display);
     let dimensions = display.dimensions();
     let mut uniforms = UniformList::new();
-    uniforms.insert("view_matrix", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());
-    uniforms.insert("model_matrix", Mat4::<f32>::identity().as_uniform());
-    uniforms.insert("global_color", Color::white().as_uniform());
+    uniforms.insert("u_view", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());
+    uniforms.insert("u_model", Mat4::<f32>::identity().as_uniform());
+    uniforms.insert("_rd_color", Color::white().as_uniform());
     Ok(Program {
         uniforms: uniforms,
-        sprite_program: create_program(display_handle, SPRITE_VS, &sprite_fs)?,
-        texture_program: create_program(display_handle, TEXTURE_VS, &texture_fs)?,
+        sprite_program: Arc::new(create_program(display_handle, SPRITE_VS, &sprite_fs)?),
+        texture_program: Arc::new(create_program(display_handle, TEXTURE_VS, &texture_fs)?),
     })
-}
+    }
 
 /// Private accessor to the sprite fragement shader program.
 pub fn sprite(program: &Program) -> &glium::Program {
@@ -75,18 +83,21 @@ fn create_program(display: &glium::Display, vertex_shader: &str, fragment_shader
         ProgramCreationError::LinkingError(message) => { core::Error::ShaderError(format!("Shader linking failed with: {}", message)) }
         _ => { core::Error::ShaderError("No shader support found".to_string()) }
     })
-}
+        }
 
 /// Inserts program boilterplate code into the shader source.
 fn insert_template(source: &str, template: &str) -> String {
     let mut result = String::new();
     let mut lines = source.lines();
+    let mut inserted = false;
     while let Some(line) = lines.next() {
         result.push_str(line);
         result.push_str("\n");
         if line.starts_with("#") {
             result.push_str(template);
+            inserted = true;
         }
     }
+    assert!(inserted, "Program is missing a version specifier.");
     result
 }

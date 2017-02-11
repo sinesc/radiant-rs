@@ -3,10 +3,13 @@ use glium;
 use core::{
     self, texture, layer, scene, rendercontext, blendmode, program, uniform,
     Display, Layer, Texture, BlendMode, Color, Program,
-    RenderContext, RenderContextData, RenderTarget,
+    RenderContext, RenderContextData, RenderTarget, RenderTargetType,
     GliumUniform,
 };
 use maths::{Vec2, Point2};
+
+/// Default fragment shader program
+const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
 
 /// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
 /// [`Display`](struct.Display.html).
@@ -20,6 +23,8 @@ use maths::{Vec2, Point2};
 #[derive(Clone)]
 pub struct Renderer {
     context: RenderContext,
+    program: Rc<Program>,
+    target: Rc<RefCell<RenderTargetType>>,
 }
 
 impl<'a> Renderer {
@@ -31,6 +36,8 @@ impl<'a> Renderer {
 
         Ok(Renderer {
             context: rendercontext::new(context_data),
+            program: Rc::new(program::create(display, DEFAULT_FS)?),
+            target: Rc::new(RefCell::new(display.get_target())),
         })
     }
 
@@ -43,14 +50,12 @@ impl<'a> Renderer {
 
     /// Sets a new rendering target. Valid targets are the display and textures.
     pub fn set_target<T>(self: &Self, target: &T) where T: RenderTarget {
-        let mut context = rendercontext::lock(&self.context);
-        context.render_target = target.get_target().clone();
+        *self.target.borrow_mut() = target.get_target().clone();
     }
 
     /// Clears the current target.
     pub fn clear(self: &Self, color: &Color) {
-        let context = rendercontext::lock(&self.context);
-        context.render_target.clear(color);
+        self.target.borrow().clear(color);
     }
 
     /// Draws given scene to the current target..
@@ -80,18 +85,18 @@ impl<'a> Renderer {
 
             // set up uniforms
 
-            let uniforms = program::uniforms(&context.program);
+            let uniforms = program::uniforms(&self.program);
             let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
 
-            glium_uniforms.add_glium("view_matrix", GliumUniform::Mat4(layer.view_matrix().as_array()));
-            glium_uniforms.add_glium("model_matrix", GliumUniform::Mat4(layer.model_matrix().as_array()));
-            glium_uniforms.add_glium("global_color", GliumUniform::Vec4(layer.color().as_array()));
-            glium_uniforms.add_glium("tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)));
-            glium_uniforms.add_glium("tex1", GliumUniform::Texture2dArray(context.tex_array[1].data.deref()));
-            glium_uniforms.add_glium("tex2", GliumUniform::Texture2dArray(context.tex_array[2].data.deref()));
-            glium_uniforms.add_glium("tex3", GliumUniform::Texture2dArray(context.tex_array[3].data.deref()));
-            glium_uniforms.add_glium("tex4", GliumUniform::Texture2dArray(context.tex_array[4].data.deref()));
-            glium_uniforms.add_glium("tex5", GliumUniform::Texture2dArray(context.tex_array[5].data.deref()));
+            glium_uniforms.add_glium("u_view", GliumUniform::Mat4(layer.view_matrix().as_array()));
+            glium_uniforms.add_glium("u_model", GliumUniform::Mat4(layer.model_matrix().as_array()));
+            glium_uniforms.add_glium("_rd_color", GliumUniform::Vec4(layer.color().as_array()));
+            glium_uniforms.add_glium("_rd_tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)));
+            glium_uniforms.add_glium("_rd_tex1", GliumUniform::Texture2dArray(context.tex_array[1].data.deref()));
+            glium_uniforms.add_glium("_rd_tex2", GliumUniform::Texture2dArray(context.tex_array[2].data.deref()));
+            glium_uniforms.add_glium("_rd_tex3", GliumUniform::Texture2dArray(context.tex_array[3].data.deref()));
+            glium_uniforms.add_glium("_rd_tex4", GliumUniform::Texture2dArray(context.tex_array[4].data.deref()));
+            glium_uniforms.add_glium("_rd_tex5", GliumUniform::Texture2dArray(context.tex_array[5].data.deref()));
 
             // set up draw parameters for given blend options
 
@@ -104,7 +109,7 @@ impl<'a> Renderer {
             // draw up to container.size
 
             let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
-            context.render_target.draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(&context.program), &glium_uniforms, &draw_parameters).unwrap();
+            self.target.borrow().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(&self.program), &glium_uniforms, &draw_parameters).unwrap();
         }
 
         self
@@ -127,7 +132,7 @@ impl<'a> Renderer {
 
         glium_uniforms.add_glium("offset", GliumUniform::Vec2(position.as_array()));
         glium_uniforms.add_glium("size", GliumUniform::Vec2(size.as_array()));
-        glium_uniforms.add_glium("tex", GliumUniform::Texture2d(texture::handle(texture)));
+        glium_uniforms.add_glium("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)));
 
         // set up draw parameters for given blend options
 
@@ -140,9 +145,14 @@ impl<'a> Renderer {
         // draw up to container.size
 
         let ib_slice = context.index_buffer.slice(0..6).unwrap();
-        context.render_target.draw(&context.vertex_buffer_single, &ib_slice, &program::texture(program), &glium_uniforms, &draw_parameters).unwrap();
+        self.target.borrow().draw(&context.vertex_buffer_single, &ib_slice, &program::texture(program), &glium_uniforms, &draw_parameters).unwrap();
 
         self
+    }
+
+    /// Returns a reference to the default rendering program.
+    pub fn default_program(self: &Self) -> &Program {
+        self.program.deref()
     }
 }
 

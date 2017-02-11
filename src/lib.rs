@@ -33,10 +33,6 @@ The examples folder contains multiple small examples. They can be run via `cargo
 blocking for other manipulations (e.g. matrix modification).
 5. Perform steps 7-10 from the above list in the thread that created the `Renderer`; both it and `Display` do not implement `Send`.
 
-# Effects
-
-!todo
-
 # Sprite-sheets
 
 Currently sprite-sheets are required to be sheets of one or more either horizontally or vertically aligned sprite frames. Each frame
@@ -48,6 +44,40 @@ two components. This is a scaled version of how it could look. The Color compone
 row:
 
 ![Spritesheet](https://sinesc.github.io/images/spritesheet.png "Spritesheet")
+
+# Custom shaders
+
+Radiant supports the use of custom fragment shaders. When you create a program, a tiny wrapper is injected into the source to
+make it compatible with the different internal shader programs used by the library. Instead of `texture()` you would then use `sheet()` to
+retrieve data from the current texture, etc. (This is required as the texture might come from a sampler or sampler array.)
+
+Available inputs:
+
+- `uniform mat4 u_view` The view matrix if applicable, otherwise the identity.
+- `uniform mat4 u_model` The model matrix if applicable, otherwise the identity.
+- `in vec2 v_tex_coords` Texture coordinates.
+- `in vec4 v_color` Color multiplier. For layers this is sprite color * layer color.
+
+Wrappers:
+
+- `vec2 sheetSize()` Retrieves the dimensions of the texture. Replaces `textureSize()`.
+- `vec4 sheet(in vec2 texture_coords)` Retrieves texels from the texture. Replaces `texture()`
+- !todo add other texture*.
+
+Example: (This is the default shader used by radiant.)
+
+```
+#version 140
+
+in vec2 v_tex_coords;
+in vec4 v_color;
+
+out vec4 f_color;
+
+void main() {
+    f_color = sheet(v_tex_coords) * v_color;
+}
+```
 
 */
 
