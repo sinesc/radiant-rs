@@ -6,7 +6,7 @@ use core::{
     RenderContext, RenderContextData, RenderTarget, RenderTargetType,
     GliumUniform,
 };
-use maths::{Vec2, Point2};
+use maths::Vec2;
 
 /// Default fragment shader program
 const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
@@ -88,9 +88,9 @@ impl<'a> Renderer {
             let uniforms = program::uniforms(&self.program);
             let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
 
-            glium_uniforms.add_glium("u_view", GliumUniform::Mat4(layer.view_matrix().as_array()));
-            glium_uniforms.add_glium("u_model", GliumUniform::Mat4(layer.model_matrix().as_array()));
-            glium_uniforms.add_glium("_rd_color", GliumUniform::Vec4(layer.color().as_array()));
+            glium_uniforms.add_glium("u_view", GliumUniform::Mat4(layer.view_matrix().deref().into()));
+            glium_uniforms.add_glium("u_model", GliumUniform::Mat4(layer.model_matrix().deref().into()));
+            glium_uniforms.add_glium("_rd_color", GliumUniform::Vec4(layer.color().deref().into()));
             glium_uniforms.add_glium("_rd_tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)));
             glium_uniforms.add_glium("_rd_tex1", GliumUniform::Texture2dArray(context.tex_array[1].data.deref()));
             glium_uniforms.add_glium("_rd_tex2", GliumUniform::Texture2dArray(context.tex_array[2].data.deref()));
@@ -115,8 +115,8 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws given texture to the current target.
-    pub fn draw_texture(self: &Self, texture: &Texture, program: &Program, blendmode: BlendMode, position: Point2, size: Vec2) -> &Self {
+    /// Draws given texture to the current target. Note: This function will likely change.
+    pub fn draw_texture<T, S>(self: &Self, texture: &Texture, program: &Program, blendmode: BlendMode, position: T, size: S) -> &Self where Vec2<f32>: From<T>+From<S> {
 
         // open context
 
@@ -130,8 +130,8 @@ impl<'a> Renderer {
         let uniforms = program::uniforms(program);
         let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
 
-        glium_uniforms.add_glium("offset", GliumUniform::Vec2(position.as_array()));
-        glium_uniforms.add_glium("size", GliumUniform::Vec2(size.as_array()));
+        glium_uniforms.add_glium("offset", GliumUniform::Vec2(Vec2::from(position).into()));
+        glium_uniforms.add_glium("size", GliumUniform::Vec2(Vec2::from(size).into()));
         glium_uniforms.add_glium("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)));
 
         // set up draw parameters for given blend options

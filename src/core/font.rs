@@ -168,19 +168,23 @@ impl Font {
     }
 
     /// Write to given layer
-    pub fn write(self: &Self, layer: &Layer, text: &str, position: Point2) -> &Font {
+    pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T) -> &Font where Vec2<f32>: From<T> {
+        let position = Vec2::from(position);
         write(self, layer, text, position.0, position.1, 0.0, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels.
-    pub fn write_wrapped(self: &Self, layer: &Layer, text: &str, position: Point2, max_width: f32) -> &Font {
+    pub fn write_wrapped<T>(self: &Self, layer: &Layer, text: &str, position: T, max_width: f32) -> &Font where Vec2<f32>: From<T> {
+        let position = Vec2::from(position);
         write(self, layer, text, position.0, position.1, max_width, &self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels and applies given rotation and scaling.
-    pub fn write_transformed(self: &Self, layer: &Layer, text: &str, position: Point2, max_width: f32, rotation: f32, scale: Vec2) -> &Font {
+    pub fn write_transformed<T, U>(self: &Self, layer: &Layer, text: &str, position: T, max_width: f32, rotation: f32, scale: U) -> &Font where Vec2<f32>: From<T>+From<U> {
+        let position = Vec2::from(position);
+        let scale = Vec2::from(scale);
         write(self, layer, text, position.0, position.1, max_width, &self.color, rotation, scale.0, scale.1);
         self
     }

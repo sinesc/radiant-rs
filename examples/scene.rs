@@ -1,6 +1,6 @@
 extern crate radiant_rs;
-use radiant_rs::*;
-use radiant_rs::scene::*;
+use radiant_rs::{DisplayInfo, Display, Renderer, Color, blendmodes, utils, Point2};
+use radiant_rs::scene::{Scene, Op};
 
 pub fn main() {
 
@@ -10,19 +10,19 @@ pub fn main() {
 
     // create a scene with one layer and load a sprite for later use
     let scene = Scene::new(&renderer.context());
-    let layer_id = scene.register_layer(640, 480, 0);
+    let layer_id = scene.register_layer((640., 480.), 0);
     let sprite_id = scene.register_sprite_from_file("examples/res/sparkles_64x64x1.png").unwrap();
 
     // define a few scene operations to be run each frame
     scene.op(Op::SetBlendmode(layer_id, blendmodes::MAX));
-    scene.op(Op::RotateViewMatrixAt(layer_id, 1.0, Vec2(320.0, 240.0), 1.0));
+    scene.op(Op::RotateViewMatrixAt(layer_id, 1.0, Point2(320., 240.), 1.0));
     scene.op(Op::RotateModelMatrix(layer_id, 1.0, -2.0));
     scene.op(Op::Draw(layer_id));
 
     // randomly draw some sprites onto the scene's layer
     let mut rand = utils::Rng::new(5339.0);
     for _ in 0..10000 {
-        scene.sprite(layer_id, sprite_id, 0, Point2(rand.range(-160.0, 800.0), rand.range(-160.0, 800.0)), Color(rand.get(), rand.get(), rand.get(), rand.get()));
+        scene.sprite(layer_id, sprite_id, 0, (rand.range(-160., 800.), rand.range(-160., 800.)), Color(rand.get(), rand.get(), rand.get(), rand.get()));
     }
 
     // keep drawing the scene

@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Font, FontInfo, Color, Point2, blendmodes, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
 
 pub fn main() {
 
@@ -10,7 +10,7 @@ pub fn main() {
     // create a sprite, a font (here from a known systemfont) and a layer
     let sprite = Sprite::from_file(&renderer.context(), r"examples/res/ball_v2_32x32x18.jpg").unwrap();
     let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 16.0, ..FontInfo::default() } );
-    let layer = Layer::new(640, 480, 0);
+    let layer = Layer::new((640., 480.), 0);
 
     // set how to blend the layer with the background
     layer.set_blendmode(blendmodes::LIGHTEN);
@@ -26,14 +26,14 @@ pub fn main() {
         layer.set_color(rainbow);
 
         // rotate the layer as a whole (by contrast, layer.model_matrix() would rotate the individual sprites)
-        layer.view_matrix().rotate_at((320.0, 200.0), -state.delta_f32);
+        layer.view_matrix().rotate_at((320., 200.), -state.delta_f32);
 
         // write some text
-        font.write(&layer, &format!("It works. {} FPS", state.fps), Point2(260.0, 140.0));
+        font.write(&layer, &format!("It works. {} FPS", state.fps), (260., 140.));
 
         // draw a sprite (going though the spritesheet frames at 30 fps)
         let frame_id = (state.elapsed_f32 * 30.0) as u32;
-        sprite.draw(&layer, frame_id, Point2(320.0, 200.0), Color::white());
+        sprite.draw(&layer, frame_id, (320., 200.), Color::white());
 
         // draw the layer
         display.clear_frame(Color::black());

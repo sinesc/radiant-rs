@@ -159,10 +159,10 @@ impl Color {
         (self.0, self.1, self.2, self.3)
     }
 
-    /// Returns the instance's channels as array.
+    /* /// Returns the instance's channels as array.
     pub fn as_array(self: &Self) -> [ f32; 4 ] {
         [ self.0, self.1, self.2, self. 3 ]
-    }
+    }*/
 
     pub fn white() -> Color {
         Color(1.0, 1.0, 1.0, 1.0)

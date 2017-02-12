@@ -238,10 +238,10 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
         Vec3(x, y, z)
     }
 
-    /// Returns the matrix as an array of 4 arrays of 4 Ts.
+    /*/// Returns the matrix as an array of 4 arrays of 4 Ts.
     pub fn as_array(self: &Self) -> [ [T; 4]; 4 ] {
         self.0
-    }
+    }*/
 }
 
 impl<T> From<[ [T; 4]; 4 ]> for Mat4<T> where T: Debug + Float {

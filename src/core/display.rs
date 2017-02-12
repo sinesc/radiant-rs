@@ -45,35 +45,6 @@ pub struct Display {
     input_data: Arc<RwLock<InputData>>,
 }
 
-impl RenderTarget for Display {
-    fn get_target(self: &Self) -> RenderTargetType {
-        RenderTargetType::Display(self.clone())
-    }
-}
-
-pub fn handle(display: &Display) -> &glium::Display {
-    &display.handle
-}
-
-pub fn input_data(display: &Display) -> &Arc<RwLock<InputData>> {
-    &display.input_data
-}
-
-pub fn draw<'b, 'v, V, I, U>(display: &Display, vb: V, ib: I, program: &Program, uniforms: &U, draw_parameters: &DrawParameters) -> Result<(), DrawError>
-    where I: Into<IndicesSource<'b>>, U: Uniforms, V: MultiVerticesSource<'v>
-{
-    display.frame.borrow_mut().as_mut().unwrap().draw(vb, ib, program, uniforms, draw_parameters)
-}
-
-pub fn clear(display: &Display, color: &Color) {
-    if let Some(ref mut frame) = display.frame.borrow_mut().as_mut() {
-        let (r, g, b, a) = color.as_tuple();
-        frame.clear_color(r, g, b, a);
-    } else {
-        panic!("Failed to clear frame: None prepared.");
-    }
-}
-
 impl Display {
 
     /// Creates a new instance from given [`DisplayInfo`](struct.DisplayInfo.html).
@@ -305,5 +276,39 @@ impl Display {
     /// returns a reference to the underlying glutin window
     fn window(self: &Self) -> glium::backend::glutin_backend::WinRef {
         self.handle.get_window().unwrap()
+    }
+}
+
+/// Returns the glium display handle
+pub fn handle(display: &Display) -> &glium::Display {
+    &display.handle
+}
+
+/// Returns an RwLocked reference to the input data.
+pub fn input_data(display: &Display) -> &Arc<RwLock<InputData>> {
+    &display.input_data
+}
+
+/// Draws to the display.
+pub fn draw<'b, 'v, V, I, U>(display: &Display, vb: V, ib: I, program: &Program, uniforms: &U, draw_parameters: &DrawParameters) -> Result<(), DrawError>
+    where I: Into<IndicesSource<'b>>, U: Uniforms, V: MultiVerticesSource<'v>
+{
+    display.frame.borrow_mut().as_mut().unwrap().draw(vb, ib, program, uniforms, draw_parameters)
+}
+
+/// Clears the display with given color without swapping buffers.
+pub fn clear(display: &Display, color: &Color) {
+    if let Some(ref mut frame) = display.frame.borrow_mut().as_mut() {
+        let (r, g, b, a) = color.as_tuple();
+        frame.clear_color(r, g, b, a);
+    } else {
+        panic!("Failed to clear frame: None prepared.");
+    }
+}
+
+impl RenderTarget for Display {
+    /// Returns an enum over different target types.
+    fn get_target(self: &Self) -> RenderTargetType {
+        RenderTargetType::Display(self.clone())
     }
 }

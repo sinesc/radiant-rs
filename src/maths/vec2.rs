@@ -97,10 +97,10 @@ impl<T> Vec2<T> where T: Debug + Float {
         let dv = *self - *other;
         (dv.0 * dv.0 + dv.1 * dv.1).sqrt()
     }
-    /// Returns the vector as an array.
+    /*/// Returns the vector as an array.
     pub fn as_array(self: &Self) -> [ T; 2 ] {
         [ self.0, self.1 ]
-    }
+    }*/
 }
 
 impl<T> VecType<T> for Vec2<T> where T: Debug + Float {
@@ -114,7 +114,13 @@ impl<T> From<(T, T)> for Vec2<T> where T: Debug + Float {
         Vec2(source.0, source.1)
     }
 }
-
+/*
+impl From<(i32, i32)> for Vec2<f32> {
+    fn from(source: (i32, i32)) -> Self {
+        Vec2(source.0 as f32, source.1 as f32)
+    }
+}
+*/
 impl<T> From<[ T; 2 ]> for Vec2<T> where T: Debug + Float {
     fn from(source: [ T; 2 ]) -> Self {
         Vec2(source[0], source[1])

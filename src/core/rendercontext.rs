@@ -1,5 +1,5 @@
 use glium;
-use core::{self, display, Display, font, RenderTarget, RenderTargetType, program, Program};
+use core::{self, display, Display, font};
 use prelude::*;
 use std::borrow::Cow;
 

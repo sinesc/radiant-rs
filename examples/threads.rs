@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{Color, Renderer, Layer, DisplayInfo, Display, Font, FontInfo, Point2, Vec2, blendmodes, utils};
+use radiant_rs::{Color, Renderer, Layer, DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
 use std::thread;
 use std::sync::{Arc, Barrier};
 
@@ -10,7 +10,7 @@ pub fn main() {
     let renderer = Renderer::new(&display).unwrap();
 
     // create a single layer and a font
-    let layer = Arc::new(Layer::new(640, 480, 0));
+    let layer = Arc::new(Layer::new((640., 480.), 0));
     layer.set_blendmode(blendmodes::LIGHTEN);
     let big_font = Arc::new(Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
     let font = big_font.with_size(12.0);
@@ -29,7 +29,7 @@ pub fn main() {
             let mut rot = 0.0;
             let pos = 120.0 + (i as f32) * 20.0;
             loop {
-                big_font.write_transformed(&layer, &format!("Thread {} !", i+1), Point2(pos, pos), 0.0, rot, Vec2(1.0, 1.0));
+                big_font.write_transformed(&layer, &format!("Thread {} !", i+1), (pos, pos), 0.0, rot, (1.0, 1.0));
                 rot += 0.01;
 
                 // wait until all other threads have also drawn, then wait until the layers have been rendered
@@ -46,7 +46,7 @@ pub fn main() {
         draw_start.wait();
 
         display.clear_frame(Color::black());
-        font.write(&layer, &format!("{}FPS", state.fps), Point2(10.0, 10.0));
+        font.write(&layer, &format!("{}FPS", state.fps), (10., 10.));
         renderer.draw_layer(&layer);
         layer.clear();
 

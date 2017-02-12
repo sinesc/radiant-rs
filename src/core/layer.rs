@@ -3,6 +3,7 @@ use prelude::*;
 use avec::AVec;
 use maths::{Mat4, Point2, Rect};
 use core::{blendmodes, BlendMode, rendercontext, RenderContextData, Color, display};
+use maths::Vec2;
 
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
@@ -43,9 +44,10 @@ impl Layer {
     /// Creates a new layer with given dimensions. The channel determines
     /// which sprite channel is drawn. All sprites support at least channel 0.
     /// Nothing will be drawn if the sprite does not contain given channel.
-    pub fn new(width: u32, height: u32, channel_id: u32) -> Self {
+    pub fn new<T>(dimensions: T, channel_id: u32) -> Self where Vec2<f32>: From<T> {
+        let dimensions = Vec2::from(dimensions);
         Layer {
-            view_matrix     : Mutex::new(Mat4::viewport(width as f32, height as f32)),
+            view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1)),
             model_matrix    : Mutex::new(Mat4::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),

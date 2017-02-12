@@ -73,7 +73,7 @@ impl<'a> Sprite {
 
 
     /// Draws a sprite onto the given layer.
-    pub fn draw(self: &Self, layer: &Layer, frame_id: u32, position: Point2, color: Color) -> &Self {
+    pub fn draw<T>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color) -> &Self where Vec2<f32>: From<T> {
 
         let layer_channel_id = layer::channel_id(&layer);
 
@@ -85,14 +85,14 @@ impl<'a> Sprite {
             let dim = Point2(self.width, self.height);
             let scale = Point2(1.0, 1.0);
 
-            layer::add_rect(layer, bucket_id, texture_id, uv, position, self.anchor, dim, color, 0.0, scale);
+            layer::add_rect(layer, bucket_id, texture_id, uv, Vec2::from(position), self.anchor, dim, color, 0.0, scale);
         }
 
         self
     }
 
     /// Draws a sprite onto the given layer and applies given color, rotation and scaling.
-    pub fn draw_transformed(self: &Self, layer: &Layer, frame_id: u32, position: Point2, color: Color, rotation: f32, scale: Vec2) -> &Self {
+    pub fn draw_transformed<T, U>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Vec2<f32>: From<T> + From<U> {
 
         let layer_channel_id = layer::channel_id(&layer);
 
@@ -104,7 +104,7 @@ impl<'a> Sprite {
             let anchor = Point2(self.anchor.0, self.anchor.1);
             let dim = Point2(self.width, self.height);
 
-            layer::add_rect(layer, bucket_id, texture_id, uv, position, anchor, dim, color, rotation, scale);
+            layer::add_rect(layer, bucket_id, texture_id, uv, Vec2::from(position), anchor, dim, color, rotation, Vec2::from(scale));
         }
 
         self

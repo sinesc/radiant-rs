@@ -19,10 +19,10 @@ impl<T> Vec3<T> where T: Debug + Float {
     pub fn dot(self: &Self, other: &Vec3<T>) -> T {
         self.0 * other.0 + self.1 * other.1 + self.1 * other.2
     }
-    /// Returns the vector as an array.
+    /*/// Returns the vector as an array.
     pub fn as_array(self: &Self) -> [ T; 3 ] {
         [ self.0, self.1, self.2 ]
-    }
+    }*/
 }
 
 impl<T> VecType<T> for Vec3<T> where T: Debug + Float {

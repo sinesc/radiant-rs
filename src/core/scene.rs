@@ -1,6 +1,6 @@
 use prelude::*;
 use avec::AVec;
-use maths::{Mat4, Vec2, Point2};
+use maths::{Mat4, Vec2};
 use core::{self, Renderer, RenderContext, Layer, Font, Sprite, Color};
 use BlendMode;
 
@@ -111,7 +111,7 @@ impl Scene {
     }
 
     /// Draws a sprite onto given layer.
-    pub fn sprite(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: Point2, color: Color) -> &Self {
+    pub fn sprite<T>(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color) -> &Self where Vec2<f32>: From<T> {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
         assert_eq!(self.scene_id, layer_id.1);
@@ -121,7 +121,7 @@ impl Scene {
     }
 
     /// Draws a sprite with given rotation and scaling onto given layer.
-    pub fn sprite_transformed(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: Point2, color: Color, rotation: f32, scale: Vec2) -> &Self {
+    pub fn sprite_transformed<T, U>(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Vec2<f32>: From<T>+From<U> {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
         assert_eq!(self.scene_id, layer_id.1);
@@ -131,7 +131,7 @@ impl Scene {
     }
 
     /// Writes a string onto given layer.
-    pub fn write(&self, layer_id: LayerId, font_id: FontId, text: &str, position: Point2) -> &Self {
+    pub fn write<T>(&self, layer_id: LayerId, font_id: FontId, text: &str, position: T) -> &Self where Vec2<f32>: From<T> {
         let layers = self.layers.get();
         let fonts = self.fonts.get();
         assert_eq!(self.scene_id, layer_id.1);
@@ -141,8 +141,8 @@ impl Scene {
     }
 
     /// Create and register a layer to the scene.
-    pub fn register_layer(&self, width: u32, height: u32, channel: u32) -> LayerId {
-        let insert_position = self.layers.push(Layer::new(width, height, channel));
+    pub fn register_layer<T>(&self, dimensions: T, channel: u32) -> LayerId where Vec2<f32>: From<T> {
+        let insert_position = self.layers.push(Layer::new(dimensions, channel));
         LayerId(insert_position as u16, self.scene_id)
     }
 
