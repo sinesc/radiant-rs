@@ -7,24 +7,24 @@ pub struct Monitor {
 
 impl Monitor {
     /// Returns the name of the device.
-    pub fn name(&self) -> String {
+    pub fn name(self: &Self) -> String {
         self.id.get_name().unwrap_or("".to_string())
     }
 
     /// Returns the current width in pixels.
-    pub fn width(&self) -> u32 {
+    pub fn width(self: &Self) -> u32 {
         let (width, _) = self.id.get_dimensions();
         width
     }
 
     /// Returns the current height in pixels.
-    pub fn height(&self) -> u32 {
+    pub fn height(self: &Self) -> u32 {
         let (_, height) = self.id.get_dimensions();
         height
     }
 
     /// Returns the current width and height in pixels.
-    pub fn dimensions(&self) -> (u32, u32) {
+    pub fn dimensions(self: &Self) -> (u32, u32) {
         self.id.get_dimensions()
     }
 }

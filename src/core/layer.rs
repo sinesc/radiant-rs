@@ -64,13 +64,13 @@ impl Layer {
     /// Note that [`Color`](struct.Color.html)s contain
     /// alpha information and are not clamped to any range, so it is possible to use an overbright
     /// color to brighten the result or use the alpha channel to apply global transparency.
-    pub fn set_color(&self, color: Color) -> &Self {
+    pub fn set_color(self: &Self, color: Color) -> &Self {
         self.color().set(color);
         self
     }
 
     /// Returns a mutex guarded mutable reference to the global color multiplicator.
-    pub fn color(&self) -> MutexGuard<Color> {
+    pub fn color(self: &Self) -> MutexGuard<Color> {
         self.color.lock().unwrap()
     }
 
@@ -79,14 +79,14 @@ impl Layer {
     /// View matrix transformation is applied after the objects are fully positioned on the layer.
     /// As a result, manipulating the view matrix has the effect of manipulating the layer itself,
     /// e.g. rotating the entire layer.
-    pub fn set_view_matrix(&self, matrix: Mat4<f32>) -> &Self {
+    pub fn set_view_matrix(self: &Self, matrix: Mat4<f32>) -> &Self {
         self.view_matrix().set(matrix);
         self
     }
 
     /// Returns a mutex guarded mutable reference to the view matrix.
     /// See [`set_view_matrix()`](#method.set_view_matrix) for a description of the view matrix.
-    pub fn view_matrix(&self) -> MutexGuard<Mat4<f32>> {
+    pub fn view_matrix(self: &Self) -> MutexGuard<Mat4<f32>> {
         self.view_matrix.lock().unwrap()
     }
 
@@ -96,25 +96,25 @@ impl Layer {
     /// on the layer. As a result, manipulating the model matrix has the effect of manipulating
     /// every object on the layer in the same way, e.g. rotating every individual object on the
     /// layer around a point relative to the individual object.
-    pub fn set_model_matrix(&self, matrix: Mat4<f32>) -> &Self {
+    pub fn set_model_matrix(self: &Self, matrix: Mat4<f32>) -> &Self {
         self.model_matrix().set(matrix);
         self
     }
 
     /// Returns a mutex guarded mutable reference to the model matrix.
     /// See [`set_model_matrix()`](#method.set_model_matrix) for a description of the model matrix.
-    pub fn model_matrix(&self) -> MutexGuard<Mat4<f32>> {
+    pub fn model_matrix(self: &Self) -> MutexGuard<Mat4<f32>> {
         self.model_matrix.lock().unwrap()
     }
 
     /// Sets the blendmode.
-    pub fn set_blendmode(&self, blendmode: BlendMode) -> &Self {
+    pub fn set_blendmode(self: &Self, blendmode: BlendMode) -> &Self {
         self.blendmode().set(blendmode);
         self
     }
 
     /// Returns a mutex guarded mutable reference to the blendmode.
-    pub fn blendmode(&self) -> MutexGuard<BlendMode> {
+    pub fn blendmode(self: &Self) -> MutexGuard<BlendMode> {
         self.blend.lock().unwrap()
     }
 

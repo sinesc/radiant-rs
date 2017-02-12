@@ -102,7 +102,7 @@ impl<'a> Renderer {
 
             let draw_parameters = glium::draw_parameters::DrawParameters {
                 backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-                blend           : blendmode::access_blendmode(layer.blendmode().deref_mut()),
+                blend           : blendmode::inner(layer.blendmode().deref_mut()),
                 .. Default::default()
             };
 
@@ -138,7 +138,7 @@ impl<'a> Renderer {
 
         let draw_parameters = glium::draw_parameters::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-            blend           : blendmode::access_blendmode(&blendmode),
+            blend           : blendmode::inner(&blendmode),
             .. Default::default()
         };
 

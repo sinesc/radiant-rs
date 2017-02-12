@@ -241,7 +241,7 @@ impl<'a> From<&'a Color> for [ f32; 4 ] {
 }
 
 impl AsUniform for Color {
-    fn as_uniform(&self) -> Uniform {
+    fn as_uniform(self: &Self) -> Uniform {
         Uniform::Vec4([ self.0, self.1, self.2, self.3 ])
     }
 }

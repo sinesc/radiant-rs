@@ -24,11 +24,11 @@ pub enum Uniform {
 
 /// A value usable as a uniform.
 pub trait AsUniform {
-    fn as_uniform(&self) -> Uniform;
+    fn as_uniform(self: &Self) -> Uniform;
 }
 
 impl AsUniform for bool {
-    fn as_uniform(&self) -> Uniform {
+    fn as_uniform(self: &Self) -> Uniform {
         Uniform::Bool(*self)
     }
 }
@@ -122,7 +122,7 @@ impl<'a> GliumUniformList<'a> {
 }
 
 impl<'b> Uniforms for GliumUniformList<'b> {
-    fn visit_values<'a, F>(&'a self, mut output: F) where F: FnMut(&str, glium::uniforms::UniformValue<'a>) {
+    fn visit_values<'a, F>(self: &'a Self, mut output: F) where F: FnMut(&str, glium::uniforms::UniformValue<'a>) {
         use glium::uniforms::UniformValue;
         for &(name, ref uniform) in &self.0 {
             output(name, match *uniform {

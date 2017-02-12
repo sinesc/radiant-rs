@@ -13,6 +13,6 @@ impl BlendMode {
     }
 }
 
-pub fn access_blendmode(blendmode: &BlendMode) -> glium::draw_parameters::Blend {
+pub fn inner(blendmode: &BlendMode) -> glium::draw_parameters::Blend {
     blendmode.0
 }

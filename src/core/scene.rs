@@ -62,7 +62,7 @@ pub enum Op {
 impl Default for Op {
     fn default() -> Op {
         Op::None
-   }
+    }
 }
 
 static SCENE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -91,13 +91,13 @@ impl Scene {
     }
 
     /// Push a layer operation on the scene operation stack.
-    pub fn op(&self, op: Op) -> OpId {
+    pub fn op(self: &Self, op: Op) -> OpId {
         let insert_position = self.operations.push(op);
         OpId(insert_position as u16, self.scene_id)
     }
 
     /// Push multiple operations on the scene operation stack.
-    pub fn ops(&self, ops: &[Op]) -> &Self {
+    pub fn ops(self: &Self, ops: &[Op]) -> &Self {
         for op in ops {
             self.op(*op);
         }
@@ -105,13 +105,13 @@ impl Scene {
     }
 
     /// Clear operation stack.
-    pub fn clear(&self) -> &Self {
+    pub fn clear(self: &Self) -> &Self {
         self.operations.clear();
         self
     }
 
     /// Draws a sprite onto given layer.
-    pub fn sprite<T>(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color) -> &Self where Vec2<f32>: From<T> {
+    pub fn sprite<T>(self: &Self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color) -> &Self where Vec2<f32>: From<T> {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
         assert_eq!(self.scene_id, layer_id.1);
@@ -121,7 +121,7 @@ impl Scene {
     }
 
     /// Draws a sprite with given rotation and scaling onto given layer.
-    pub fn sprite_transformed<T, U>(&self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Vec2<f32>: From<T>+From<U> {
+    pub fn sprite_transformed<T, U>(self: &Self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Vec2<f32>: From<T>+From<U> {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
         assert_eq!(self.scene_id, layer_id.1);
@@ -131,7 +131,7 @@ impl Scene {
     }
 
     /// Writes a string onto given layer.
-    pub fn write<T>(&self, layer_id: LayerId, font_id: FontId, text: &str, position: T) -> &Self where Vec2<f32>: From<T> {
+    pub fn write<T>(self: &Self, layer_id: LayerId, font_id: FontId, text: &str, position: T) -> &Self where Vec2<f32>: From<T> {
         let layers = self.layers.get();
         let fonts = self.fonts.get();
         assert_eq!(self.scene_id, layer_id.1);
@@ -141,7 +141,7 @@ impl Scene {
     }
 
     /// Create and register a layer to the scene.
-    pub fn register_layer<T>(&self, dimensions: T, channel: u32) -> LayerId where Vec2<f32>: From<T> {
+    pub fn register_layer<T>(self: &Self, dimensions: T, channel: u32) -> LayerId where Vec2<f32>: From<T> {
         let insert_position = self.layers.push(Layer::new(dimensions, channel));
         LayerId(insert_position as u16, self.scene_id)
     }

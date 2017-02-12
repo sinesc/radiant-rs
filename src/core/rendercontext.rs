@@ -34,7 +34,7 @@ pub struct RenderContextTexture {
 
 impl<'a> glium::texture::Texture2dDataSource<'a> for RenderContextTexture {
     type Data = u8;
-    fn into_raw(self) -> glium::texture::RawImage2d<'a, Self::Data> {
+    fn into_raw(self: Self) -> glium::texture::RawImage2d<'a, Self::Data> {
         glium::texture::RawImage2d {
             data: Cow::Owned(self.data),
             width: self.width,
@@ -91,7 +91,7 @@ impl RenderContextData {
             font_texture        : Rc::new(font::create_cache_texture(glium_handle, 512, 512)),
             vertex_buffer_single: Self::create_vertex_buffer_single(glium_handle),
         })
-        }
+    }
 
     /// Update font-texture from cache
     pub fn update_font_cache(self: &Self) {
