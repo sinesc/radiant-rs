@@ -2,7 +2,7 @@ use prelude::*;
 use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RenderContextTexture};
 use maths::{Point2, Vec2, Rect};
 use Color;
-use image::{self, ImageError, GenericImage};
+use image::{self, GenericImage};
 use regex::Regex;
 
 /// A sprite used for drawing on a [`Layer`](struct.Layer.html).
@@ -55,22 +55,22 @@ struct SpriteDescriptor {
 
 impl<'a> Sprite {
 
-    /// Creates a new sprite texture.
-    ///
-    /// The given filename is expected to end on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
+    /// Creates a new sprite texture. Given filename is expected to end
+    /// on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
     pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Sprite> {
-        create_or_error(context, spritesheet_from_file(file))
+        let path = Path::new(file);
+        let mut image = image::open(&path)?;
+        let parameters = parse_parameters(image.dimensions(), path);
+        let descriptor = build_raw_frames(&mut image, &parameters);
+        Result::Ok(sprite_from_descriptor(context, descriptor))
     }
 
     /// Creates a new sprite texture.
     pub fn from_data(context: &RenderContext, data: &[u8], parameters: &SpriteParameters) -> core::Result<Sprite> {
-        create_or_error(context, spritesheet_from_data(data, parameters))
+        let mut image = image::load_from_memory(data)?;
+        let descriptor = build_raw_frames(&mut image, parameters);
+        Result::Ok(sprite_from_descriptor(context, descriptor))
     }
-// !todo when sprite is dropped, texture would have to be removed (easy)
-// alters the texture ids of all following sprites (bah)
-//   a) create a lookup table in the context sprite_texture_id <-> texture_array_texture_id
-//  or b) keep a list of sprite instances in the context and mutate those (sounds sucky)
-
 
     /// Draws a sprite onto the given layer.
     pub fn draw<T>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color) -> &Self where Vec2<f32>: From<T> {
@@ -78,13 +78,11 @@ impl<'a> Sprite {
         let layer_channel_id = layer::channel_id(&layer);
 
         if layer_channel_id < self.num_channels {
-
             let bucket_id = self.bucket_id;
             let texture_id = self.texture_id(frame_id) + self.num_frames * layer_channel_id;
             let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
             let dim = Point2(self.width, self.height);
             let scale = Point2(1.0, 1.0);
-
             layer::add_rect(layer, bucket_id, texture_id, uv, Vec2::from(position), self.anchor, dim, color, 0.0, scale);
         }
 
@@ -97,13 +95,11 @@ impl<'a> Sprite {
         let layer_channel_id = layer::channel_id(&layer);
 
         if layer_channel_id < self.num_channels {
-
             let bucket_id = self.bucket_id;
             let texture_id = self.texture_id(frame_id) + self.num_frames * layer_channel_id;
             let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
             let anchor = Point2(self.anchor.0, self.anchor.1);
             let dim = Point2(self.width, self.height);
-
             layer::add_rect(layer, bucket_id, texture_id, uv, Vec2::from(position), anchor, dim, color, rotation, Vec2::from(scale));
         }
 
@@ -131,66 +127,28 @@ impl<'a> Sprite {
     }
 }
 
-// !todo this needs a rendercontext.
-// maybe add custom unwrap_or_default-like function for a custom result that includes the rendercontext ?
-/*impl Default for Sprite {
-    /// Generates a test sprite.
-    fn default() -> Sprite {
-        Sprite::from_data()
-    }
-}*/
+/// Creates a sprite from given descriptor.
+fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor) -> Sprite {
 
-/// Creates a sprite from spritesheet_from_* functions result. !todo refactor this
-fn create_or_error(context: &RenderContext, spritesheet_result: Result<SpriteDescriptor, ImageError>) -> core::Result<Sprite> {
-    match spritesheet_result {
-        Result::Err(error) => {
-            match error {
-                ImageError::IoError(error) => { result::Result::Err(core::Error::IoError(error)) } // !todo use core::Result once #26264 is fixed
-                _ => { result::Result::Err(core::Error::Failed) } // !todo errors with messages and stuff
-            }
-        }
-        Result::Ok(descriptor) => {
-            let SpriteDescriptor { bucket_id, texture_size, frame_width, frame_height, num_channels, raw_frames } = descriptor;
-            let num_frames = (raw_frames.len() as u32 / num_channels) as u32;
-            let texture_id = rendercontext::lock(context).store_frames(bucket_id, raw_frames);
-            result::Result::Ok(Sprite { // !todo use core::Result once #26264 is fixed
-                width       : frame_width as f32,
-                height      : frame_height as f32,
-                num_frames  : num_frames,
-                num_channels: num_channels,
-                anchor      : Point2(0.5, 0.5),
-                bucket_id   : bucket_id,
-                texture_id  : texture_id,
-                u_max       : (frame_width as f32 / texture_size as f32),
-                v_max       : (frame_height as f32 / texture_size as f32),
-                context     : context.clone()
-            })
-        }
+    let SpriteDescriptor { bucket_id, texture_size, frame_width, frame_height, num_channels, raw_frames } = descriptor;
+    let num_frames = (raw_frames.len() as u32 / num_channels) as u32;
+    let texture_id = rendercontext::lock(context).store_frames(bucket_id, raw_frames);
+
+    Sprite {
+        width       : frame_width as f32,
+        height      : frame_height as f32,
+        num_frames  : num_frames,
+        num_channels: num_channels,
+        anchor      : Point2(0.5, 0.5),
+        bucket_id   : bucket_id,
+        texture_id  : texture_id,
+        u_max       : (frame_width as f32 / texture_size as f32),
+        v_max       : (frame_height as f32 / texture_size as f32),
+        context     : context.clone()
     }
 }
 
-/// Loads a spritesheet from file.
-fn spritesheet_from_file(file: &str) -> Result<SpriteDescriptor, ImageError> {
-
-    // load image file
-    let path = Path::new(file);
-    let mut image = image::open(&path)?;
-
-    // extract frame parameters and build descriptor
-    let parameters = parse_parameters(image.dimensions(), path);
-    let descriptor = build_raw_frames(&mut image, &parameters);
-
-    Result::Ok(descriptor)
-}
-
-/// Creates a spritesheet from raw bytes.
-fn spritesheet_from_data(data: &[u8], parameters: &SpriteParameters) -> Result<SpriteDescriptor, ImageError> {
-    let mut image = image::load_from_memory(data)?;
-    let descriptor = build_raw_frames(&mut image, parameters);
-    Result::Ok(descriptor)
-}
-
-/// Builds a sprite descriptor containing sprite dimensions and raw frames
+/// Builds a sprite descriptor containing sprite dimensions and raw frames.
 fn build_raw_frames(image: &mut image::DynamicImage, sprite_parameters: &SpriteParameters) -> SpriteDescriptor {
 
     let SpriteParameters { dimensions: (frame_width, frame_height), num_frames, num_channels, .. } = *sprite_parameters;

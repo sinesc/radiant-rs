@@ -58,7 +58,7 @@ pub fn create(display: &Display, source: &str) -> core::Result<Program> {
         sprite_program: Arc::new(create_program(display_handle, SPRITE_VS, &sprite_fs)?),
         texture_program: Arc::new(create_program(display_handle, TEXTURE_VS, &texture_fs)?),
     })
-    }
+}
 
 /// Private accessor to the sprite fragement shader program.
 pub fn sprite(program: &Program) -> &glium::Program {
@@ -78,12 +78,13 @@ pub fn uniforms(program: &Program) -> &UniformList {
 /// Creates a shader program from given vertex- and fragment-shader sources.
 fn create_program(display: &glium::Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<glium::Program> {
     use glium::program::ProgramCreationError;
+    use core::Error;
     glium::Program::from_source(display, vertex_shader, fragment_shader, None).map_err(|err| match err {
-        ProgramCreationError::CompilationError(message) => { core::Error::ShaderError(format!("Shader compilation failed with: {}", message)) }
-        ProgramCreationError::LinkingError(message) => { core::Error::ShaderError(format!("Shader linking failed with: {}", message)) }
-        _ => { core::Error::ShaderError("No shader support found".to_string()) }
+        ProgramCreationError::CompilationError(message) => { Error::ShaderError(format!("Shader compilation failed with: {}", message)) }
+        ProgramCreationError::LinkingError(message)     => { Error::ShaderError(format!("Shader linking failed with: {}", message)) }
+        _                                               => { Error::ShaderError("No shader support found".to_string()) }
     })
-        }
+}
 
 /// Inserts program boilterplate code into the shader source.
 fn insert_template(source: &str, template: &str) -> String {

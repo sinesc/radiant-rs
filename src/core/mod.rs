@@ -32,6 +32,7 @@ use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
 use glium::vertex::MultiVerticesSource;
 use glium::{self, Surface, DrawParameters, DrawError};
+use image;
 use prelude::*;
 
 /// An enum of render target type instances.
@@ -85,8 +86,22 @@ pub enum Error {
 
 impl From<io::Error> for Error {
     /// Converts io error to radiant error
-    fn from(e: io::Error) -> Error {
-        Error::IoError(e)
+    fn from(error: io::Error) -> Error {
+        Error::IoError(error)
+    }
+}
+
+impl From<image::ImageError> for Error {
+    /// Converts image error to radiant error
+    fn from(error: image::ImageError) -> Error {
+        use image::ImageError;
+        match error {
+            ImageError::IoError(error)          => { Error::IoError(error) }
+            ImageError::FormatError(error)      => { Error::ImageError(format!("Image format error: {}", error)) }
+            ImageError::UnsupportedError(error) => { Error::ImageError(format!("Image unsupported: {}", error)) }
+            ImageError::UnsupportedColor(_)     => { Error::ImageError("Unsupported colorformat".to_string()) }
+            _                                   => { Error::ImageError("Unknown image error".to_string()) }
+        }
     }
 }
 
