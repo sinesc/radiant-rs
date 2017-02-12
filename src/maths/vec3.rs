@@ -31,9 +31,32 @@ impl<T> VecType<T> for Vec3<T> where T: Debug + Float {
     }
 }
 
+impl<T> From<(T, T, T)> for Vec3<T> where T: Debug + Float {
+    fn from(source: (T, T, T)) -> Self {
+        Vec3(source.0, source.1, source.2)
+    }
+}
+
+impl<T> From<[ T; 3 ]> for Vec3<T> where T: Debug + Float {
+    fn from(source: [ T; 3 ]) -> Self {
+        Vec3(source[0], source[1], source[2])
+    }
+}
+
+impl From<Vec3<f32>> for [ f32; 3 ] {
+    fn from(source: Vec3<f32>) -> Self {
+        [ source.0, source.1, source.2 ]
+    }
+}
+
+impl From<Vec3<f64>> for [ f64; 3 ] {
+    fn from(source: Vec3<f64>) -> Self {
+        [ source.0, source.1, source.2 ]
+    }
+}
+
 impl<T> Neg for Vec3<T> where T: Debug + Float {
     type Output = Vec3<T>;
-
     fn neg(self) -> Vec3<T> {
         Vec3::<T>(-self.0, -self.1, -self.2)
     }

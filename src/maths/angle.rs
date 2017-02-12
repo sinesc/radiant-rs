@@ -86,6 +86,18 @@ impl From<Angle<f32>> for f32 {
     }
 }
 
+impl<'a> From<&'a Angle<f64>> for f64 {
+    fn from(other: &'a Angle<f64>) -> f64 {
+        other.to_radians() as f64
+    }
+}
+
+impl<'a> From<&'a Angle<f32>> for f32 {
+    fn from(other: &'a Angle<f32>) -> f32 {
+        other.to_radians() as f32
+    }
+}
+
 impl<T> ToPrimitive for Angle<T> where T: Debug + Float {
     fn to_f64(self: &Self) -> Option<f64> {
         NumCast::from(self.to_radians())

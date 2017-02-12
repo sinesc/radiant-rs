@@ -1,6 +1,6 @@
 use prelude::*;
-use glium::uniforms::{AsUniformValue, UniformValue};
 use glium::vertex::{Attribute, AttributeType};
+use core::{Uniform, AsUniform};
 
 /// A color value consisting of four floating point values for the color channels red, green, blue
 /// and alpha.
@@ -216,7 +216,29 @@ fn hue_to_rgb(p: f32, q: f32, mut hue: f32) -> f32 {
     return p;
 }
 
-use core::{Uniform, AsUniform};
+impl<T> From<(T, T, T, T)> for Color where T: Debug + Float, f32: From<T> {
+    fn from(source: (T, T, T, T)) -> Self {
+        Color(source.0.into(), source.1.into(), source.2.into(), source.3.into())
+    }
+}
+
+impl<T> From<[ T; 4 ]> for Color where T: Debug + Float, f32: From<T> {
+    fn from(source: [ T; 4 ]) -> Self {
+        Color(source[0].into(), source[1].into(), source[2].into(), source[3].into())
+    }
+}
+
+impl From<Color> for [ f32; 4 ] {
+    fn from(source: Color) -> Self {
+        [ source.0, source.1, source.2, source.3 ]
+    }
+}
+
+impl<'a> From<&'a Color> for [ f32; 4 ] {
+    fn from(source: &'a Color) -> Self {
+        [ source.0, source.1, source.2, source.3 ]
+    }
+}
 
 impl AsUniform for Color {
     fn as_uniform(&self) -> Uniform {
@@ -228,13 +250,6 @@ impl AsUniform for Color {
 unsafe impl Attribute for Color {
     fn get_type() -> AttributeType {
         AttributeType::F32F32F32F32
-    }
-}
-
-#[doc(hidden)]
-impl AsUniformValue for Color {
-    fn as_uniform_value(&self) -> UniformValue {
-        UniformValue::Vec4([ self.0, self.1, self.2, self.3 ])
     }
 }
 

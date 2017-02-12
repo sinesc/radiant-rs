@@ -109,9 +109,32 @@ impl<T> VecType<T> for Vec2<T> where T: Debug + Float {
     }
 }
 
+impl<T> From<(T, T)> for Vec2<T> where T: Debug + Float {
+    fn from(source: (T, T)) -> Self {
+        Vec2(source.0, source.1)
+    }
+}
+
+impl<T> From<[ T; 2 ]> for Vec2<T> where T: Debug + Float {
+    fn from(source: [ T; 2 ]) -> Self {
+        Vec2(source[0], source[1])
+    }
+}
+
+impl From<Vec2<f32>> for [ f32; 2 ] {
+    fn from(source: Vec2<f32>) -> Self {
+        [ source.0, source.1 ]
+    }
+}
+
+impl From<Vec2<f64>> for [ f64; 2 ] {
+    fn from(source: Vec2<f64>) -> Self {
+        [ source.0, source.1 ]
+    }
+}
+
 impl<T> Neg for Vec2<T> where T: Debug + Float {
     type Output = Vec2<T>;
-
     fn neg(self) -> Vec2<T> {
         Vec2::<T>(-self.0, -self.1)
     }
