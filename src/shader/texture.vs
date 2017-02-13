@@ -2,9 +2,8 @@
 
 uniform mat4 u_view;
 uniform vec4 _rd_color;
-
-uniform vec2 offset;
-uniform vec2 size;
+uniform vec2 _rd_offset;
+uniform vec2 _rd_dimensions;
 
 in vec2 position;
 in vec2 texture_uv;
@@ -19,16 +18,16 @@ void main() {
     vec2 f_pos;
 
     if (id == 0) {
-        v_pos = offset;
+        v_pos = _rd_offset;
         f_pos = vec2(0.0, 1.0);
     } else if (id == 1) {
-        v_pos = vec2(offset.x, offset.y + size.y);
+        v_pos = vec2(_rd_offset.x, _rd_offset.y + _rd_dimensions.y);
         f_pos = vec2(0.0, 0.0);
     } else if (id == 2) {
-        v_pos = vec2(offset.x + size.x, offset.y);
+        v_pos = vec2(_rd_offset.x + _rd_dimensions.x, _rd_offset.y);
         f_pos = vec2(1.0, 1.0);
     } else if (id == 3) {
-        v_pos = vec2(offset.x + size.x, offset.y + size.y);
+        v_pos = vec2(_rd_offset.x + _rd_dimensions.x, _rd_offset.y + _rd_dimensions.y);
         f_pos = vec2(1.0, 0.0);
     }
 

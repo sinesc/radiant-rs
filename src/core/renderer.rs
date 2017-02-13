@@ -22,9 +22,10 @@ const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
 /// level abstraction.
 #[derive(Clone)]
 pub struct Renderer {
-    context: RenderContext,
-    program: Rc<Program>,
-    target: Rc<RefCell<RenderTargetType>>,
+    context         : RenderContext,
+    program         : Rc<Program>,
+    target          : Rc<RefCell<RenderTargetType>>,
+    empty_texture   : Texture,
 }
 
 impl<'a> Renderer {
@@ -33,11 +34,13 @@ impl<'a> Renderer {
     pub fn new(display: &Display) -> core::Result<Self> {
 
         let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY)?;
+        let context = rendercontext::new(context_data);
 
         Ok(Renderer {
-            context: rendercontext::new(context_data),
-            program: Rc::new(program::create(display, DEFAULT_FS)?),
-            target: Rc::new(RefCell::new(display.get_target())),
+            empty_texture   : Texture::new(&context, 2, 2),
+            context         : context,
+            program         : Rc::new(program::create(display, DEFAULT_FS)?),
+            target          : Rc::new(RefCell::new(display.get_target())),
         })
     }
 
@@ -67,6 +70,8 @@ impl<'a> Renderer {
     /// Draws given layer to the current target..
     pub fn draw_layer(self: &Self, layer: &Layer) -> &Self {
 
+        use glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
+
         // open context
         let mut context = rendercontext::lock(&self.context);
         let mut context = context.deref_mut();
@@ -89,15 +94,16 @@ impl<'a> Renderer {
             // set up uniforms
             let uniforms = program::uniforms(program);
             let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
-            glium_uniforms.add_glium("u_view", GliumUniform::Mat4(layer.view_matrix().deref().into()));
-            glium_uniforms.add_glium("u_model", GliumUniform::Mat4(layer.model_matrix().deref().into()));
-            glium_uniforms.add_glium("_rd_color", GliumUniform::Vec4(layer.color().deref().into()));
-            glium_uniforms.add_glium("_rd_tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)));
-            glium_uniforms.add_glium("_rd_tex1", GliumUniform::Texture2dArray(context.tex_array[1].data.deref()));
-            glium_uniforms.add_glium("_rd_tex2", GliumUniform::Texture2dArray(context.tex_array[2].data.deref()));
-            glium_uniforms.add_glium("_rd_tex3", GliumUniform::Texture2dArray(context.tex_array[3].data.deref()));
-            glium_uniforms.add_glium("_rd_tex4", GliumUniform::Texture2dArray(context.tex_array[4].data.deref()));
-            glium_uniforms.add_glium("_rd_tex5", GliumUniform::Texture2dArray(context.tex_array[5].data.deref()));
+            glium_uniforms
+                .add("u_view", GliumUniform::Mat4(layer.view_matrix().deref().into()))
+                .add("u_model", GliumUniform::Mat4(layer.model_matrix().deref().into()))
+                .add("_rd_color", GliumUniform::Vec4(layer.color().deref().into()))
+                .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
+                .add("_rd_tex1", GliumUniform::Texture2dArray(context.tex_array[1].data.deref()))
+                .add("_rd_tex2", GliumUniform::Texture2dArray(context.tex_array[2].data.deref()))
+                .add("_rd_tex3", GliumUniform::Texture2dArray(context.tex_array[3].data.deref()))
+                .add("_rd_tex4", GliumUniform::Texture2dArray(context.tex_array[4].data.deref()))
+                .add("_rd_tex5", GliumUniform::Texture2dArray(context.tex_array[5].data.deref()));
 
             // set up draw parameters for given blend options
             let draw_parameters = glium::draw_parameters::DrawParameters {
@@ -114,8 +120,9 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws given texture to the current target. Note: This function will likely change.
-    pub fn draw_texture<T, S>(self: &Self, texture: &Texture, program: &Program, blendmode: BlendMode, position: T, size: S) -> &Self where Vec2<f32>: From<T>+From<S> {
+    /// Draws a rectangle to the current target. The optionally specified texture is available via sheet*() in the shader. Note that you can
+    /// pass custom textures via the optional shader program's uniforms.
+    pub fn draw_rect<T, S>(self: &Self, position: T, dimensions: S, blendmode: BlendMode, program: Option<&Program>, texture: Option<&Texture>) -> &Self where Vec2<f32>: From<T>+From<S> {
 
         // open context
         let mut context = rendercontext::lock(&self.context);
@@ -123,13 +130,22 @@ impl<'a> Renderer {
 
         context.update_index_buffer(1);
 
+        // use default or custom program and texture
+        let program = match program {
+            Some(program)   => program,
+            None            => &self.program,
+        };
+        let texture = match texture {
+            Some(texture)   => texture,
+            None            => &self.empty_texture,
+        };
+
         // set up uniforms
         let uniforms = program::uniforms(program);
         let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
-
-        glium_uniforms.add_glium("offset", GliumUniform::Vec2(Vec2::from(position).into()));
-        glium_uniforms.add_glium("size", GliumUniform::Vec2(Vec2::from(size).into()));
-        glium_uniforms.add_glium("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)));
+        glium_uniforms.add("_rd_offset", GliumUniform::Vec2(Vec2::from(position).into()));
+        glium_uniforms.add("_rd_dimensions", GliumUniform::Vec2(Vec2::from(dimensions).into()));
+        glium_uniforms.add("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)));
 
         // set up draw parameters for given blend options
         let draw_parameters = glium::draw_parameters::DrawParameters {

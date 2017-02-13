@@ -1,7 +1,7 @@
 use prelude::*;
 use glium;
 use glium::uniforms::{Uniforms, AsUniformValue};
-use core::texture::{self, Texture};
+use core::texture::{self, Texture, TextureFilter, TextureWrap};
 
 /// A uniform value.
 #[derive(Clone)]
@@ -27,12 +27,6 @@ pub trait AsUniform {
     fn as_uniform(self: &Self) -> Uniform;
 }
 
-impl AsUniform for bool {
-    fn as_uniform(self: &Self) -> Uniform {
-        Uniform::Bool(*self)
-    }
-}
-
 /// Multiple uniforms held by a program.
 #[derive(Clone)]
 pub struct UniformList (HashMap<String, Uniform>);
@@ -55,6 +49,36 @@ impl UniformList {
 /// Creates a GliumUniformList from the given uniform list.
 pub fn to_glium_uniforms(list: &UniformList) -> GliumUniformList {
     GliumUniformList::from_uniform_list(list)
+}
+
+impl AsUniform for bool {
+    fn as_uniform(self: &Self) -> Uniform {
+        Uniform::Bool(*self)
+    }
+}
+
+impl AsUniform for i32 {
+    fn as_uniform(self: &Self) -> Uniform {
+        Uniform::SignedInt(*self)
+    }
+}
+
+impl AsUniform for u32 {
+    fn as_uniform(self: &Self) -> Uniform {
+        Uniform::UnsignedInt(*self)
+    }
+}
+
+impl AsUniform for f32 {
+    fn as_uniform(self: &Self) -> Uniform {
+        Uniform::Float(*self)
+    }
+}
+
+impl AsUniform for f64 {
+    fn as_uniform(self: &Self) -> Uniform {
+        Uniform::Double(*self)
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -94,14 +118,16 @@ impl<'a> GliumUniformList<'a> {
     pub fn from_uniform_list(list: &'a UniformList) -> Self {
         let mut result = GliumUniformList(Vec::new());
         for (name, uniform) in list.0.iter() {
-            result.add(name, uniform);
+            result.add_uniform(name, uniform);
         }
         result
     }
-    pub fn add_glium(self: &mut Self, name: &'a str, uniform: GliumUniform<'a>) {
+    pub fn add(self: &mut Self, name: &'a str, uniform: GliumUniform<'a>) -> &mut Self {
         self.0.push((name, uniform));
+        self
     }
-    pub fn add(self: &mut Self, name: &'a str, uniform: &'a Uniform) {
+    fn add_uniform(self: &mut Self, name: &'a str, uniform: &'a Uniform) {
+        use glium::uniforms::{MinifySamplerFilter, MagnifySamplerFilter, SamplerWrapFunction};
         self.0.push((name, match *uniform {
             Uniform::Bool(val) => { GliumUniform::Bool(val) },
             Uniform::SignedInt(val) => { GliumUniform::SignedInt(val) },
@@ -116,7 +142,25 @@ impl<'a> GliumUniformList<'a> {
             Uniform::DoubleVec2(val) => { GliumUniform::DoubleVec2(val) },
             Uniform::DoubleVec3(val) => { GliumUniform::DoubleVec3(val) },
             Uniform::DoubleVec4(val) => { GliumUniform::DoubleVec4(val) },
-            Uniform::Texture(ref val) => { GliumUniform::Texture2d(texture::handle(val)) },
+            Uniform::Texture(ref val) => {
+                let (minify, magnify, wrap) = texture::filters(val);
+                let glium_minify = if minify == TextureFilter::Linear { MinifySamplerFilter::Linear } else { MinifySamplerFilter::Nearest };
+                let glium_magnify = if magnify == TextureFilter::Linear { MagnifySamplerFilter::Linear } else { MagnifySamplerFilter::Nearest };
+                let glium_wrap = match wrap {
+                    TextureWrap::Repeat         => SamplerWrapFunction::Repeat,
+                    TextureWrap::Mirror         => SamplerWrapFunction::Mirror,
+                    TextureWrap::Clamp          => SamplerWrapFunction::Clamp,
+                    TextureWrap::MirrorClamp    => SamplerWrapFunction::MirrorClamp,
+                };
+                GliumUniform::Sampled2d(
+                    texture::handle(val)
+                                .sampled()
+                                .minify_filter(glium_minify)
+                                .magnify_filter(glium_magnify)
+                                .wrap_function(glium_wrap)
+                )
+            },
+            //Uniform::Texture(ref val) => { GliumUniform::Texture2d(texture::handle(val)) },
         }));
     }
 }

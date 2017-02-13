@@ -24,7 +24,7 @@ pub use self::rendercontext::{RenderContext, RenderContextData, RenderContextTex
 pub use self::color::Color;
 pub use self::scene::*;
 pub use self::monitor::Monitor;
-pub use self::texture::Texture;
+pub use self::texture::{Texture, TextureFilter, TextureWrap};
 pub use self::program::Program;
 pub use self::uniform::{Uniform, AsUniform, UniformList, GliumUniform};
 
