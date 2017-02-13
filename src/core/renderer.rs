@@ -68,26 +68,27 @@ impl<'a> Renderer {
     pub fn draw_layer(self: &Self, layer: &Layer) -> &Self {
 
         // open context
-
         let mut context = rendercontext::lock(&self.context);
         let mut context = context.deref_mut();
 
         // update sprite texture arrays, font texture and vertex buffer as required
-
         context.update_tex_array();
         context.update_font_cache();
         let (vertex_buffer, num_vertices) = layer::upload(&layer, context);
         context.update_index_buffer(num_vertices / 4);
 
         // draw the layer, unless it is empty
-
         if num_vertices > 0 {
 
+            // use default or custom program
+            let program = match layer::program(layer) {
+                Some(program)   => program,
+                None            => &self.program,
+            };
+
             // set up uniforms
-
-            let uniforms = program::uniforms(&self.program);
+            let uniforms = program::uniforms(program);
             let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
-
             glium_uniforms.add_glium("u_view", GliumUniform::Mat4(layer.view_matrix().deref().into()));
             glium_uniforms.add_glium("u_model", GliumUniform::Mat4(layer.model_matrix().deref().into()));
             glium_uniforms.add_glium("_rd_color", GliumUniform::Vec4(layer.color().deref().into()));
@@ -99,7 +100,6 @@ impl<'a> Renderer {
             glium_uniforms.add_glium("_rd_tex5", GliumUniform::Texture2dArray(context.tex_array[5].data.deref()));
 
             // set up draw parameters for given blend options
-
             let draw_parameters = glium::draw_parameters::DrawParameters {
                 backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
                 blend           : blendmode::inner(layer.blendmode().deref_mut()),
@@ -107,9 +107,8 @@ impl<'a> Renderer {
             };
 
             // draw up to container.size
-
             let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
-            self.target.borrow().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(&self.program), &glium_uniforms, &draw_parameters).unwrap();
+            self.target.borrow().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(program), &glium_uniforms, &draw_parameters).unwrap();
         }
 
         self
@@ -119,14 +118,12 @@ impl<'a> Renderer {
     pub fn draw_texture<T, S>(self: &Self, texture: &Texture, program: &Program, blendmode: BlendMode, position: T, size: S) -> &Self where Vec2<f32>: From<T>+From<S> {
 
         // open context
-
         let mut context = rendercontext::lock(&self.context);
         let mut context = context.deref_mut();
 
         context.update_index_buffer(1);
 
         // set up uniforms
-
         let uniforms = program::uniforms(program);
         let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
 
@@ -135,7 +132,6 @@ impl<'a> Renderer {
         glium_uniforms.add_glium("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)));
 
         // set up draw parameters for given blend options
-
         let draw_parameters = glium::draw_parameters::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
             blend           : blendmode::inner(&blendmode),
@@ -143,7 +139,6 @@ impl<'a> Renderer {
         };
 
         // draw up to container.size
-
         let ib_slice = context.index_buffer.slice(0..6).unwrap();
         self.target.borrow().draw(&context.vertex_buffer_single, &ib_slice, &program::texture(program), &glium_uniforms, &draw_parameters).unwrap();
 

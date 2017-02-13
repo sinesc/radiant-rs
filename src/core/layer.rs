@@ -2,7 +2,7 @@ use glium;
 use prelude::*;
 use avec::AVec;
 use maths::{Mat4, Point2, Rect};
-use core::{blendmodes, BlendMode, rendercontext, RenderContextData, Color, display};
+use core::{blendmodes, BlendMode, rendercontext, RenderContextData, Color, display, Program};
 use maths::Vec2;
 
 #[derive(Copy, Clone, Default)]
@@ -35,6 +35,7 @@ pub struct Layer {
     vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
     dirty           : AtomicBool,
     channel_id      : u32,
+    program         : Option<Program>,
 }
 unsafe impl Send for Layer { }
 unsafe impl Sync for Layer { }
@@ -45,17 +46,14 @@ impl Layer {
     /// which sprite channel is drawn. All sprites support at least channel 0.
     /// Nothing will be drawn if the sprite does not contain given channel.
     pub fn new<T>(dimensions: T, channel_id: u32) -> Self where Vec2<f32>: From<T> {
-        let dimensions = Vec2::from(dimensions);
-        Layer {
-            view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1)),
-            model_matrix    : Mutex::new(Mat4::identity()),
-            blend           : Mutex::new(blendmodes::ALPHA),
-            color           : Mutex::new(Color::white()),
-            vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
-            vertex_buffer   : Mutex::new(None),
-            dirty           : AtomicBool::new(true),
-            channel_id      : channel_id,
-        }
+        Self::create(dimensions, channel_id, None)
+    }
+
+    /// Creates a new layer with given dimensions and fragment program. The channel determines
+    /// which sprite channel is drawn. All sprites support at least channel 0.
+    /// Nothing will be drawn if the sprite does not contain given channel.
+    pub fn new_with_program<T>(dimensions: T, channel_id: u32, program: Program) -> Self where Vec2<f32>: From<T> {
+        Self::create(dimensions, channel_id, Some(program))
     }
 
     /// Sets a global color multiplicator. Setting this to white means that the layer contents
@@ -135,6 +133,27 @@ impl Layer {
     pub fn len(self: &Self) -> usize {
         self.vertex_data.len() / 4
     }
+
+    /// Creates a new layer
+    fn create<T>(dimensions: T, channel_id: u32, program: Option<Program>) -> Self where Vec2<f32>: From<T> {
+        let dimensions = Vec2::from(dimensions);
+        Layer {
+            view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1)),
+            model_matrix    : Mutex::new(Mat4::identity()),
+            blend           : Mutex::new(blendmodes::ALPHA),
+            color           : Mutex::new(Color::white()),
+            vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
+            vertex_buffer   : Mutex::new(None),
+            dirty           : AtomicBool::new(true),
+            channel_id      : channel_id,
+            program         : program,
+        }
+    }
+}
+
+/// Returns a reference to the layer's program, if it has any.
+pub fn program(layer: &Layer) -> Option<&Program> {
+    layer.program.as_ref()
 }
 
 /// Returns the layer's channel id.
