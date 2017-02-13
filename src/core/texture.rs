@@ -29,7 +29,7 @@ impl Texture {
     }
     /// Clears the texture with given color.
     pub fn clear(self: &Self, color: &Color) {
-        let (r, g, b, a) = color.as_tuple();
+        let Color(r, g, b, a) = *color;
         self.0.as_surface().clear_color(r, g, b, a);
     }
 }

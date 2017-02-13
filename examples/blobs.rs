@@ -45,9 +45,9 @@ pub fn main() {
         view3.rotate_at((320., 200.), state.delta_f32 * 2.0);
 
         // draw the sprite three times, tinted red, green and blue
-        sprite.draw(&spark_layer, 0, (320., 180.), Color::red().scale(1.5));
-        sprite.draw(&spark_layer, 0, (300., 200.), Color::green().scale(1.5));
-        sprite.draw(&spark_layer, 0, (340., 200.), Color::blue().scale(1.5));
+        sprite.draw(&spark_layer, 0, (320., 180.), *Color::red().scale(1.5));
+        sprite.draw(&spark_layer, 0, (300., 200.), *Color::green().scale(1.5));
+        sprite.draw(&spark_layer, 0, (340., 200.), *Color::blue().scale(1.5));
 
         // draw the spark layer three times with different matrices and alpha levels as well as the text layer
         display.clear_frame(Color::black());

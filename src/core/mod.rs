@@ -63,7 +63,7 @@ impl RenderTargetType {
                 display::clear(display, color);
             },
             RenderTargetType::Texture(ref texture) => {
-                let (r, g, b, a) = color.as_tuple();
+                let Color(r, g, b, a) = *color;
                 texture.as_surface().clear_color(r, g, b, a);
             }
         }

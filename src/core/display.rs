@@ -101,7 +101,7 @@ impl Display {
     pub fn clear_frame(self: &Self, color: Color) {
         self.prepare_frame();
         if let Some(ref mut frame) = self.frame.borrow_mut().as_mut() {
-            let (r, g, b, a) = color.as_tuple();
+            let Color(r, g, b, a) = color;
             frame.clear_color(r, g, b, a);
         } else {
             panic!("Failed to prepare a frame for clear.");
@@ -299,7 +299,7 @@ pub fn draw<'b, 'v, V, I, U>(display: &Display, vb: V, ib: I, program: &Program,
 /// Clears the display with given color without swapping buffers.
 pub fn clear(display: &Display, color: &Color) {
     if let Some(ref mut frame) = display.frame.borrow_mut().as_mut() {
-        let (r, g, b, a) = color.as_tuple();
+        let Color(r, g, b, a) = *color;
         frame.clear_color(r, g, b, a);
     } else {
         panic!("Failed to clear frame: None prepared.");

@@ -52,9 +52,9 @@ impl Color {
             };
             let p = 2.0 * lightness - q;
             Color(
-                hue_to_rgb(p, q, hue + 1.0 / 3.0),
-                hue_to_rgb(p, q, hue),
-                hue_to_rgb(p, q, hue - 1.0 / 3.0),
+                Self::hue_to_rgb(p, q, hue + 1.0 / 3.0),
+                Self::hue_to_rgb(p, q, hue),
+                Self::hue_to_rgb(p, q, hue - 1.0 / 3.0),
                 alpha
             )
         }
@@ -123,98 +123,110 @@ impl Color {
     }
 
     /// Sets a value for the instance's red channel
-    pub fn set_r(self: &mut Self, value: f32) -> Color {
+    pub fn set_r(self: &mut Self, value: f32) -> &mut Color {
         self.0 = value;
-        *self
+        self
     }
 
     /// Sets a value for the instance's green channel.
-    pub fn set_g(self: &mut Self, value: f32) -> Color {
+    pub fn set_g(self: &mut Self, value: f32) -> &mut Color {
         self.1 = value;
-        *self
+        self
     }
 
     /// Sets a value for the instance's blue channel.
-    pub fn set_b(self: &mut Self, value: f32) -> Color {
+    pub fn set_b(self: &mut Self, value: f32) -> &mut Color {
         self.2 = value;
-        *self
+        self
     }
 
     /// Sets a value for the instance's alpha channel.
-    pub fn set_a(self: &mut Self, value: f32) -> Color {
+    pub fn set_a(self: &mut Self, value: f32) -> &mut Color {
         self.3 = value;
-        *self
+        self
     }
 
     /// Multiplies the instance's color channels by given scaling factor. Does not modify alpha.
-    pub fn scale(self: &mut Self, scaling: f32) -> Color {
+    pub fn scale(self: &mut Self, scaling: f32) -> &mut Color {
         self.0 *= scaling;
         self.1 *= scaling;
         self.2 *= scaling;
-        *self
+        self
     }
 
     /// Returns the instance's channels as a tuple.
+    #[deprecated(since="0.2", note="Use into() instead")]
     pub fn as_tuple(self: &Self) -> (f32, f32, f32, f32) {
         (self.0, self.1, self.2, self.3)
     }
 
-    /* /// Returns the instance's channels as array.
-    pub fn as_array(self: &Self) -> [ f32; 4 ] {
-        [ self.0, self.1, self.2, self. 3 ]
-    }*/
-
+    /// Returns opaque white color.
     pub fn white() -> Color {
         Color(1.0, 1.0, 1.0, 1.0)
     }
 
+    /// Returns opaque black color.
     pub fn black() -> Color {
         Color(0.0, 0.0, 0.0, 1.0)
     }
 
+    /// Returns opaque red color.
     pub fn red() -> Color {
         Color(1.0, 0.0, 0.0, 1.0)
     }
 
+    /// Returns opaque green color.
     pub fn green() -> Color {
         Color(0.0, 1.0, 0.0, 1.0)
     }
 
+    /// Returns opaque blue color.
     pub fn blue() -> Color {
         Color(0.0, 0.0, 1.0, 1.0)
     }
 
+    /// Returns opaque yellow color.
     pub fn yellow() -> Color {
         Color(1.0, 1.0, 0.0, 1.0)
     }
 
+    /// Returns opaque cyan color.
     pub fn cyan() -> Color {
         Color(0.0, 1.0, 1.0, 1.0)
     }
 
-    pub fn purple() -> Color {
+    /// Returns opaque magenta color.
+    pub fn magenta() -> Color {
         Color(1.0, 0.0, 1.0, 1.0)
+    }
+
+    /// Returns opaque magenta color.
+    #[deprecated(since="0.2", note="Use magenta() instead")]
+    pub fn puple() -> Color {
+        Self::magenta()
+    }
+
+    /// Hue to rgb helper function uses by hsl.
+    fn hue_to_rgb(p: f32, q: f32, mut hue: f32) -> f32 {
+        if hue < 0.0 {
+            hue += 1.0;
+        }
+        if hue > 1.0 {
+            hue -= 1.0;
+        }
+        if hue < 1.0 / 6.0 {
+            return p + (q - p) * 6.0 * hue;
+        }
+        if hue < 1.0 / 2.0 {
+            return q;
+        }
+        if hue < 2.0 / 3.0 {
+            return p + (q - p) * (2.0/3.0 - hue) * 6.0;
+        }
+        return p;
     }
 }
 
-fn hue_to_rgb(p: f32, q: f32, mut hue: f32) -> f32 {
-    if hue < 0.0 {
-        hue += 1.0;
-    }
-    if hue > 1.0 {
-        hue -= 1.0;
-    }
-    if hue < 1.0 / 6.0 {
-        return p + (q - p) * 6.0 * hue;
-    }
-    if hue < 1.0 / 2.0 {
-        return q;
-    }
-    if hue < 2.0 / 3.0 {
-        return p + (q - p) * (2.0/3.0 - hue) * 6.0;
-    }
-    return p;
-}
 
 impl<T> From<(T, T, T, T)> for Color where T: Debug + Float, f32: From<T> {
     fn from(source: (T, T, T, T)) -> Self {
@@ -237,6 +249,18 @@ impl From<Color> for [ f32; 4 ] {
 impl<'a> From<&'a Color> for [ f32; 4 ] {
     fn from(source: &'a Color) -> Self {
         [ source.0, source.1, source.2, source.3 ]
+    }
+}
+
+impl From<Color> for (f32, f32, f32, f32) {
+    fn from(source: Color) -> Self {
+        (source.0, source.1, source.2, source.3)
+    }
+}
+
+impl<'a> From<&'a Color> for (f32, f32, f32, f32) {
+    fn from(source: &'a Color) -> Self {
+        (source.0, source.1, source.2, source.3)
     }
 }
 
