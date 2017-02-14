@@ -1,9 +1,12 @@
+#![doc(html_logo_url = "https://sinesc.github.io/images/radiant-logo.png",
+       html_favicon_url = "https://sinesc.github.io/images/radiant-favicon.png")]
+
 /*!
-Very easy to use, thread-safe Rust sprite rendering engine.
+Thread-safe Rust sprite rendering engine with an easy to use API and custom shader support.
 
 To view the reference, scroll down or collapse this block using the [-] to the left.
 
-**This is work-in-progress. The API is incomplete and will likely still change somewhat.**
+**This is work-in-progress. Parts of the API are incomplete and will likely still change somewhat.**
 
 # Examples
 
@@ -24,12 +27,12 @@ The examples folder contains multiple small examples. They can be run via `cargo
 9. Make the frame visible via `Display::swap_frame()`.
 10. Consider clearing the layer and goto 6. Or maybe simply change some layer properties and redraw it starting a step 7.
 
-# Rendering from multiple threads
+# Drawing from multiple threads
 
-1. Stick fonts, sprites, and layers or scenes into `Arc`s.
+1. Wrap fonts, sprites, and layers or scenes in `Arc`s.
 2. Clone the `Arc`s for each thread that needs their contents. The rendercontext can be cloned directly.
 3. Move the clones into the thread.
-4. Draw onto your layers, load sprites etc. from however many threads you like. Layers are non-blocking for drawing operations,
+4. Draw onto your layers, load sprites etc. from any thread(s). Layers are non-blocking for drawing operations,
 blocking for other manipulations (e.g. matrix modification).
 5. Perform steps 7-10 from the above list in the thread that created the `Renderer`; both it and `Display` do not implement `Send`.
 

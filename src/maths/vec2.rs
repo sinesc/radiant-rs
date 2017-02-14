@@ -97,10 +97,6 @@ impl<T> Vec2<T> where T: Debug + Float {
         let dv = *self - *other;
         (dv.0 * dv.0 + dv.1 * dv.1).sqrt()
     }
-    /*/// Returns the vector as an array.
-    pub fn as_array(self: &Self) -> [ T; 2 ] {
-        [ self.0, self.1 ]
-    }*/
 }
 
 impl<T> VecType<T> for Vec2<T> where T: Debug + Float {

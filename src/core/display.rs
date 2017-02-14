@@ -110,8 +110,7 @@ impl Display {
 
     /// Swaps current drawing frame with visible frame.
     pub fn swap_frame(self: &Self) {
-        use std::mem::replace;
-        let frame = replace(&mut *self.frame.borrow_mut(), None);
+        let frame = mem::replace(&mut *self.frame.borrow_mut(), None);
         if let Some(frame) = frame {
             frame.finish().unwrap();
         } else {
