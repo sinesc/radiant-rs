@@ -57,7 +57,7 @@ impl<'a> Renderer {
     }
 
     /// Clears the current target.
-    pub fn clear(self: &Self, color: &Color) {
+    pub fn clear(self: &Self, color: Color) {
         self.target.borrow().clear(color);
     }
 

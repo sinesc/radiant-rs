@@ -170,14 +170,14 @@ impl Font {
     /// Write to given layer
     pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T) -> &Font where Vec2<f32>: From<T> {
         let position = Vec2::from(position);
-        write(self, layer, text, position.0, position.1, 0.0, &self.color, 0.0, 1.0, 1.0);
+        write(self, layer, text, position.0, position.1, 0.0, self.color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels.
     pub fn write_wrapped<T>(self: &Self, layer: &Layer, text: &str, position: T, max_width: f32) -> &Font where Vec2<f32>: From<T> {
         let position = Vec2::from(position);
-        write(self, layer, text, position.0, position.1, max_width, &self.color, 0.0, 1.0, 1.0);
+        write(self, layer, text, position.0, position.1, max_width, self.color, 0.0, 1.0, 1.0);
         self
     }
 
@@ -185,7 +185,7 @@ impl Font {
     pub fn write_transformed<T, U>(self: &Self, layer: &Layer, text: &str, position: T, max_width: f32, rotation: f32, scale: U) -> &Font where Vec2<f32>: From<T>+From<U> {
         let position = Vec2::from(position);
         let scale = Vec2::from(scale);
-        write(self, layer, text, position.0, position.1, max_width, &self.color, rotation, scale.0, scale.1);
+        write(self, layer, text, position.0, position.1, max_width, self.color, rotation, scale.0, scale.1);
         self
     }
 
@@ -218,7 +218,7 @@ fn create_font(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
 }
 
 /// write text to given layer using given font
-fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: &Color, rotation: f32, scale_x: f32, scale_y: f32) {
+fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
 
     // !todo probably expensive, but rusttype is completely opaque. would be nice to be able to store Font::info outside of a "may or may not own" container
     let rt_font = rusttype::FontCollection::from_bytes(&font.data[..]).into_font().unwrap();
@@ -240,7 +240,7 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
             let dist_y = pos.1 * scale_y;
             let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;
             let offset_y = y + dist_x * sin_rot + dist_y * cos_rot;
-            layer::add_rect(layer, bucket_id, 0, uv, Point2(offset_x, offset_y), anchor, dim, *color, rotation, scale);
+            layer::add_rect(layer, bucket_id, 0, uv, Point2(offset_x, offset_y), anchor, dim, color, rotation, scale);
         }
     }
 }

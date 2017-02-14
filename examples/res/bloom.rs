@@ -11,7 +11,7 @@ impl Postprocessor for Bloom {
 
     /// Returns the target where the postprocessor expects the unprocessed input.
     fn target(self: &mut Self) -> &Texture {
-        self.targets[0][0].clear(&Color::black());
+        self.targets[0][0].clear(Color::black());
         &self.targets[0][0]
     }
 

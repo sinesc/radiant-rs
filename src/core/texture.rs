@@ -80,8 +80,8 @@ impl Texture {
         }
     }
     /// Clears the texture with given color.
-    pub fn clear(self: &Self, color: &Color) {
-        let Color(r, g, b, a) = *color;
+    pub fn clear(self: &Self, color: Color) {
+        let Color(r, g, b, a) = color;
         self.handle.as_surface().clear_color(r, g, b, a);
     }
 }

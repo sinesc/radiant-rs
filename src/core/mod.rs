@@ -57,13 +57,13 @@ impl RenderTargetType {
         }
     }
     /// Clears the target.
-    fn clear(self: &Self, color: &Color) {
+    fn clear(self: &Self, color: Color) {
         match *self {
             RenderTargetType::Display(ref display) => {
                 display::clear(display, color);
             },
             RenderTargetType::Texture(ref texture) => {
-                let Color(r, g, b, a) = *color;
+                let Color(r, g, b, a) = color;
                 texture.as_surface().clear_color(r, g, b, a);
             }
         }
