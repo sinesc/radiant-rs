@@ -2,7 +2,7 @@ use prelude::*;
 use glium;
 use core::{
     self, texture, layer, scene, rendercontext, blendmode, program, uniform,
-    Display, Layer, Texture, BlendMode, Color, Program,
+    Display, Layer, Texture, BlendMode, Color, Program, Postprocessor,
     RenderContext, RenderContextData, RenderTarget, RenderTargetType,
     GliumUniform,
 };
@@ -11,14 +11,14 @@ use maths::Vec2;
 /// Default fragment shader program
 const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
 
-/// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](struct.Scene.html)s to the
+/// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](scene/struct.Scene.html)s to the
 /// [`Display`](struct.Display.html).
 ///
 /// The renderer itself is not thread-safe. Instead, draw or write onto layers (from any one or
 /// more threads)  and present those layers using the renderer once your threads have concluded
 /// drawing.
 ///
-/// Alternatively to directly drawing on layers, [`Scene`](struct.Scene.html) provides a higher
+/// Alternatively to directly drawing on layers, [`Scene`](scene/struct.Scene.html) provides a higher
 /// level abstraction.
 #[derive(Clone)]
 pub struct Renderer {
@@ -44,8 +44,8 @@ impl<'a> Renderer {
         })
     }
 
-    /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext)
-    /// is thread-safe and required by [`Font`](struct.Font) and [`Sprite`](struct.Sprite) to
+    /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext.html)
+    /// is thread-safe and required by [`Font`](struct.Font.html) and [`Sprite`](struct.Sprite.html) to
     /// create new instances.
     pub fn context(self: &Self) -> RenderContext {
         self.context.clone()
@@ -117,6 +117,22 @@ impl<'a> Renderer {
             self.target.borrow().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(program), &glium_uniforms, &draw_parameters).unwrap();
         }
 
+        self
+    }
+
+    /// Draws given layer to the current target using given postprocessor.
+    pub fn draw_layer_processed<T>(self: &Self, layer: &Layer, postprocessor: &mut T) -> &Self where T: Postprocessor {
+
+        //let texture = postprocessor.target(); // WTB nonlexial lifetimes pls
+        let previous_target = mem::replace(&mut *self.target.borrow_mut(), RenderTargetType::Texture(texture::rc_handle( postprocessor.target() )).clone());
+
+        // draw layer and process
+        self.draw_layer(layer);
+        postprocessor.process(self);
+
+        // restore previous target and draw postprocessor result
+        *self.target.borrow_mut() = previous_target;
+        postprocessor.draw(self);
         self
     }
 

@@ -6,26 +6,36 @@ use glium::Surface;
 /// Texture minify- or magnify filtering function.
 #[derive(Copy, Clone, PartialEq)]
 pub enum TextureFilter {
+    /// All nearby texels will be loaded and their values will be merged.
     Linear,
+    /// The nearest texel will be loaded.
     Nearest,
 }
 
 /// Texture wrapping function.
 #[derive(Copy, Clone, PartialEq)]
 pub enum TextureWrap {
+    /// Samples at coord x + 1 map to coord x.
     Repeat,
+    /// Samples at coord x + 1 map to coord 1 - x.
     Mirror,
+    /// Samples at coord x + 1 map to coord 1.
     Clamp,
+    /// Same as Mirror, but only for one repetition.
     MirrorClamp,
 }
 
 /// A texture.
+///
+/// Textures serve as drawing targets for userdefined [`Postprocessors`](trait.Postprocessor.html)
+/// or custom [`Programs`](struct.Program.html). A texture can also be drawn with
+/// [`Renderer::draw_rect()`](struct.Renderer.html#method.draw_rect).
 #[derive(Clone)]
 pub struct Texture {
-    handle      : Rc<glium::texture::Texture2d>,
-    pub minify  : TextureFilter,
-    pub magnify : TextureFilter,
-    pub wrap    : TextureWrap,
+    handle  : Rc<glium::texture::Texture2d>,
+    minify  : TextureFilter,
+    magnify : TextureFilter,
+    wrap    : TextureWrap,
 }
 
 impl Texture {
@@ -79,6 +89,10 @@ impl Texture {
 /// Returns the texture handle.
 pub fn handle(texture: &Texture) -> &glium::texture::Texture2d {
     texture.handle.deref()
+}
+
+pub fn rc_handle(texture: &Texture) -> Rc<glium::texture::Texture2d> {
+    texture.handle.clone()
 }
 
 /// Returns texture filters.

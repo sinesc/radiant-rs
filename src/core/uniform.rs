@@ -4,6 +4,10 @@ use glium::uniforms::{Uniforms, AsUniformValue};
 use core::texture::{self, Texture, TextureFilter, TextureWrap};
 
 /// A uniform value.
+///
+/// Uniforms are values that can be passed to [`Programs`](struct.Program.html).
+/// Various types also implement the [`AsUniform`](trait.AsUniform.html) trait
+/// and can be directly used with [`Program::set_uniform()`](struct.Program.html#method.set_uniform).
 #[derive(Clone)]
 pub enum Uniform {
     Bool(bool),

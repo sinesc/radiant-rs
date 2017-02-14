@@ -17,6 +17,13 @@ pub struct RenderContext (Arc<Mutex<RenderContextData>>);
 unsafe impl<'a> Send for RenderContext { }
 unsafe impl<'a> Sync for RenderContext { }
 
+impl RenderContext {
+    /// Retrieves the display associated with this rendercontext.
+    pub fn display(self: &Self) -> Display {
+        lock(self).display.clone()
+    }
+}
+
 pub fn new(data: RenderContextData) -> RenderContext {
     RenderContext(Arc::new(Mutex::new(data)))
 }

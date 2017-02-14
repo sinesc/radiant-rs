@@ -44,3 +44,7 @@ path = "examples/minimalistic.rs"
 [[example]]
 name = "scene"
 path = "examples/scene.rs"
+
+[[example]]
+name = "postprocess"
+path = "examples/postprocess.rs"

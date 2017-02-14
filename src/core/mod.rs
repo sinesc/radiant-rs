@@ -72,7 +72,28 @@ impl RenderTargetType {
 
 /// A target for rendering.
 pub trait RenderTarget {
+    /// Returns RenderTargetType enum containing a texture or a frame.
     fn get_target(self: &Self) -> RenderTargetType;
+}
+
+/// A custom postprocessor.
+///
+/// Postprocessing happens in three steps:
+///
+/// - first, `target()` is invoked and expected to return the input texture target (from
+/// where the postprocessor intends to read input data).
+/// - `process()` is invoked and expected to perform the neccessary processing
+/// **excluding** the final draw operation.
+/// - `draw()` is invoked. At this point the renderer has already restored the drawing
+/// target so that this method is only required to draw the postprocessing result
+/// to the current target.
+pub trait Postprocessor {
+    /// Returns a texture. This texture will contain the input data during `process()`.
+    fn target(self: &mut Self) -> &Texture;
+    /// Processes input data.
+    fn process(self: &mut Self, renderer: &Renderer);
+    /// Draws final result to current target.
+    fn draw(self: &mut Self, renderer: &Renderer);
 }
 
 /// Radiant errors.
