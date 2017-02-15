@@ -180,7 +180,7 @@ fn build_raw_frame(image: &mut image::DynamicImage, image_dimensions: (u32, u32)
         let mut dest = image::DynamicImage::new_rgba8(pad_size, pad_size);
         dest.copy_from(&subimage, 0, 0);
         RenderContextTexture {
-            data: premultiply_alpha(dest.to_rgba()).into_raw(),
+            data: convert_color(dest.to_rgba()).into_raw(),
             width: pad_size,
             height: pad_size,
         }
@@ -189,7 +189,7 @@ fn build_raw_frame(image: &mut image::DynamicImage, image_dimensions: (u32, u32)
 
         // perfect fit
         RenderContextTexture {
-            data: premultiply_alpha(subimage.to_rgba()).into_raw(),
+            data: convert_color(subimage.to_rgba()).into_raw(),
             width: frame_width,
             height: frame_height,
         }
@@ -214,12 +214,20 @@ fn get_frame_coordinates(image_dimensions: (u32, u32), sprite_parameters: &Sprit
     }
 }
 
-/// Multiplies image color channels with alpha channel
-fn premultiply_alpha(mut image: image::RgbaImage) -> image::RgbaImage {
+/// Converts Srgb to rgb and multiplies image color channels with alpha channel
+fn convert_color(mut image: image::RgbaImage) -> image::RgbaImage {
+    use palette::Rgb;
+    use palette::pixel::Srgb;
     for (_, _, pixel) in image.enumerate_pixels_mut() {
-        pixel[0] = (pixel[3] as u32 * pixel[0] as u32 / 255) as u8;
-        pixel[1] = (pixel[3] as u32 * pixel[1] as u32 / 255) as u8;
-        pixel[2] = (pixel[3] as u32 * pixel[2] as u32 / 255) as u8;
+        let alpha = pixel[3] as f32 / 255.0;
+        let rgb = Rgb::from(Srgb::new(
+            pixel[0] as f32 / 255.0,
+            pixel[1] as f32 / 255.0,
+            pixel[2] as f32 / 255.0
+        ));
+        pixel[0] = (alpha * rgb.red * 255.0) as u8;
+        pixel[1] = (alpha * rgb.green * 255.0) as u8;
+        pixel[2] = (alpha * rgb.blue * 255.0) as u8;
     }
     image
 }

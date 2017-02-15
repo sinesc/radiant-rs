@@ -54,7 +54,7 @@ impl<'a> glium::texture::Texture2dDataSource<'a> for RenderContextTexture {
 /// Texture data for a single texture array
 pub struct RenderContextTextureArray {
     pub dirty   : bool,
-    pub data    : Rc<glium::texture::SrgbTexture2dArray>,
+    pub data    : Rc<glium::texture::Texture2dArray>,
     pub raw     : Vec<RenderContextTexture>,
 }
 
@@ -172,11 +172,11 @@ pub struct Vertex {
 implement_vertex!(Vertex, position, texture_uv);
 
 /// Generates glium texture array from given vector of textures
-fn texture_array(display: &Display, raw: Vec<RenderContextTexture>) -> glium::texture::SrgbTexture2dArray {
+fn texture_array(display: &Display, raw: Vec<RenderContextTexture>) -> glium::texture::Texture2dArray {
     use glium::texture;
     if raw.len() > 0 {
-        texture::SrgbTexture2dArray::with_format(display::handle(display), raw.clone(), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
+        texture::Texture2dArray::with_format(display::handle(display), raw.clone(), texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
     } else {
-        texture::SrgbTexture2dArray::empty_with_format(display::handle(display), texture::SrgbFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
+        texture::Texture2dArray::empty_with_format(display::handle(display), texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
     }
 }

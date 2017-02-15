@@ -110,7 +110,7 @@ pub enum GliumUniform<'a> {
     DoubleVec3([f64; 3]),
     DoubleVec4([f64; 4]),
     Texture2d(&'a glium::texture::Texture2d),
-    Texture2dArray(&'a glium::texture::SrgbTexture2dArray),
+    Texture2dArray(&'a glium::texture::Texture2dArray),
     Sampled2d(glium::uniforms::Sampler<'a, glium::texture::Texture2d>),
 }
 
