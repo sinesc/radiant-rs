@@ -24,7 +24,7 @@ const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
 pub struct Renderer {
     context         : RenderContext,
     program         : Rc<Program>,
-    target          : Rc<RefCell<RenderTarget>>,
+    target          : Rc<RefCell<(RenderTarget, bool)>>,
     empty_texture   : Texture,
 }
 
@@ -40,7 +40,7 @@ impl<'a> Renderer {
             empty_texture   : Texture::new(&context, 2, 2),
             context         : context,
             program         : Rc::new(program::create(display, DEFAULT_FS)?),
-            target          : Rc::new(RefCell::new(RenderTarget::Display(display.clone()))),
+            target          : Rc::new(RefCell::new((RenderTarget::Display(display.clone()), false))),
         })
     }
 
@@ -53,13 +53,16 @@ impl<'a> Renderer {
 
     /// Sets a new rendering target. Valid targets are the display and textures.
     pub fn set_target<T>(self: &Self, target: &T) -> &Self where T: AsRenderTarget {
-        *self.target.borrow_mut() = target.as_render_target().clone();
+        if self.target.borrow().1 {
+            panic!("Attempted to set_target from within postrenderer function");
+        }
+        *self.target.borrow_mut() = (target.as_render_target().clone(), false);
         self
     }
 
     /// Clears the current target.
     pub fn clear(self: &Self, color: Color) -> &Self {
-        self.target.borrow().clear(color);
+        self.target.borrow().0.clear(color);
         self
     }
 
@@ -75,21 +78,26 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws given layer to the current target using given postprocessor. Note: API is likely to change!
-    pub fn draw_layer_processed<T>(self: &Self, layer: &Layer, postprocessor: &mut T) -> &Self where T: Postprocessor {
+    /// Reroutes draws issued within draw_func through the given postprocessor.
+    pub fn postprocess<P, F>(self: &Self, blendmode: BlendMode, postprocessor: &mut P, mut draw_func: F) -> &Self where F: FnMut(), P: Postprocessor {
 
-        let (blendmode, previous_target) = {
-            let (ref texture, blendmode) = postprocessor.target();
-            (blendmode, mem::replace(&mut *self.target.borrow_mut(), texture.as_render_target().clone()))
+        // backup previous target and set temporary target
+        let previous_target = {
+            let texture = postprocessor.target();
+            mem::replace(&mut self.target.borrow_mut().0, texture.as_render_target().clone())
         };
 
-        // draw layer and process
-        self.draw(layer, Some(&blendmode));
+        // draw to temporary target using given draw_func
+        self.target.borrow_mut().1 = true;
+        draw_func();
+        self.target.borrow_mut().1 = false;
+
+        // postprocess draw result
         postprocessor.process(self);
 
         // restore previous target and draw postprocessor result
-        *self.target.borrow_mut() = previous_target;
-        postprocessor.draw(self, *layer.blendmode().deref_mut());
+        self.target.borrow_mut().0 = previous_target;
+        postprocessor.draw(self, blendmode);
         self
     }
 
@@ -129,7 +137,7 @@ impl<'a> Renderer {
 
         // draw up to container.size
         let ib_slice = context.index_buffer.slice(0..6).unwrap();
-        self.target.borrow().draw(&context.vertex_buffer_single, &ib_slice, &program::texture(program), &glium_uniforms, &draw_parameters);
+        self.target.borrow().0.draw(&context.vertex_buffer_single, &ib_slice, &program::texture(program), &glium_uniforms, &draw_parameters);
 
         self
     }
@@ -184,7 +192,7 @@ impl<'a> Renderer {
 
         // draw up to container.size
         let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
-        self.target.borrow().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(program), &glium_uniforms, &draw_parameters);
+        self.target.borrow().0.draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(program), &glium_uniforms, &draw_parameters);
     }
 }
 

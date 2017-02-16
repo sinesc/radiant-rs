@@ -10,9 +10,8 @@ pub struct Bloom {
 impl Postprocessor for Bloom {
 
     /// Returns the target where the postprocessor expects the unprocessed input.
-    fn target(self: &mut Self) -> (&Texture, BlendMode) {
-        self.targets[0][0].clear(Color::black());
-        (&self.targets[0][0], blendmodes::ALPHA)
+    fn target(self: &mut Self) -> &Texture {
+        &self.targets[0][0]
     }
 
     /// Process received data.
@@ -72,6 +71,7 @@ impl Bloom {
             ] ]
         };
 
+        &result.targets[0][0].clear(Color::black());
         result.combine_program.set_uniform("sample0", &result.targets[0][0]);
         result.combine_program.set_uniform("sample1", &result.targets[0][1]);
         result.combine_program.set_uniform("sample2", &result.targets[0][2]);

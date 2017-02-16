@@ -91,13 +91,12 @@ pub trait AsRenderTarget {
 /// target so that this method is only required to draw the postprocessing result
 /// to the current target.
 pub trait Postprocessor {
-    /// Returns a texture and blendmode. The renderer will draw to this texture
-    /// using the returned blendmode.
-    fn target(self: &mut Self) -> (&Texture, BlendMode);
-    /// Processes input data. Simple postprocessors may not need to implement this.
+    /// Expected to return a texture to draw to.
+    fn target(self: &mut Self) -> &Texture;
+    /// Expected to processes input data. Simple postprocessors may not need to implement this.
     #[allow(unused_variables)]
     fn process(self: &mut Self, renderer: &Renderer) { }
-    /// Draws final result to current target. Expected to use given blendmode.
+    /// Expected to draw final result to current target using given blendmode.
     fn draw(self: &mut Self, renderer: &Renderer, blendmode: BlendMode);
 }
 
