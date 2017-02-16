@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{display, rendercontext, RenderContext, RenderTarget, RenderTargetType, Color, Uniform, AsUniform};
+use core::{display, rendercontext, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
 use glium;
 use glium::Surface;
 
@@ -91,18 +91,14 @@ pub fn handle(texture: &Texture) -> &glium::texture::Texture2d {
     texture.handle.deref()
 }
 
-pub fn rc_handle(texture: &Texture) -> Rc<glium::texture::Texture2d> {
-    texture.handle.clone()
-}
-
 /// Returns texture filters.
 pub fn filters(texture: &Texture) -> (TextureFilter, TextureFilter, TextureWrap) {
     (texture.minify, texture.magnify, texture.wrap)
 }
 
-impl RenderTarget for Texture {
-    fn get_target(self: &Self) -> RenderTargetType {
-        RenderTargetType::Texture(self.handle.clone())
+impl AsRenderTarget for Texture {
+    fn as_render_target(self: &Self) -> RenderTarget {
+        RenderTarget::Texture(self.clone())
     }
 }
 

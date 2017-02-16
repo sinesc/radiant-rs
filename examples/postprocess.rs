@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, utils};
+use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, blendmodes, utils};
 
 #[path="res/bloom.rs"]
 mod bloom;
@@ -18,7 +18,9 @@ pub fn main() {
     // A bunch of layers. The lightmap layers use component 1 (the "lightmap") of the sprite.
     let color_layer = Layer::new((640., 480.), 0);
     let lightmap_layer = Layer::new((640., 480.), 1);
+    lightmap_layer.set_blendmode(blendmodes::LIGHTEN);
     let unprocessed_lightmap_layer = Layer::new((640., 480.), 1);
+    unprocessed_lightmap_layer.set_blendmode(blendmodes::LIGHTEN);
 
     // A simple mainloop helper (just an optional utility function).
     utils::renderloop(|state| {
@@ -30,14 +32,14 @@ pub fn main() {
 
         // Draw top row of sprites: unprocessed components.
         let frame_id = (state.elapsed_f32 * 1.0) as u32;
-        sprite.draw(&color_layer, frame_id, (120., 120.), Color::green());
-        sprite.draw(&unprocessed_lightmap_layer, frame_id, (520., 120.), Color::white());
-        sprite.draw(&color_layer, frame_id, (320., 120.), Color::green());
+        sprite.draw(&color_layer, frame_id, (120., 120.), Color::white());
         sprite.draw(&unprocessed_lightmap_layer, frame_id, (320., 120.), Color::white());
+        sprite.draw(&color_layer, frame_id, (520., 120.), Color::white());
+        sprite.draw(&unprocessed_lightmap_layer, frame_id, (520., 120.), Color::white());
 
         // Draw bottom sprite: this one uses lightmap_layer, which will be postprocessed below.
         let frame_id = (state.elapsed_f32 * 30.0) as u32;
-        sprite.draw(&color_layer, frame_id, (320., 320.), Color::green());
+        sprite.draw(&color_layer, frame_id, (320., 320.), Color::white());
         sprite.draw(&lightmap_layer, frame_id, (320., 320.), Color::white());
 
         // Clear frame, draw unprocesses layers and postprocessed lightmap layer.

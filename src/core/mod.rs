@@ -31,52 +31,55 @@ pub use self::uniform::{Uniform, AsUniform, UniformList, GliumUniform};
 use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
 use glium::vertex::MultiVerticesSource;
-use glium::{self, Surface, DrawParameters, DrawError};
+use glium::{self, Surface, DrawParameters};
 use image;
 use prelude::*;
 
 /// An enum of render target type instances.
 #[derive(Clone)]
-pub enum RenderTargetType {
+pub enum RenderTarget {
+    None,
     Display(Display),
-    Texture(Rc<glium::texture::Texture2d>),
+    Texture(Texture),
 }
 
-impl RenderTargetType {
+impl RenderTarget {
     /// Draws to the target.
-    fn draw<'b, 'v, V, I, U>(self: &Self, vb: V, ib: I, program: &glium::Program, uniforms: &U, draw_parameters: &DrawParameters) -> result::Result<(), DrawError>
+    fn draw<'b, 'v, V, I, U>(self: &Self, vb: V, ib: I, program: &glium::Program, uniforms: &U, draw_parameters: &DrawParameters)
         where I: Into<IndicesSource<'b>>, U: Uniforms, V: MultiVerticesSource<'v> {
 
         match *self {
-            RenderTargetType::Display(ref display) => {
-                display::draw(display, vb, ib, program, uniforms, draw_parameters)
-            },
-            RenderTargetType::Texture(ref texture) => {
-                texture.as_surface().draw(vb, ib, program, uniforms, draw_parameters)
+            RenderTarget::Display(ref display) => {
+                display::draw(display, vb, ib, program, uniforms, draw_parameters).unwrap()
             }
+            RenderTarget::Texture(ref texture) => {
+                texture::handle(texture).as_surface().draw(vb, ib, program, uniforms, draw_parameters).unwrap()
+            }
+            RenderTarget::None => { }
         }
     }
     /// Clears the target.
     fn clear(self: &Self, color: Color) {
         match *self {
-            RenderTargetType::Display(ref display) => {
+            RenderTarget::Display(ref display) => {
                 display::clear(display, color);
             },
-            RenderTargetType::Texture(ref texture) => {
+            RenderTarget::Texture(ref texture) => {
                 let Color(r, g, b, a) = color;
-                texture.as_surface().clear_color(r, g, b, a);
+                texture::handle(texture).as_surface().clear_color(r, g, b, a);
             }
+            RenderTarget::None => { }
         }
     }
 }
 
 /// A target for rendering.
-pub trait RenderTarget {
-    /// Returns RenderTargetType enum containing a texture or a frame.
-    fn get_target(self: &Self) -> RenderTargetType;
+pub trait AsRenderTarget {
+    /// Returns RenderTarget enum containing a texture or a frame.
+    fn as_render_target(self: &Self) -> RenderTarget;
 }
 
-/// A custom postprocessor.
+/// A custom postprocessor. Note: API is likely to change!
 ///
 /// Postprocessing happens in three steps:
 ///
@@ -88,12 +91,14 @@ pub trait RenderTarget {
 /// target so that this method is only required to draw the postprocessing result
 /// to the current target.
 pub trait Postprocessor {
-    /// Returns a texture. This texture will contain the input data during `process()`.
-    fn target(self: &mut Self) -> &Texture;
-    /// Processes input data.
-    fn process(self: &mut Self, renderer: &Renderer);
-    /// Draws final result to current target.
-    fn draw(self: &mut Self, renderer: &Renderer);
+    /// Returns a texture and blendmode. The renderer will draw to this texture
+    /// using the returned blendmode.
+    fn target(self: &mut Self) -> (&Texture, BlendMode);
+    /// Processes input data. Simple postprocessors may not need to implement this.
+    #[allow(unused_variables)]
+    fn process(self: &mut Self, renderer: &Renderer) { }
+    /// Draws final result to current target. Expected to use given blendmode.
+    fn draw(self: &mut Self, renderer: &Renderer, blendmode: BlendMode);
 }
 
 /// Radiant errors.
@@ -126,5 +131,5 @@ impl From<image::ImageError> for Error {
     }
 }
 
-/// Input/output result.
+/// Radiant result.
 pub type Result<T> = result::Result<T, Error>;

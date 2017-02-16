@@ -4,8 +4,7 @@ use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton};
 use prelude::*;
 use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
-use core::Color;
-use core::{RenderTarget, RenderTargetType};
+use core::{AsRenderTarget, RenderTarget, Color};
 use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
 use glium::vertex::MultiVerticesSource;
@@ -305,9 +304,8 @@ pub fn clear(display: &Display, color: Color) {
     }
 }
 
-impl RenderTarget for Display {
-    /// Returns an enum over different target types.
-    fn get_target(self: &Self) -> RenderTargetType {
-        RenderTargetType::Display(self.clone())
+impl AsRenderTarget for Display {
+    fn as_render_target(self: &Self) -> RenderTarget {
+        RenderTarget::Display(self.clone())
     }
 }

@@ -1,4 +1,4 @@
-use radiant_rs::{Postprocessor, RenderContext, Renderer, Color, Texture, Program, blendmodes};
+use radiant_rs::{Postprocessor, RenderContext, Renderer, Color, Texture, Program, BlendMode, blendmodes};
 
 pub struct Bloom {
     targets         : [[Texture; 5]; 2],
@@ -10,9 +10,9 @@ pub struct Bloom {
 impl Postprocessor for Bloom {
 
     /// Returns the target where the postprocessor expects the unprocessed input.
-    fn target(self: &mut Self) -> &Texture {
+    fn target(self: &mut Self) -> (&Texture, BlendMode) {
         self.targets[0][0].clear(Color::black());
-        &self.targets[0][0]
+        (&self.targets[0][0], blendmodes::ALPHA)
     }
 
     /// Process received data.
@@ -40,8 +40,8 @@ impl Postprocessor for Bloom {
     }
 
     /// Draw processed input. The renderer has already set the correct target.
-    fn draw(self: &mut Self, renderer: &Renderer) {
-        renderer.draw_rect((0., 0.), self.dimensions, blendmodes::LIGHTEN, Some(&self.combine_program), None);
+    fn draw(self: &mut Self, renderer: &Renderer, blendmode: BlendMode) {
+        renderer.draw_rect((0., 0.), self.dimensions, blendmode, Some(&self.combine_program), None);
     }
 }
 
