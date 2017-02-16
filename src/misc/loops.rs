@@ -1,14 +1,22 @@
 use std::time::{Instant, Duration};
 use std::thread;
 
+/// Passed to `renderloop()` and `mainloop()` callbacks.
 #[derive(Copy, Clone)]
 pub struct LoopState {
+    /// Time between frames in as Duration.
     pub delta       : Duration,
+    /// Time between frames in seconds.
     pub delta_f32   : f32,
+    /// Time since loop was started as Duration.
     pub elapsed     : Duration,
+    /// Time since loop was started in seconds.
     pub elapsed_f32 : f32,
+    /// Current frame id.
     pub frame_id    : u64,
+    /// Current framerate.
     pub fps         : u32,
+    /// Current state id for `mainloop()`'s `state_callback`.
     pub state_id    : u32,
 }
 

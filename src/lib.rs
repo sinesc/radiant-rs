@@ -53,8 +53,10 @@ row:
 Radiant supports the use of custom fragment shaders. When you create a program, a tiny wrapper is injected into the source to
 make it compatible with the different internal shader programs used by the library. Instead of `texture()` you would then use `sheet()` to
 retrieve data from the current texture, etc. (This is required as the texture might come from a sampler or sampler array.)
+It is possible to add custom uniforms, including textures, to your shader. The postprocessing example uses a shader that takes
+5 samplers and combines them.
 
-Available inputs:
+Available default inputs:
 
 - `uniform mat4 u_view` The view matrix if applicable, otherwise the identity.
 - `uniform mat4 u_model` The model matrix if applicable, otherwise the identity.

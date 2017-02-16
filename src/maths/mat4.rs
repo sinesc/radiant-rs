@@ -5,7 +5,7 @@ use core::{Uniform, AsUniform};
 
 /// A 4x4 matrix.
 #[derive(Copy, Clone)]
-pub struct Mat4<T: Debug + Float + NumCast = f32> ([ [ T; 4 ]; 4 ]);
+pub struct Mat4<T: Debug + Float + NumCast = f32> (pub [ [ T; 4 ]; 4 ]);
 
 impl<T> Mat4<T> where T: Debug + Float + NumCast {
 

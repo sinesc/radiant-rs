@@ -4,7 +4,7 @@ mod periodic;
 
 use prelude::*;
 
-pub use self::loops::{renderloop, mainloop};
+pub use self::loops::{renderloop, mainloop, LoopState};
 pub use self::rng::Rng;
 pub use self::periodic::Periodic;
 
