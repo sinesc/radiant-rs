@@ -258,10 +258,9 @@ fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width:
     for c in text.nfc() {
         if c.is_control() {
             match c {
-                '\r' => {
+                '\n' => {
                     caret = rusttype::point(0.0, caret.y + advance_height);
-                }
-                '\n' => {},
+                },
                 _ => {}
             }
             continue;
