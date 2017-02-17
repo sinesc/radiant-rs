@@ -12,8 +12,9 @@ mod monitor;
 mod texture;
 mod program;
 mod uniform;
+mod postprocessor;
 
-pub use self::blendmode::{blendmodes, BlendMode};
+pub use self::blendmode::{BlendMode, blendmodes};
 pub use self::input::{Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator};
 pub use self::display::{Display, DisplayInfo};
 pub use self::sprite::Sprite;
@@ -27,6 +28,7 @@ pub use self::monitor::Monitor;
 pub use self::texture::{Texture, TextureFilter, TextureWrap};
 pub use self::program::Program;
 pub use self::uniform::{Uniform, AsUniform, UniformList, GliumUniform};
+pub use self::postprocessor::{Postprocessor, postprocessors};
 
 use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
@@ -34,6 +36,12 @@ use glium::vertex::MultiVerticesSource;
 use glium::{self, Surface, DrawParameters};
 use image;
 use prelude::*;
+
+/// A target for rendering.
+pub trait AsRenderTarget {
+    /// Returns RenderTarget enum containing a texture or a frame.
+    fn as_render_target(self: &Self) -> RenderTarget;
+}
 
 /// An enum of render target type instances.
 #[derive(Clone)]
@@ -71,33 +79,6 @@ impl RenderTarget {
             RenderTarget::None => { }
         }
     }
-}
-
-/// A target for rendering.
-pub trait AsRenderTarget {
-    /// Returns RenderTarget enum containing a texture or a frame.
-    fn as_render_target(self: &Self) -> RenderTarget;
-}
-
-/// A custom postprocessor. Note: API is likely to change!
-///
-/// Postprocessing happens in three steps:
-///
-/// - first, `target()` is invoked and expected to return the input texture target (from
-/// where the postprocessor intends to read input data).
-/// - `process()` is invoked and expected to perform the neccessary processing
-/// **excluding** the final draw operation.
-/// - `draw()` is invoked. At this point the renderer has already restored the drawing
-/// target so that this method is only required to draw the postprocessing result
-/// to the current target.
-pub trait Postprocessor {
-    /// Expected to return a texture to draw to.
-    fn target(self: &mut Self) -> &Texture;
-    /// Expected to processes input data. Simple postprocessors may not need to implement this.
-    #[allow(unused_variables)]
-    fn process(self: &mut Self, renderer: &Renderer) { }
-    /// Expected to draw final result to current target using given blendmode.
-    fn draw(self: &mut Self, renderer: &Renderer, blendmode: BlendMode);
 }
 
 /// Radiant errors.

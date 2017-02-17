@@ -1,9 +1,10 @@
 pub use core::{
-    blendmodes, BlendMode,
+    BlendMode, blendmodes,
     Display, DisplayInfo, Monitor,
     Renderer, RenderContext, RenderTarget,
     Layer, Sprite, Font, FontInfo, Texture, TextureFilter, TextureWrap, Color,
-    Program, Uniform, AsUniform, Postprocessor,
+    Program, Uniform, AsUniform,
+    Postprocessor, postprocessors,
     Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator,
     Result, Error
 };
