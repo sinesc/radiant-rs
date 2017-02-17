@@ -1,5 +1,5 @@
 # radiant-rs
-Very easy to use, thread-safe Rust sprite rendering engine.
+Thread-safe Rust sprite rendering engine with an easy to use API and custom shader support.
 
 This is work-in-progress. The API is incomplete and will likely still change somewhat. Have a look if you like, but don't depend on it :)
 

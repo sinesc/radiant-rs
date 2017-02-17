@@ -1,8 +1,8 @@
 [package]
 name = "radiant-rs"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
-description = "Easy to use, thread-safe sprite rendering engine"
+description = "Thread-safe Rust sprite rendering engine with an easy to use API and custom shader support"
 documentation = "https://sinesc.github.io/doc/radiant_rs/"
 repository = "https://github.com/sinesc/radiant-rs.git"
 license = "MIT"
@@ -19,7 +19,6 @@ font-loader = "0.1.0"
 enum_primitive = "0.1.0"
 avec = "0.1.0"
 palette = "0.2.1"
-#avec = { path = "../avec/" }
 
 [lib]
 name = "radiant_rs"
@@ -31,21 +30,38 @@ name = "demos"
 path = "src/main.rs"
 
 [[example]]
-name = "blobs"
-path = "examples/blobs.rs"
+name = "01_empty"
+path = "examples/01_empty.rs"
 
 [[example]]
-name = "threads"
-path = "examples/threads.rs"
+name = "02_sprites"
+path = "examples/02_sprites.rs"
 
 [[example]]
-name = "minimalistic"
-path = "examples/minimalistic.rs"
+name = "03_text"
+path = "examples/03_text.rs"
 
 [[example]]
-name = "scene"
-path = "examples/scene.rs"
+name = "04_postprocessor"
+path = "examples/04_postprocessor.rs"
 
 [[example]]
-name = "postprocess"
-path = "examples/postprocess.rs"
+name = "05_matrix"
+path = "examples/05_matrix.rs"
+
+[[example]]
+name = "06_threads"
+path = "examples/06_threads.rs"
+
+[[example]]
+name = "99_scene"
+path = "examples/99_scene.rs"
+
+
+[[example]]
+name = "demo_blobs"
+path = "examples/demo_blobs.rs"
+
+[[example]]
+name = "demo_bloom"
+path = "examples/demo_bloom.rs"

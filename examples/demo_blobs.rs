@@ -2,12 +2,9 @@ extern crate radiant_rs;
 use radiant_rs::{DisplayInfo, Display, Renderer, Input, InputId, Layer, Sprite, Font, FontInfo, Color, blendmodes, utils};
 
 pub fn main() {
-
-    // create a window, a renderer and some basic input handler for the window
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display).unwrap();
     let input = Input::new(&display);
-    let context = renderer.context();
 
     // create three layers, change one to use the "lighten" blend mode
     let text_layer = Layer::new((640., 480.), 0);
@@ -16,12 +13,12 @@ pub fn main() {
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     // create a sprite and some fonts
-    let sprite = Sprite::from_file(&context, r"examples/res/sparkles_64x64x1.png").unwrap();
-    let font = Font::from_info(&context, FontInfo { family: "Arial".to_string(), size: 12.0, ..FontInfo::default() } );
+    let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
+    let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 12.0, ..FontInfo::default() } );
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 
     // write text to layer only once and reuse every frame
-    big_red_font.write(&text_layer, "examples/blobs.rs", (355., 330.));
+    big_red_font.write(&text_layer, "blobs.rs", (355., 330.));
     font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.));
 
     // clone a couple of layer matrices to play around with
@@ -59,7 +56,6 @@ pub fn main() {
         renderer.draw_layer(&fps_layer);
 
         display.swap_frame();
-
         !display.poll_events().was_closed() && !input.down(InputId::Escape)
     });
 }
