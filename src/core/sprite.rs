@@ -125,6 +125,11 @@ impl<'a> Sprite {
     fn texture_id(self: &Self, frame_id: u32) -> u32 {
         self.texture_id + (frame_id % self.num_frames)
     }
+
+    /// Returns the sprite wrapped in an std::Arc
+    pub fn arc(self: Self) -> Arc<Self> {
+        Arc::new(self)
+    }
 }
 
 /// Creates a sprite from given descriptor.

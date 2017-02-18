@@ -189,6 +189,10 @@ impl Font {
         self
     }
 
+    /// Returns the font wrapped in an std::Arc
+    pub fn arc(self: Self) -> Arc<Self> {
+        Arc::new(self)
+    }
 }
 
 /// creates a new cache texture for the renderer.

@@ -134,6 +134,11 @@ impl Layer {
         self.vertex_data.len() / 4
     }
 
+    /// Returns the layer wrapped in an std::Arc
+    pub fn arc(self: Self) -> Arc<Self> {
+        Arc::new(self)
+    }
+
     /// Creates a new layer
     fn create<T>(dimensions: T, channel_id: u32, program: Option<Program>) -> Self where Vec2<f32>: From<T> {
         let dimensions = Vec2::from(dimensions);
