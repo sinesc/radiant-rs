@@ -24,5 +24,6 @@ pub trait Postprocessor {
 mod basic;
 
 pub mod postprocessors {
+    //! A set of predefined postprocessors for use with `Renderer::postprocess()`.
     pub use super::basic::Basic;
 }
