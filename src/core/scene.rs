@@ -6,18 +6,22 @@ use BlendMode;
 
 /// An operation-id returned from Scene::op.
 #[derive(Copy, Clone)]
+#[deprecated(note="Removed for being out of scope of this library")]
 pub struct OpId(u16, u16);
 
 /// A layer-id returned from layer registration or creation methods.
 #[derive(Copy, Clone)]
+#[deprecated(note="Removed for being out of scope of this library")]
 pub struct LayerId(u16, u16);
 
 /// A sprite-id returned from sprite registration or creation methods.
 #[derive(Copy, Clone)]
+#[deprecated(note="Removed for being out of scope of this library")]
 pub struct SpriteId(u16, u16);
 
 /// A font-id returned from font registration or creation methods.
 #[derive(Copy, Clone)]
+#[deprecated(note="Removed for being out of scope of this library")]
 pub struct FontId(u16, u16);
 
 /// A scene-operation.
@@ -26,6 +30,8 @@ pub struct FontId(u16, u16);
 /// Transformation-, rotation- and scaling-operations take a delta-factor which determines how the operation is affected by frame delta.
 /// A value of 1.0 will scale the relevant parts of the operation by frame-delta, a value of 0.0 will not apply any modifications to the operation.
 #[derive(Copy, Clone)]
+#[deprecated(note="Removed for being out of scope of this library")]
+#[allow(deprecated)]
 pub enum Op {
     /// No op
     None,
@@ -59,6 +65,8 @@ pub enum Op {
     ScaleModelMatrix(LayerId, f32, Vec2<f32>),
 }
 
+#[deprecated(note="Removed for being out of scope of this library")]
+#[allow(deprecated)]
 impl Default for Op {
     fn default() -> Op {
         Op::None
@@ -68,6 +76,8 @@ impl Default for Op {
 static SCENE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
 /// A container for layers, sprites and fonts intended to simplify usage.
+#[deprecated(note="Removed for being out of scope of this library")]
+#[allow(deprecated)]
 pub struct Scene {
     operations      : AVec<Op>,
     layers          : AVec<Layer>,
@@ -77,6 +87,8 @@ pub struct Scene {
     scene_id        : u16,
 }
 
+#[deprecated(note="Removed for being out of scope of this library")]
+#[allow(deprecated)]
 impl Scene {
     /// Create a new scene instance.
     pub fn new(context: &RenderContext) -> Self {
@@ -168,6 +180,7 @@ impl Scene {
 
 /// Draw entire scene. As this function is required to be called from the thread that created this
 /// instance, it's not available in the implementation. Instead use renderer::draw_scene().
+#[allow(deprecated)]
 pub fn draw(this: &Scene, renderer: &Renderer, per_frame_multiplier: f32) {
     let operations_guard = this.operations.get();
     let operations = operations_guard.deref();

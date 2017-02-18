@@ -15,6 +15,8 @@ pub mod utils {
     pub use misc::{renderloop, mainloop, LoopState, lerp, approach, min, max, Rng, Periodic};
 }
 
+#[deprecated(note="Removed for being out of scope of this library")]
+#[allow(deprecated)]
 pub mod scene {
     //! Optional scene abstraction.
     //!

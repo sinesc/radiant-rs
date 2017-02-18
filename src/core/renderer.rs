@@ -66,7 +66,9 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws given scene to the current target..
+    /// Draws given scene to the current target.
+    #[deprecated(note="Removed for being out of scope of this library")]
+    #[allow(deprecated)]
     pub fn draw_scene(self: &Self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
         scene::draw(scene, self, per_frame_multiplier);
         self
