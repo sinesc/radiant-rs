@@ -39,3 +39,19 @@ vec4 sheet(in vec2 texture_coords) {
         return texture(_rd_tex5, vec3(texture_coords, float(rd_v_texture_id)));
     }
 }
+
+vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset) {
+    if (rd_v_bucket_id == 0u) {
+        return textureOffset(_rd_tex, texture_coords, offset).rrrr;
+    } else if (rd_v_bucket_id == 1u) {
+        return textureOffset(_rd_tex1, vec3(texture_coords, float(rd_v_texture_id)), offset);
+    } else if (rd_v_bucket_id == 2u) {
+        return textureOffset(_rd_tex2, vec3(texture_coords, float(rd_v_texture_id)), offset);
+    } else if (rd_v_bucket_id == 3u) {
+        return textureOffset(_rd_tex3, vec3(texture_coords, float(rd_v_texture_id)), offset);
+    } else if (rd_v_bucket_id == 4u) {
+        return textureOffset(_rd_tex4, vec3(texture_coords, float(rd_v_texture_id)), offset);
+    } else /*if (rd_v_bucket_id == 5u)*/ {
+        return textureOffset(_rd_tex5, vec3(texture_coords, float(rd_v_texture_id)), offset);
+    }
+}
