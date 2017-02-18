@@ -13,12 +13,12 @@ use super::{Texture, Renderer, BlendMode};
 /// to the current target.
 pub trait Postprocessor {
     /// Expected to return a texture to draw to.
-    fn target(self: &mut Self) -> &Texture;
+    fn target(self: &Self) -> &Texture;
     /// Expected to processes input data. Simple postprocessors may not need to implement this.
     #[allow(unused_variables)]
-    fn process(self: &mut Self, renderer: &Renderer) { }
+    fn process(self: &Self, renderer: &Renderer) { }
     /// Expected to draw final result to current target using given blendmode.
-    fn draw(self: &mut Self, renderer: &Renderer, blendmode: BlendMode);
+    fn draw(self: &Self, renderer: &Renderer, blendmode: BlendMode);
 }
 
 mod basic;

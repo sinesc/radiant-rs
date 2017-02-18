@@ -8,10 +8,10 @@ pub struct Basic {
 }
 
 impl Postprocessor for Basic {
-    fn target(self: &mut Self) -> &Texture {
+    fn target(self: &Self) -> &Texture {
         &self.source
     }
-    fn draw(self: &mut Self, renderer: &Renderer, blendmode: BlendMode) {
+    fn draw(self: &Self, renderer: &Renderer, blendmode: BlendMode) {
         // Simply draws the given source data to the current target using our custom shader program.
         renderer.draw_rect((0., 0.), self.dimensions, blendmode, Some(&self.program), None);
     }

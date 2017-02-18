@@ -81,7 +81,7 @@ impl<'a> Renderer {
     }
 
     /// Reroutes draws issued within draw_func through the given postprocessor.
-    pub fn postprocess<P, F>(self: &Self, blendmode: BlendMode, postprocessor: &mut P, mut draw_func: F) -> &Self where F: FnMut(), P: Postprocessor {
+    pub fn postprocess<P, F>(self: &Self, blendmode: BlendMode, postprocessor: &P, mut draw_func: F) -> &Self where F: FnMut(), P: Postprocessor {
 
         // backup previous target and set temporary target
         let previous_target = {
