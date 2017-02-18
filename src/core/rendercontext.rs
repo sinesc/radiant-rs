@@ -154,10 +154,10 @@ impl RenderContextData {
     fn create_vertex_buffer_single(display: &glium::Display) -> glium::VertexBuffer<Vertex> {
         glium::VertexBuffer::new(display,
             &[
-                Vertex { position: [-0.5, -0.5], texture_uv: [ 0.0, 0.0 ] },
-                Vertex { position: [-0.5,  0.5], texture_uv: [ 0.0, 1.0 ] },
-                Vertex { position: [ 0.5, -0.5], texture_uv: [ 1.0, 0.0 ] },
-                Vertex { position: [ 0.5,  0.5], texture_uv: [ 1.0, 1.0 ] },
+                Vertex { position: [ 0.0,  0.0 ], texture_uv: [ 0.0, 1.0 ] },
+                Vertex { position: [ 1.0,  0.0 ], texture_uv: [ 1.0, 1.0 ] },
+                Vertex { position: [ 0.0,  1.0 ], texture_uv: [ 0.0, 0.0 ] },
+                Vertex { position: [ 1.0,  1.0 ], texture_uv: [ 1.0, 0.0 ] },
             ]
         ).unwrap()
     }

@@ -1,6 +1,7 @@
 #version 140
 
 uniform mat4 u_view;
+uniform mat4 u_model;
 uniform vec4 _rd_color;
 uniform vec2 _rd_offset;
 uniform vec2 _rd_dimensions;
@@ -13,25 +14,11 @@ out vec2 v_tex_coords;
 
 void main() {
 
-    int id = gl_VertexID;
-    vec2 v_pos;
-    vec2 f_pos;
+    vec2 v_pos = _rd_offset + vec2( vec4(position * _rd_dimensions, 0.0, 1.0) * u_model );
 
-    if (id == 0) {
-        v_pos = _rd_offset;
-        f_pos = vec2(0.0, 1.0);
-    } else if (id == 1) {
-        v_pos = vec2(_rd_offset.x, _rd_offset.y + _rd_dimensions.y);
-        f_pos = vec2(0.0, 0.0);
-    } else if (id == 2) {
-        v_pos = vec2(_rd_offset.x + _rd_dimensions.x, _rd_offset.y);
-        f_pos = vec2(1.0, 1.0);
-    } else if (id == 3) {
-        v_pos = vec2(_rd_offset.x + _rd_dimensions.x, _rd_offset.y + _rd_dimensions.y);
-        f_pos = vec2(1.0, 0.0);
-    }
+    vec4 final = u_view * vec4(v_pos, 0.0, 1.0);
 
-    gl_Position = u_view * vec4(v_pos, 0.0, 1.0);
-    v_tex_coords = f_pos;
+    gl_Position = final;
+    v_tex_coords = texture_uv;
     v_color = _rd_color;
 }
