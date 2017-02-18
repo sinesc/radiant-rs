@@ -88,8 +88,6 @@ impl Bloom {
             ] ]
         };
 
-        result.targets[0][0].clear(Color::transparent());
-
         {
             let mut combine = result.combine_program.lock().unwrap();
             let combine = combine.deref_mut();

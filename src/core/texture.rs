@@ -63,6 +63,8 @@ impl Texture {
             height
         ).unwrap();
 
+        texture.as_surface().clear_color(0.0, 0.0, 0.0, 0.0);
+
         Texture {
             handle  : Rc::new(texture),
             minify  : minify,
