@@ -63,5 +63,5 @@ name = "demo_blobs"
 path = "examples/demo_blobs.rs"
 
 [[example]]
-name = "demo_bloom"
-path = "examples/demo_bloom.rs"
+name = "demo_glare"
+path = "examples/demo_glare.rs"
