@@ -1,8 +1,7 @@
-#version 330
+#version 140
 
 in vec2 v_tex_coords;
 uniform bool horizontal;
-uniform vec2 max_uv;
 const float weight[3] = float[] (0.3125, 0.375, 0.3125);
 out vec4 f_color;
 
