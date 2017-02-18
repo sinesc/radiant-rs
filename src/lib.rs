@@ -2,7 +2,7 @@
        html_favicon_url = "https://sinesc.github.io/images/radiant-favicon.png")]
 
 /*!
-Thread-safe Rust sprite rendering engine with an easy to use API and custom shader support.
+Thread-safe Rust sprite rendering engine with a friendly API and custom shader support.
 
 To view the reference, scroll down or collapse this block using the [-] to the left.
 

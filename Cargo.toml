@@ -2,7 +2,7 @@
 name = "radiant-rs"
 version = "0.3.0"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
-description = "Thread-safe Rust sprite rendering engine with an easy to use API and custom shader support"
+description = "Thread-safe Rust sprite rendering engine with a friendly API and custom shader support"
 documentation = "https://sinesc.github.io/doc/radiant_rs/"
 repository = "https://github.com/sinesc/radiant-rs.git"
 license = "MIT"
