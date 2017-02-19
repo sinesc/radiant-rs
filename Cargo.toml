@@ -54,6 +54,10 @@ name = "06_postprocessor"
 path = "examples/06_postprocessor.rs"
 
 [[example]]
+name = "07_combined"
+path = "examples/07_combined.rs"
+
+[[example]]
 name = "98_threads"
 path = "examples/98_threads.rs"
 

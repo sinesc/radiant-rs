@@ -1,8 +1,8 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, Program, utils, blendmodes, postprocessors};
+use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, Program, Texture, utils, blendmodes, postprocessors};
 
 pub fn main() {
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Basic postprocessor example".to_string(), ..DisplayInfo::default() });
+    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Draw to texture and postprocess example".to_string(), ..DisplayInfo::default() });
     let renderer = Renderer::new(&display).unwrap();
     let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.), 0);
@@ -13,26 +13,28 @@ pub fn main() {
     sprite.draw(&layer, 0, (190., 100.), Color::green());
     sprite.draw(&layer, 0, (160., 155.), Color::blue());
 
-    // Load a shader progam.
     let program = Program::from_string(&renderer.context(), include_str!("../res/ripple.fs")).unwrap();
-
-    // Use a default Basic postprocessor with the given program. It simply draws the input
-    // using the given program, but there is a trait to implement custom postprocessors.
     let mut ripple_effect = postprocessors::Basic::new(&renderer.context(), program, "tex");
+
+    let surface = Texture::new(&renderer.context(), 640, 480);
+    let darken = Texture::new(&renderer.context(), 1, 1);
+    darken.clear(Color(0., 0., 0., 0.07));
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
         layer.model_matrix().rotate(frame.delta_f32 * 1.1);
 
-        // Drawing within Renderer::postprocess() applies the given postprocessor to the result
-        // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN.
-        // Notice the similarity to rendering to textures.
-        renderer.postprocess(&mut ripple_effect, &blendmodes::LIGHTEN, || {
-            renderer.clear(Color::black());
-            renderer.draw_layer(&layer);
+        // This example simply combines rendering to textures with postprocessing.
+        renderer.render_to(&surface, || {
+            renderer.postprocess(&mut ripple_effect, &blendmodes::LIGHTEN, || {
+                renderer.clear(Color::black());
+                renderer.draw_layer(&layer);
+            });
+            renderer.draw_rect((0., 0.), (640., 480.), blendmodes::ALPHA, None, Some(&darken));
         });
-        
+
+        renderer.draw_rect((0., 0.), (640., 480.), blendmodes::COPY, None, Some(&surface));
         renderer.draw_layer(&layer);
 
         display.swap_frame();
