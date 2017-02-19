@@ -24,7 +24,7 @@ pub fn main() {
     let mut model = *spark_layer.model_matrix().clone().scale(4.0);
 
     // This is a userdefined postprocessor to add a bloom effect
-    let mut bloom_effect = bloom::Bloom::new(&renderer.context(), 2, blendmodes::COPY);
+    let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, blendmodes::COPY);
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());
@@ -47,7 +47,7 @@ pub fn main() {
         // Draw the spark layer three times with different matrices and alpha levels
         if (frame.elapsed_f32 / 1.5) as u32 % 2 == 0 {
             // Postprocesses version
-            renderer.postprocess(&mut bloom_effect, &blendmodes::COPY, || {
+            renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
                 renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1));
                 renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2));
                 renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3));

@@ -14,7 +14,7 @@ pub fn main() {
     sprite.draw(&layer, 0, (160., 155.), Color::blue());
 
     let program = Program::from_string(&renderer.context(), include_str!("../res/ripple.fs")).unwrap();
-    let mut ripple_effect = postprocessors::Basic::new(&renderer.context(), program, "tex");
+    let ripple_effect = postprocessors::Basic::new(&renderer.context(), program, "tex");
 
     let surface = Texture::new(&renderer.context(), 640, 480);
     let darken = Texture::new(&renderer.context(), 1, 1);
@@ -27,7 +27,7 @@ pub fn main() {
 
         // This example simply combines rendering to textures with postprocessing.
         renderer.render_to(&surface, || {
-            renderer.postprocess(&mut ripple_effect, &blendmodes::LIGHTEN, || {
+            renderer.postprocess(&ripple_effect, &blendmodes::LIGHTEN, || {
                 renderer.clear(Color::black());
                 renderer.draw_layer(&layer);
             });

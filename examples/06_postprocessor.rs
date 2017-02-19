@@ -18,7 +18,7 @@ pub fn main() {
 
     // Use a default Basic postprocessor with the given program. It simply draws the input
     // using the given program, but there is a trait to implement custom postprocessors.
-    let mut ripple_effect = postprocessors::Basic::new(&renderer.context(), program, "tex");
+    let ripple_effect = postprocessors::Basic::new(&renderer.context(), program, "tex");
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());
@@ -28,11 +28,11 @@ pub fn main() {
         // Drawing within Renderer::postprocess() applies the given postprocessor to the result
         // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN.
         // Notice the similarity to rendering to textures.
-        renderer.postprocess(&mut ripple_effect, &blendmodes::LIGHTEN, || {
+        renderer.postprocess(&ripple_effect, &blendmodes::LIGHTEN, || {
             renderer.clear(Color::black());
             renderer.draw_layer(&layer);
         });
-        
+
         renderer.draw_layer(&layer);
 
         display.swap_frame();
