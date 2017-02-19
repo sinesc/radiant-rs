@@ -24,8 +24,9 @@ impl Postprocessor for Bloom {
 
         // Copy to progressively smaller textures
         for i in 1..self.targets[0].len() {
-            renderer.set_target(&self.targets[0][i]);
-            renderer.draw_rect((0., 0.), self.dimensions, blendmodes::COPY, None, Some(&self.targets[0][i-1]));
+            renderer.render_to(&self.targets[0][i], || {
+                renderer.draw_rect((0., 0.), self.dimensions, blendmodes::COPY, None, Some(&self.targets[0][i-1]));
+            });
         }
 
         let mut blur = self.blur_program.lock().unwrap();
@@ -36,15 +37,17 @@ impl Postprocessor for Bloom {
             // Apply horizontal blur
             blur.set_uniform("horizontal", &true);
             for i in 0..self.targets[1].len() {
-                renderer.set_target(&self.targets[1][i]);
-                renderer.draw_rect((0., 0.), self.dimensions, self.iter_blend, Some(&blur), Some(&self.targets[0][i]));
+                renderer.render_to(&self.targets[1][i], || {
+                    renderer.draw_rect((0., 0.), self.dimensions, self.iter_blend, Some(&blur), Some(&self.targets[0][i]));
+                });
             }
 
             // Apply vertical blur
             blur.set_uniform("horizontal", &false);
             for i in 0..self.targets[0].len() {
-                renderer.set_target(&self.targets[0][i]);
-                renderer.draw_rect((0., 0.), self.dimensions, self.iter_blend, Some(&blur), Some(&self.targets[1][i]));
+                renderer.render_to(&self.targets[0][i], || {
+                    renderer.draw_rect((0., 0.), self.dimensions, self.iter_blend, Some(&blur), Some(&self.targets[1][i]));
+                });
             }
         }
     }
