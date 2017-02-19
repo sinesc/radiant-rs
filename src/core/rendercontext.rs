@@ -62,7 +62,7 @@ impl RenderContextTextureArray {
     pub fn new(display: &Display) -> Self {
         RenderContextTextureArray {
             dirty   : false,
-            data    : Rc::new(texture_array(display, Vec::new())),
+            data    : Rc::new(texture_array(display, &Vec::new())),
             raw     : Vec::new(),
         }
     }
@@ -110,7 +110,7 @@ impl RenderContextData {
         for ref mut array in self.tex_array.iter_mut() {
             if array.dirty {
                 array.dirty = false;
-                array.data = Rc::new(texture_array(&self.display, array.raw.clone()));
+                array.data = Rc::new(texture_array(&self.display, &array.raw));
             }
         }
     }
@@ -172,7 +172,7 @@ pub struct Vertex {
 implement_vertex!(Vertex, position, texture_uv);
 
 /// Generates glium texture array from given vector of textures
-fn texture_array(display: &Display, raw: Vec<RenderContextTexture>) -> glium::texture::Texture2dArray {
+fn texture_array(display: &Display, raw: &Vec<RenderContextTexture>) -> glium::texture::Texture2dArray {
     use glium::texture;
     if raw.len() > 0 {
         texture::Texture2dArray::with_format(display::handle(display), raw.clone(), texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
