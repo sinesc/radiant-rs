@@ -27,6 +27,7 @@ pub fn main() {
         display.clear_frame(Color::black());
 
         // Drawing within Renderer::postprocess() applies the given postprocessor to the result
+        // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN
         renderer.postprocess(&mut ripple_effect, &blendmodes::LIGHTEN, || {
             renderer.draw_layer(&layer);
         });

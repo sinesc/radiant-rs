@@ -17,9 +17,9 @@ pub struct Vertex {
 }
 implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv);
 
-/// A non-blocking, thread-safe drawing target.
+/// A non-blocking, thread-safe drawing surface.
 ///
-/// In radiant_rs, all drawing happens on layers. Layers provide transformation capabilities in
+/// In radiant_rs, sprite drawing happens on layers. Layers provide transformation capabilities in
 /// the form of model- and view-matrices and the layer's blendmode and color determine
 /// how sprites are rendered onto the display. Layers can be rendered multiple times using
 /// different matrices, blendmodes or colors without having to redraw their contents first.
