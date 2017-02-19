@@ -8,12 +8,13 @@ pub struct Basic {
 }
 
 impl Postprocessor for Basic {
+    type T = BlendMode;
     fn target(self: &Self) -> &Texture {
         &self.source
     }
-    fn draw(self: &Self, renderer: &Renderer, blendmode: BlendMode) {
+    fn draw(self: &Self, renderer: &Renderer, blendmode: &Self::T) {
         // Simply draws the given source data to the current target using our custom shader program.
-        renderer.draw_rect((0., 0.), self.dimensions, blendmode, Some(&self.program), None);
+        renderer.draw_rect((0., 0.), self.dimensions, *blendmode, Some(&self.program), None);
     }
 }
 

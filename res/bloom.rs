@@ -11,6 +11,7 @@ pub struct Bloom {
 }
 
 impl Postprocessor for Bloom {
+    type T = BlendMode;
 
     /// Returns the target where the postprocessor expects the unprocessed input.
     fn target(self: &Self) -> &Texture {
@@ -18,7 +19,7 @@ impl Postprocessor for Bloom {
     }
 
     /// Process received data.
-    fn process(self: &Self, renderer: &Renderer) {
+    fn process(self: &Self, renderer: &Renderer, _: &Self::T) {
         use std::ops::DerefMut;
 
         // Copy to progressively smaller textures
@@ -49,11 +50,11 @@ impl Postprocessor for Bloom {
     }
 
     /// Draw processed input. The renderer has already set the correct target.
-    fn draw(self: &Self, renderer: &Renderer, blendmode: BlendMode) {
+    fn draw(self: &Self, renderer: &Renderer, blendmode: &Self::T) {
         use std::ops::DerefMut;
         let mut combine = self.combine_program.lock().unwrap();
         let combine = combine.deref_mut();
-        renderer.draw_rect((0., 0.), self.dimensions, blendmode, Some(combine), None);
+        renderer.draw_rect((0., 0.), self.dimensions, *blendmode, Some(combine), None);
         self.targets[0][0].clear(Color::transparent());
     }
 }

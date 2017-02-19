@@ -49,7 +49,7 @@ pub fn main() {
         renderer.draw_layer(&unprocessed_lightmap_layer);
 
         // Draw light_map layer to postprocessor.
-        renderer.postprocess(blendmodes::LIGHTEN, &mut bloom_effect, || {
+        renderer.postprocess(&mut bloom_effect, &blendmodes::LIGHTEN, || {
             renderer.clear(Color(0., 0., 0., 0.05));
             renderer.draw_layer(&lightmap_layer);
         });
