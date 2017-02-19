@@ -4,10 +4,15 @@ use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, Program, 
 pub fn main() {
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Basic postprocessor example".to_string(), ..DisplayInfo::default() });
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"res/ball_v2_32x32x18.jpg").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.), 0);
 
-    // Load a shader progam
+    sprite.draw(&layer, 0, (160., 120.), Color::white());
+    sprite.draw(&layer, 0, (130., 100.), Color::red());
+    sprite.draw(&layer, 0, (190., 100.), Color::green());
+    sprite.draw(&layer, 0, (160., 155.), Color::blue());
+
+    // Load a shader progam.
     let program = Program::from_string(&renderer.context(), include_str!("../res/ripple.fs")).unwrap();
 
     // Use a default Basic postprocessor with the given program. It simply draws the input
@@ -15,19 +20,13 @@ pub fn main() {
     let mut ripple_effect = postprocessors::Basic::new(&renderer.context(), program, "tex");
 
     utils::renderloop(|frame| {
-        layer.clear();
-
-        // Draw the four sprites from sprite.rs again
-        let frame_id = (frame.elapsed_f32 * 30.0) as u32;
-        sprite.draw(&layer, frame_id, (160., 120.), Color::white());
-        sprite.draw(&layer, frame_id, (130., 100.), Color::red());
-        sprite.draw(&layer, frame_id, (190., 100.), Color::green());
-        sprite.draw(&layer, frame_id, (160., 155.), Color::blue());
-
         display.clear_frame(Color::black());
+        layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
+        layer.model_matrix().rotate(frame.delta_f32 * 1.1);
 
         // Drawing within Renderer::postprocess() applies the given postprocessor to the result
-        // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN
+        // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN.
+        // Notice the similarity to rendering to textures.
         renderer.postprocess(&mut ripple_effect, &blendmodes::LIGHTEN, || {
             renderer.draw_layer(&layer);
         });

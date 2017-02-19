@@ -42,16 +42,20 @@ name = "03_text"
 path = "examples/03_text.rs"
 
 [[example]]
-name = "04_postprocessor"
-path = "examples/04_postprocessor.rs"
+name = "04_matrix"
+path = "examples/04_matrix.rs"
 
 [[example]]
-name = "05_matrix"
-path = "examples/05_matrix.rs"
+name = "05_to_texture"
+path = "examples/05_to_texture.rs"
 
 [[example]]
-name = "06_threads"
-path = "examples/06_threads.rs"
+name = "06_postprocessor"
+path = "examples/06_postprocessor.rs"
+
+[[example]]
+name = "98_threads"
+path = "examples/98_threads.rs"
 
 [[example]]
 name = "99_scene"
