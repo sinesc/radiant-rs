@@ -25,7 +25,66 @@ pub enum TextureWrap {
     MirrorClamp,
 }
 
-/// A texture.
+/// Internal texture format. Note that the shader will always see a floating
+/// point representation. U[n]* will have their minimum value mapped to 0.0 and
+/// their maximum to 1.0.
+///
+/// The following formats are recommended:
+///
+/// - `F16F16F16F16` for multipass, color gradiant heavy effects
+/// - `F11F11F10` if no alpha channel is required
+/// - `U8U8U8U8` for single pass drawing
+#[derive(Copy, Clone, PartialEq)]
+pub enum TextureFormat {
+    U8,
+    U16,
+    U8U8,
+    U16U16,
+    U10U10U10,
+    U12U12U12,
+    U16U16U16,
+    U2U2U2U2,
+    U4U4U4U4,
+    U5U5U5U1,
+    U8U8U8U8,
+    U10U10U10U2,
+    U12U12U12U12,
+    U16U16U16U16,
+    I16I16I16I16,
+    F16,
+    F16F16,
+    F16F16F16F16,
+    F32,
+    F32F32,
+    F32F32F32F32,
+    F11F11F10,
+}
+
+/// A struct used to describe a [`Texture`](struct.Texture.html) to be created via [`Texture::from_info()`](struct.Texture.html#method.from_info).
+#[derive(Clone)]
+pub struct TextureInfo {
+    pub minify  : TextureFilter,
+    pub magnify : TextureFilter,
+    pub wrap    : TextureWrap,
+    pub format  : TextureFormat,
+    pub width   : u32,
+    pub height  : u32,
+}
+
+impl Default for TextureInfo {
+    fn default() -> TextureInfo {
+        TextureInfo {
+            minify  : TextureFilter::Linear,
+            magnify : TextureFilter::Linear,
+            wrap    : TextureWrap::Clamp,
+            format  : TextureFormat::F16F16F16F16,
+            width   : 1,
+            height  : 1,
+        }
+   }
+}
+
+/// A texture to draw or draw to.
 ///
 /// Textures serve as drawing targets for userdefined [`Postprocessors`](trait.Postprocessor.html)
 /// or custom [`Programs`](struct.Program.html). A texture can also be drawn with
@@ -39,37 +98,44 @@ pub struct Texture {
 }
 
 impl Texture {
-    /// Creates a new texture with given dimensions.
+    /// Creates a new texture with given dimensions. The texture will use linear interpolation
+    /// for magnification or minification and internally use the `F16F16F16F16` format.
     pub fn new(context: &RenderContext, width: u32, height: u32) -> Self {
-        Self::wrapped_and_filtered(context, width, height, TextureFilter::Linear, TextureFilter::Linear, TextureWrap::Clamp)
+        Self::from_info(context, TextureInfo {
+            width: width,
+            height: height,
+            ..TextureInfo::default()
+        })
     }
-    /// Creates a new texture with given dimensions and wrapping function.
-    pub fn wrapped(context: &RenderContext, width: u32, height: u32, wrap: TextureWrap) -> Self {
-        Self::wrapped_and_filtered(context, width, height, TextureFilter::Linear, TextureFilter::Linear, wrap)
-    }
-    /// Creates a new texture with given dimensions and filters.
+    /// Creates a new texture with given dimensions and filters. It will internally use the `F16F16F16F16` format.
     pub fn filtered(context: &RenderContext, width: u32, height: u32, minify: TextureFilter, magnify: TextureFilter) -> Self {
-        Self::wrapped_and_filtered(context, width, height, minify, magnify, TextureWrap::Clamp)
+        Self::from_info(context, TextureInfo {
+            width: width,
+            height: height,
+            minify: minify,
+            magnify: magnify,
+            ..TextureInfo::default()
+        })
     }
-    /// Creates a new texture with given dimensions and filters and wrapping function.
-    pub fn wrapped_and_filtered(context: &RenderContext, width: u32, height: u32, minify: TextureFilter, magnify: TextureFilter, wrap: TextureWrap) -> Self {
+    /// Creates a new texture from given TextureInfo struct.
+    pub fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
         let context = rendercontext::lock(context);
 
         let texture = glium::texture::Texture2d::empty_with_format(
             display::handle(&context.display),
-            glium::texture::UncompressedFloatFormat::F32F32F32F32,
+            convert_format(info.format),
             glium::texture::MipmapsOption::NoMipmap,
-            width,
-            height
+            info.width,
+            info.height,
         ).unwrap();
 
         texture.as_surface().clear_color(0.0, 0.0, 0.0, 0.0);
 
         Texture {
             handle  : Rc::new(texture),
-            minify  : minify,
-            magnify : magnify,
-            wrap    : wrap,
+            minify  : info.minify,
+            magnify : info.magnify,
+            wrap    : info.wrap,
         }
     }
     /// Clones texture with new filters and wrapping function. Both source and clone reference the same texture data.
@@ -107,5 +173,35 @@ impl AsRenderTarget for Texture {
 impl AsUniform for Texture {
     fn as_uniform(self: &Self) -> Uniform {
         Uniform::Texture(self.clone())
+    }
+}
+
+/// Converts TextureFormat to the supported gliums texture formats
+fn convert_format(format: TextureFormat) -> glium::texture::UncompressedFloatFormat {
+    use glium::texture::UncompressedFloatFormat as GF;
+    use self::TextureFormat as RF;
+    match format {
+        RF::U8 => GF::U8,
+        RF::U16 => GF::U16,
+        RF::U8U8 => GF::U8U8,
+        RF::U16U16 => GF::U16U16,
+        RF::U10U10U10 => GF::U10U10U10,
+        RF::U12U12U12 => GF::U12U12U12,
+        RF::U16U16U16 => GF::U16U16U16,
+        RF::U2U2U2U2 => GF::U2U2U2U2,
+        RF::U4U4U4U4 => GF::U4U4U4U4,
+        RF::U5U5U5U1 => GF::U5U5U5U1,
+        RF::U8U8U8U8 => GF::U8U8U8U8,
+        RF::U10U10U10U2 => GF::U10U10U10U2,
+        RF::U12U12U12U12 => GF::U12U12U12U12,
+        RF::U16U16U16U16 => GF::U16U16U16U16,
+        RF::I16I16I16I16 => GF::I16I16I16I16,
+        RF::F16 => GF::F16,
+        RF::F16F16 => GF::F16F16,
+        RF::F16F16F16F16 => GF::F16F16F16F16,
+        RF::F32 => GF::F32,
+        RF::F32F32 => GF::F32F32,
+        RF::F32F32F32F32 => GF::F32F32F32F32,
+        RF::F11F11F10 => GF::F11F11F10,
     }
 }
