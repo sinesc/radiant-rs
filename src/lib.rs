@@ -75,11 +75,11 @@ row:
 
 # Custom shaders
 
-Radiant supports the use of custom fragment shaders. When you create a program, a tiny wrapper is injected into the source to
-make it compatible with the different internal shader programs used by the library. Instead of `texture()` you would then use `sheet()` to
-retrieve data from the current texture, etc. (This is required as the texture might come from a sampler or sampler array.)
-It is possible to add custom uniforms, including textures, to your shader. The postprocessing example uses a shader that takes
-5 samplers and combines them.
+Radiant supports the use of custom fragment shaders. These are normal glsl shaders. To simplify access to the default
+sampler (which might be a sampler2DArray or sampler2D, depending on what is drawn) a tiny wrapper is injected into the
+source. The wrapper provides `sheet*()` functions similar to glsl's `texture*()` functions.
+This only applies to the default sampler. It is possible to add custom uniforms, including samplers, to your shader
+that would be sampled using the `texture*()` functions.
 
 Available default inputs:
 
@@ -88,11 +88,13 @@ Available default inputs:
 - `in vec2 v_tex_coords` Texture coordinates.
 - `in vec4 v_color` Color multiplier. For layers this is sprite color * layer color.
 
-Wrappers:
+To access the default sampler, the following wrappers are provided:
 
-- `vec2 sheetSize()` Retrieves the dimensions of the texture. Replaces `textureSize()`.
-- `vec4 sheet(in vec2 texture_coords)` Retrieves texels from the texture. Replaces `texture()`
-- !todo add other texture*.
+- `vec2 sheetSize()` Retrieves the dimensions of the texture.
+- `vec4 sheet(in vec2 texture_coords)` Retrieves texels from the texture.
+- `vec4 sheetComponent(in vec2 texture_coords, in uint component)` Samples a specific sprite
+component instead of the default one set by render_layer().
+- `vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset)` Like textureOffset().
 
 Example: (This is the default shader used by radiant.)
 
