@@ -8,7 +8,7 @@ pub fn main() {
     let renderer = Renderer::new(&display).unwrap();
 
     // Create a layer and a font, wrapped in Arcs
-    let layer = Arc::new(Layer::new((640., 480.), 0));
+    let layer = Arc::new(Layer::new((640., 480.)));
     layer.set_blendmode(blendmodes::LIGHTEN);
     let font = Arc::new(Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
 
@@ -45,7 +45,7 @@ pub fn main() {
         draw_start.wait();
 
         display.clear_frame(Color::black());
-        renderer.draw_layer(&layer);
+        renderer.draw_layer(&layer, 0);
         layer.clear();
 
         // Layer is drawn, let threads render their next frame.

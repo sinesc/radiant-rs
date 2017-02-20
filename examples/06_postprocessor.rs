@@ -5,7 +5,7 @@ pub fn main() {
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Basic postprocessor example".to_string(), ..DisplayInfo::default() });
     let renderer = Renderer::new(&display).unwrap();
     let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
-    let layer = Layer::new((320., 240.), 0);
+    let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
     sprite.draw(&layer, 0, (160., 120.), Color::white());
@@ -30,10 +30,10 @@ pub fn main() {
         // Notice the similarity to rendering to textures.
         renderer.postprocess(&ripple_effect, &blendmodes::LIGHTEN, || {
             renderer.clear(Color::transparent());
-            renderer.draw_layer(&layer);
+            renderer.draw_layer(&layer, 0);
         });
 
-        renderer.draw_layer(&layer);
+        renderer.draw_layer(&layer, 0);
 
         display.swap_frame();
         !display.poll_events().was_closed()

@@ -5,7 +5,7 @@ pub fn main() {
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Matrix example".to_string(), ..DisplayInfo::default() });
     let renderer = Renderer::new(&display).unwrap();
     let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
-    let layer = Layer::new((320., 240.), 0);
+    let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
     // Draw the usual sprites to the layer just once. We won't ever clear it, so we don't have to continuously redraw them.
@@ -29,7 +29,7 @@ pub fn main() {
         if presentation_id == 1 || presentation_id == 0 {
             layer.set_color(Color::red());
             layer.view_matrix().rotate_at((160., 120.), frame.elapsed_f32);
-            renderer.draw_layer(&layer);
+            renderer.draw_layer(&layer, 0);
             layer.set_view_matrix(original_view_matrix);
         }
 
@@ -38,7 +38,7 @@ pub fn main() {
         if presentation_id == 2 || presentation_id == 0 {
             layer.set_color(Color::green());
             layer.model_matrix().rotate_at((0., 0.), frame.elapsed_f32);
-            renderer.draw_layer(&layer);
+            renderer.draw_layer(&layer, 0);
             layer.set_model_matrix(original_model_matrix);
         }
 
@@ -47,7 +47,7 @@ pub fn main() {
             layer.set_color(Color::blue());
             layer.view_matrix().rotate_at((160., 120.), frame.elapsed_f32);
             layer.model_matrix().rotate_at((0., 0.), frame.elapsed_f32);
-            renderer.draw_layer(&layer);
+            renderer.draw_layer(&layer, 0);
             layer.set_view_matrix(original_view_matrix);
             layer.set_model_matrix(original_model_matrix);
         }

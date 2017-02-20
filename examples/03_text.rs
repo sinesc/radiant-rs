@@ -4,7 +4,7 @@ use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Font, FontInfo, Color, u
 pub fn main() {
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Text example".to_string(), ..DisplayInfo::default() });
     let renderer = Renderer::new(&display).unwrap();
-    let layer = Layer::new((640., 480.), 0);
+    let layer = Layer::new((640., 480.));
 
     // A few fonts (here from a known systemfont, could also come from a file)
     let small = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 16.0, ..FontInfo::default() } );
@@ -24,7 +24,7 @@ pub fn main() {
 
         // The usual clear, draw, swap, repeat.
         display.clear_frame(Color::black());
-        renderer.draw_layer(&layer);
+        renderer.draw_layer(&layer, 0);
         display.swap_frame();
         !display.poll_events().was_closed()
     });

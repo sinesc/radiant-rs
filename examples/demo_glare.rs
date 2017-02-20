@@ -15,9 +15,9 @@ pub fn main() {
     let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, blendmodes::ALPHA);
 
     // A bunch of layers. The lightmap layers use component 1 (the "lightmap") of the sprite.
-    let color_layer = Layer::new((640., 480.), 0);
-    let lightmap_layer = Layer::new((640., 480.), 1);
-    let unprocessed_lightmap_layer = Layer::new((640., 480.), 1);
+    let color_layer = Layer::new((640., 480.));
+    let lightmap_layer = Layer::new((640., 480.));
+    let unprocessed_lightmap_layer = Layer::new((640., 480.));
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());
@@ -44,14 +44,14 @@ pub fn main() {
         font.write(&color_layer, "Component 0 wihout postprocessing\nComponent 1 with postprocessing", (220., 440.));
 
         // Draw unprocessed layers.
-        renderer.draw_layer(&color_layer);
-        renderer.draw_layer(&lightmap_layer);
-        renderer.draw_layer(&unprocessed_lightmap_layer);
+        renderer.draw_layer(&color_layer, 0);
+        renderer.draw_layer(&lightmap_layer, 1);
+        renderer.draw_layer(&unprocessed_lightmap_layer, 1);
 
         // Draw light_map layer to postprocessor.
         renderer.postprocess(&bloom_effect, &blendmodes::LIGHTEN, || {
             renderer.clear(Color(0., 0., 0., 0.05));
-            renderer.draw_layer(&lightmap_layer);
+            renderer.draw_layer(&lightmap_layer, 1);
         });
 
         display.swap_frame();

@@ -11,11 +11,13 @@ in vec4 color;
 in uint bucket_id;
 in uint texture_id;
 in vec2 texture_uv;
+in uint components;
 
 out vec4 v_color;
 out vec2 v_tex_coords;
-flat out uint rd_v_texture_id;
-flat out uint rd_v_bucket_id;
+flat out uint _rd_v_texture_id;
+flat out uint _rd_v_bucket_id;
+flat out uint _rd_v_components;
 
 void main() {
 
@@ -37,6 +39,7 @@ void main() {
 
     v_color = color * _rd_color;
     v_tex_coords = texture_uv;
-    rd_v_texture_id = texture_id;
-    rd_v_bucket_id = bucket_id;
+    _rd_v_texture_id = texture_id;
+    _rd_v_bucket_id = bucket_id;
+    _rd_v_components = components;
 }

@@ -244,7 +244,7 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
             let dist_y = pos.1 * scale_y;
             let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;
             let offset_y = y + dist_x * sin_rot + dist_y * cos_rot;
-            layer::add_rect(layer, bucket_id, 0, uv, Point2(offset_x, offset_y), anchor, dim, color, rotation, scale);
+            layer::add_rect(layer, bucket_id, 0, 1, uv, Point2(offset_x, offset_y), anchor, dim, color, rotation, scale);
         }
     }
 }

@@ -59,7 +59,7 @@ impl<'a> Renderer {
     }
 
     /// Draws given layer.
-    pub fn draw_layer(self: &Self, layer: &Layer) -> &Self {
+    pub fn draw_layer(self: &Self, layer: &Layer, component: u32) -> &Self {
         use glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
 
         // open context
@@ -86,6 +86,7 @@ impl<'a> Renderer {
         glium_uniforms
             .add("u_view", GliumUniform::Mat4(layer.view_matrix().deref().into()))
             .add("u_model", GliumUniform::Mat4(layer.model_matrix().deref().into()))
+            .add("_rd_comp", GliumUniform::UnsignedInt(component))
             .add("_rd_color", GliumUniform::Vec4(layer.color().deref().into()))
             .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
             .add("_rd_tex1", GliumUniform::Texture2dArray(context.tex_array[1].data.deref()))

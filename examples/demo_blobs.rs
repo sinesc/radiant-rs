@@ -9,8 +9,8 @@ pub fn main() {
     let renderer = Renderer::new(&display).unwrap();
     let input = Input::new(&display);
 
-    let text_layer = Layer::new((640., 480.), 0);
-    let spark_layer = Layer::new((640., 480.), 0);
+    let text_layer = Layer::new((640., 480.));
+    let spark_layer = Layer::new((640., 480.));
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
@@ -48,23 +48,23 @@ pub fn main() {
         if (frame.elapsed_f32 / 1.5) as u32 % 2 == 0 {
             // Postprocesses version
             renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
-                renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1));
-                renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2));
-                renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3));
+                renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
+                renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
+                renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
             });
             font.write(&text_layer, "Custom postprocessor: enabled", (240., 450.));
         } else {
             // Unprocessed version
-            renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1));
-            renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2));
-            renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3));
+            renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
+            renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
+            renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
             font.write(&text_layer, "Custom postprocessor: disabled", (240., 450.));
         }
 
         // Draw text
         big_red_font.write(&text_layer, "blobs.rs", (355., 330.));
         font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.));
-        renderer.draw_layer(&text_layer);
+        renderer.draw_layer(&text_layer, 0);
 
         display.swap_frame();
         !display.poll_events().was_closed() && !input.down(InputId::Escape)

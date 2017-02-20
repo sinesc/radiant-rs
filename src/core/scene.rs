@@ -154,7 +154,7 @@ impl Scene {
 
     /// Create and register a layer to the scene.
     pub fn register_layer<T>(self: &Self, dimensions: T, channel: u32) -> LayerId where Vec2<f32>: From<T> {
-        let insert_position = self.layers.push(Layer::new(dimensions, channel));
+        let insert_position = self.layers.push(Layer::new(dimensions));
         LayerId(insert_position as u16, self.scene_id)
     }
 
@@ -198,7 +198,7 @@ pub fn draw(this: &Scene, renderer: &Renderer, per_frame_multiplier: f32) {
             }
             Op::Draw(layer_id) => {
                 assert_eq!(this.scene_id, layer_id.1);
-                renderer.draw_layer(&layers[layer_id.0 as usize]);
+                renderer.draw_layer(&layers[layer_id.0 as usize], 0);
             }
             Op::Clear(layer_id) => {
                 assert_eq!(this.scene_id, layer_id.1);

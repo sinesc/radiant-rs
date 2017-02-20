@@ -14,8 +14,9 @@ pub struct Vertex {
     bucket_id   : u32,
     texture_id  : u32,
     texture_uv  : [f32; 2],
+    components  : u32,
 }
-implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv);
+implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
 
 /// A non-blocking, thread-safe drawing surface.
 ///
@@ -34,7 +35,6 @@ pub struct Layer {
     vertex_data     : AVec<Vertex>,
     vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
     dirty           : AtomicBool,
-    channel_id      : u32,
     program         : Option<Program>,
 }
 unsafe impl Send for Layer { }
@@ -42,18 +42,14 @@ unsafe impl Sync for Layer { }
 
 impl Layer {
 
-    /// Creates a new layer with given dimensions. The channel determines
-    /// which sprite channel is drawn. All sprites support at least channel 0.
-    /// Nothing will be drawn if the sprite does not contain given channel.
-    pub fn new<T>(dimensions: T, channel_id: u32) -> Self where Vec2<f32>: From<T> {
-        Self::create(dimensions, channel_id, None)
+    /// Creates a new layer with given dimensions.
+    pub fn new<T>(dimensions: T) -> Self where Vec2<f32>: From<T> {
+        Self::create(dimensions, None)
     }
 
-    /// Creates a new layer with given dimensions and fragment program. The channel determines
-    /// which sprite channel is drawn. All sprites support at least channel 0.
-    /// Nothing will be drawn if the sprite does not contain given channel.
-    pub fn new_with_program<T>(dimensions: T, channel_id: u32, program: Program) -> Self where Vec2<f32>: From<T> {
-        Self::create(dimensions, channel_id, Some(program))
+    /// Creates a new layer with given dimensions and fragment program.
+    pub fn with_program<T>(dimensions: T, program: Program) -> Self where Vec2<f32>: From<T> {
+        Self::create(dimensions, Some(program))
     }
 
     /// Sets a global color multiplicator. Setting this to white means that the layer contents
@@ -140,7 +136,7 @@ impl Layer {
     }
 
     /// Creates a new layer
-    fn create<T>(dimensions: T, channel_id: u32, program: Option<Program>) -> Self where Vec2<f32>: From<T> {
+    fn create<T>(dimensions: T, program: Option<Program>) -> Self where Vec2<f32>: From<T> {
         let dimensions = Vec2::from(dimensions);
         Layer {
             view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1)),
@@ -150,7 +146,6 @@ impl Layer {
             vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
             vertex_buffer   : Mutex::new(None),
             dirty           : AtomicBool::new(true),
-            channel_id      : channel_id,
             program         : program,
         }
     }
@@ -161,13 +156,8 @@ pub fn program(layer: &Layer) -> Option<&Program> {
     layer.program.as_ref()
 }
 
-/// Returns the layer's channel id.
-pub fn channel_id(layer: &Layer) -> u32 {
-    layer.channel_id
-}
-
 /// Draws a rectangle on given layer.
-pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Point2) {
+pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Point2) {
 
     layer.dirty.store(true, Ordering::Relaxed);
 
@@ -193,6 +183,7 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: P
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : [(uv.0).0, (uv.0).1],
+        components  : components,
     });
 
     map.set(1, Vertex {
@@ -203,6 +194,7 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: P
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : [(uv.1).0, (uv.0).1],
+        components  : components,
     });
 
     map.set(2, Vertex {
@@ -213,6 +205,7 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: P
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : [(uv.0).0, (uv.1).1],
+        components  : components,
     });
 
     map.set(3, Vertex {
@@ -223,6 +216,7 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, uv: Rect, pos: P
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : [(uv.1).0, (uv.1).1],
+        components  : components,
     });
 }
 

@@ -11,7 +11,7 @@ pub fn main() {
     let sprite = Sprite::from_file(&renderer.context(), r"res/ball_v2_32x32x18.jpg").unwrap();
 
     // A layer where 320x240 units correspond to the full window (which measures 640x480 pixels, so that one unit = two pixel).
-    let layer = Layer::new((320., 240.), 0);
+    let layer = Layer::new((320., 240.));
 
     // Layers have a blendmode setting that defines how their contents will be blended with the background on draw.
     layer.set_blendmode(blendmodes::LIGHTEN);
@@ -30,7 +30,7 @@ pub fn main() {
 
         // draw the layer to the frame after clearing it with solid black.
         display.clear_frame(Color::black());
-        renderer.draw_layer(&layer);
+        renderer.draw_layer(&layer, 0);
 
         display.swap_frame();
         !display.poll_events().was_closed()
