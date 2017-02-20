@@ -1,4 +1,4 @@
-use super::{Texture, Renderer, BlendMode};
+use super::{Texture, Renderer};
 
 /// A custom postprocessor.
 ///
