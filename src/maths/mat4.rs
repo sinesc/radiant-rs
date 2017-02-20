@@ -168,7 +168,7 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
     }
 
     /// Scales at given position.
-    pub fn scale_at<Vector: VecType<T>>(&mut self, position: Vector, scaling: Vector) -> &mut Self {
+    pub fn scale_at<R, S>(&mut self, position: R, scaling: S) -> &mut Self where R: VecType<T>, S: VecType<T> {
         let position = position.as_vec3(T::zero());
         self.translate(position)
             .scale(scaling)
