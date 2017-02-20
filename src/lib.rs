@@ -27,6 +27,31 @@ The examples folder contains multiple small examples. They can be run via `cargo
 9. Make the frame visible via `Display::swap_frame()`.
 10. Consider clearing the layer and goto 6. Or maybe simply change some layer properties and redraw it starting a step 7.
 
+# Draw to texture/postprocess
+
+Postprocessors are custom effects that may be as simple as a single shader program or combine multiple shaders and textures into a single
+output.
+
+The renderer has a method [`Renderer::render_to()`](struct.Renderer.html#method.render_to) that accepts a texture and a closure. Anything
+drawn within the closure will be rendered to the texture.
+
+Likewise, use [`Renderer::postprocess()`](struct.Renderer.html#method.postprocess) to render using a postprocessor.
+
+These methods can be combined/nested as shown here:
+
+```
+renderer.render_to(&surface, || {
+    renderer.postprocess(&effect1, &effect1_arguments, || {
+        renderer.postprocess(&effect2, &effect2_arguments, || {
+            //...
+            renderer.draw_layer(&layer);
+        });
+        //... maybe draw here with only effect 1? ...
+    });
+    //... or here without any postprocessor? ...
+});
+```
+
 # Drawing from multiple threads
 
 1. Wrap fonts, sprites, and layers or scenes in `Arc`s.
