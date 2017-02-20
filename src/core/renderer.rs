@@ -58,7 +58,9 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws given layer.
+    /// Draws given layer. Component refers to the sprite component to draw.
+    /// All sprites support at least component 0. Sprites that do not support
+    /// the given component will not be drawn.
     pub fn draw_layer(self: &Self, layer: &Layer, component: u32) -> &Self {
         use glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
 

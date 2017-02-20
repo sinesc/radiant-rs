@@ -24,7 +24,6 @@ pub struct Sprite {
     texture_id      : u32,
     u_max           : f32,
     v_max           : f32,
-    context         : RenderContext,
 }
 
 /// Sprite parameter layout type. Sprites are arranged either horizontally or
@@ -137,7 +136,6 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
         texture_id  : texture_id,
         u_max       : (frame_width as f32 / texture_size as f32),
         v_max       : (frame_height as f32 / texture_size as f32),
-        context     : context.clone()
     }
 }
 

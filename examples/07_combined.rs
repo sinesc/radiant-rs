@@ -33,6 +33,10 @@ pub fn main() {
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
         layer.model_matrix().rotate(frame.delta_f32 * 1.1);
 
+        // Back up view matrix, then scale it based on elapsed time
+        let prev_view_matrix = layer.view_matrix().clone();
+        layer.view_matrix().scale_at((160., 120.), frame.elapsed_f32.sin() + 1.0 * 2.0);
+
         // This example simply combines rendering to textures with 2 postprocessors.
         renderer.render_to(&surface, || {
             renderer.postprocess(&bloom_effect, &blendmodes::LIGHTEN, || {
@@ -47,6 +51,7 @@ pub fn main() {
 
         renderer.draw_rect((0., 0.), (640., 480.), blendmodes::COPY, None, Some(&surface));
         renderer.draw_layer(&layer, 0);
+        layer.set_view_matrix(prev_view_matrix);
 
         display.swap_frame();
         !display.poll_events().was_closed()
