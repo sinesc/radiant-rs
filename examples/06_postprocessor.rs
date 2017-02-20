@@ -29,7 +29,7 @@ pub fn main() {
         // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN.
         // Notice the similarity to rendering to textures.
         renderer.postprocess(&ripple_effect, &blendmodes::LIGHTEN, || {
-            renderer.clear(Color::black());
+            renderer.clear(Color::transparent());
             renderer.draw_layer(&layer);
         });
 

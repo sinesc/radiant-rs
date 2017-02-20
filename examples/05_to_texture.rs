@@ -16,7 +16,7 @@ pub fn main() {
     // Two textures. We'll draw the sprites to "surface". The "darken" texture only
     // contains black with a low opacity. We'll blend this with surface's contents.
     // Note: there are more optimal solutions to do this (using Program). This is just to make the example pretty.
-    let surface = Texture::new(&renderer.context(), 320, 200);
+    let surface = Texture::new(&renderer.context(), 640, 480);
     let darken = Texture::new(&renderer.context(), 1, 1);
     darken.clear(Color(0., 0., 0., 0.04));
 

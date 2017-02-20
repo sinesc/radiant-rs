@@ -8,6 +8,7 @@ pub struct Bloom {
     dimensions      : (f32, f32),
     iterations      : u32,
     iter_blend      : BlendMode,
+    spread          : u8,
 }
 
 impl Postprocessor for Bloom {
@@ -21,9 +22,12 @@ impl Postprocessor for Bloom {
     /// Process received data.
     fn process(self: &Self, renderer: &Renderer, _: &Self::T) {
         use std::ops::DerefMut;
+        use std::cmp::min;
+
+        let spread = min(self.targets[0].len(), self.spread as usize);
 
         // Copy to progressively smaller textures
-        for i in 1..self.targets[0].len() {
+        for i in 1..spread {
             renderer.render_to(&self.targets[0][i], || {
                 renderer.draw_rect((0., 0.), self.dimensions, blendmodes::COPY, None, Some(&self.targets[0][i-1]));
             });
@@ -36,7 +40,7 @@ impl Postprocessor for Bloom {
 
             // Apply horizontal blur
             blur.set_uniform("horizontal", &true);
-            for i in 0..self.targets[1].len() {
+            for i in 0..spread {
                 renderer.render_to(&self.targets[1][i], || {
                     renderer.draw_rect((0., 0.), self.dimensions, self.iter_blend, Some(&blur), Some(&self.targets[0][i]));
                 });
@@ -44,7 +48,7 @@ impl Postprocessor for Bloom {
 
             // Apply vertical blur
             blur.set_uniform("horizontal", &false);
-            for i in 0..self.targets[0].len() {
+            for i in 0..spread {
                 renderer.render_to(&self.targets[0][i], || {
                     renderer.draw_rect((0., 0.), self.dimensions, self.iter_blend, Some(&blur), Some(&self.targets[1][i]));
                 });
@@ -63,7 +67,7 @@ impl Postprocessor for Bloom {
 }
 
 impl Bloom {
-    pub fn new(context: &RenderContext, iterations: u32, iter_blend: BlendMode) -> Self {
+    pub fn new(context: &RenderContext, iterations: u32, spread: u8, iter_blend: BlendMode) -> Self {
         use std::ops::DerefMut;
 
         let blur_program = Program::from_string(&context, include_str!("blur.fs")).unwrap();
@@ -77,6 +81,7 @@ impl Bloom {
             dimensions      : (width as f32, height as f32),
             iterations      : iterations,
             iter_blend      : iter_blend,
+            spread          : spread,
             targets: [ [
                 Texture::new(&context, width / 2, height / 2),
                 Texture::new(&context, width / 4, height / 4),
