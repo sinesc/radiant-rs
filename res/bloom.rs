@@ -1,4 +1,4 @@
-use radiant_rs::{Postprocessor, RenderContext, Renderer, Color, Texture, TextureFilter, Program, BlendMode, blendmodes};
+use radiant_rs::{Postprocessor, RenderContext, Renderer, Color, Texture, TextureFilter, Program, BlendMode};
 use std::sync::Mutex;
 
 pub struct Bloom {
