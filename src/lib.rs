@@ -126,6 +126,7 @@ extern crate avec;
 extern crate palette;
 
 mod prelude;
+mod backend;
 mod core;
 mod maths;
 mod misc;

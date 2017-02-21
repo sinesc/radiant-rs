@@ -2,11 +2,11 @@ use prelude::*;
 use glium;
 use core::{
     self, texture, layer, scene, rendercontext, blendmode, program, uniform,
-    Display, Layer, Texture, BlendMode, Color, Program, Postprocessor,
+    Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
     GliumUniform,
 };
-use maths::Vec2;
+use maths::{Vec2, Rect};
 
 /// Default fragment shader program
 const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
@@ -58,7 +58,7 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws given layer. Component refers to the sprite component to draw.
+    /// Draws given layer to the current target. Component refers to the sprite component to draw.
     /// All sprites support at least component 0. Sprites that do not support
     /// the given component will not be drawn.
     pub fn draw_layer(self: &Self, layer: &Layer, component: u32) -> &Self {
@@ -110,7 +110,7 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws a rectangle. The optionally specified texture is available via sheet*() in the shader. Note that you can
+    /// Draws a rectangle to the current target. The optionally specified texture is available via sheet*() in the shader. Note that you can
     /// pass custom textures via the optional shader program's uniforms.
     pub fn draw_rect<T, S>(self: &Self, position: T, dimensions: S, blendmode: BlendMode, program: Option<&Program>, texture: Option<&Texture>) -> &Self where Vec2<f32>: From<T> + From<S> {
 
@@ -150,12 +150,14 @@ impl<'a> Renderer {
         self
     }
 
-    /// Draws given scene to the current target.
-    #[deprecated(note="Removed for being out of scope of this library")]
-    #[allow(deprecated)]
-    pub fn draw_scene(self: &Self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
-        scene::draw(scene, self, per_frame_multiplier);
-        self
+    /// Copies a rectangle from the source to the current target.
+    pub fn copy_rect_from<R, S, T>(self: &Self, source: &R, source_rect: S, target_rect: T, filter: TextureFilter) where R: AsRenderTarget, Rect<f32>: From<S> + From<T> {
+        self.current_target().blit_rect(&source.as_render_target(), source_rect.into(), target_rect.into(), filter);
+    }
+
+    /// Copies the entire source, overwriting the entire current target.
+    pub fn copy_from<R>(self: &Self, source: &R, filter: TextureFilter) where R: AsRenderTarget {
+        self.current_target().blit(&source.as_render_target(), filter);
     }
 
     /// Reroutes draws issued within `draw_func()` to given Texture.
@@ -201,6 +203,14 @@ impl<'a> Renderer {
     fn current_target(self: &Self) -> RenderTarget {
         // !todo avoid the cloning?
         self.target.borrow().last().unwrap().clone()
+    }
+
+    /// Draws given scene to the current target.
+    #[deprecated(note="Removed for being out of scope of this library")]
+    #[allow(deprecated)]
+    pub fn draw_scene(self: &Self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
+        scene::draw(scene, self, per_frame_multiplier);
+        self
     }
 }
 

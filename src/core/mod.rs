@@ -29,6 +29,7 @@ pub use self::texture::{Texture, TextureInfo, TextureFilter, TextureWrap, Textur
 pub use self::program::Program;
 pub use self::uniform::{Uniform, AsUniform, UniformList, GliumUniform};
 pub use self::postprocessor::{Postprocessor, postprocessors};
+use backend::glium as backend;
 
 use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
@@ -36,6 +37,7 @@ use glium::vertex::MultiVerticesSource;
 use glium::{self, Surface, DrawParameters};
 use image;
 use prelude::*;
+use maths::Rect;
 
 /// A target for rendering.
 pub trait AsRenderTarget {
@@ -75,6 +77,63 @@ impl RenderTarget {
             RenderTarget::Texture(ref texture) => {
                 let Color(r, g, b, a) = color;
                 texture::handle(texture).as_surface().clear_color(r, g, b, a);
+            }
+            RenderTarget::None => { }
+        }
+    }
+    /// Blits a source rect to a rect on the target.
+    fn blit_rect(self: &Self, source: &RenderTarget, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+        match *self {
+            RenderTarget::Display(ref target_display) => {
+                match *source {
+                    RenderTarget::Display(_) => {
+                        display::copy_rect(&target_display, source_rect, target_rect, filter);
+                    },
+                    RenderTarget::Texture(ref src_texture) => {
+                        display::copy_rect_from_texture(&target_display, src_texture, source_rect, target_rect, filter);
+                    }
+                    RenderTarget::None => { }
+                }
+            },
+            RenderTarget::Texture(ref target_texture) => {
+                match *source {
+                    RenderTarget::Display(ref src_display) => {
+                        display::copy_rect_to_texture(&src_display, target_texture, source_rect, target_rect, filter);
+                    },
+                    RenderTarget::Texture(ref src_texture) => {
+                        let target_height = texture::handle(target_texture).as_surface().get_dimensions().1;
+                        let source_height = texture::handle(src_texture).as_surface().get_dimensions().1;
+                        let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, source_height, target_rect, target_height);
+                        texture::handle(src_texture).as_surface().blit_color(&glium_src_rect, &texture::handle(target_texture).as_surface(), &glium_target_rect, backend::magnify_filter(filter));
+                    }
+                    RenderTarget::None => { }
+                }
+            }
+            RenderTarget::None => { }
+        }
+    }
+    /// Blits to the target.
+    fn blit(self: &Self, source: &RenderTarget, filter: TextureFilter) {
+        match *self {
+            RenderTarget::Display(ref target_display) => {
+                match *source {
+                    RenderTarget::Display(_) => { /* blitting entire frame to entire frame makes no sense */ },
+                    RenderTarget::Texture(ref src_texture) => {
+                        display::copy_from_texture(target_display, src_texture, filter);
+                    }
+                    RenderTarget::None => { }
+                }
+            },
+            RenderTarget::Texture(ref target_texture) => {
+                match *source {
+                    RenderTarget::Display(ref src_display) => {
+                        display::copy_to_texture(src_display, target_texture, filter);
+                    },
+                    RenderTarget::Texture(ref src_texture) => {
+                        texture::handle(src_texture).as_surface().fill(&texture::handle(target_texture).as_surface(), backend::magnify_filter(filter))
+                    }
+                    RenderTarget::None => { }
+                }
             }
             RenderTarget::None => { }
         }

@@ -4,11 +4,13 @@ use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton};
 use prelude::*;
 use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
-use core::{AsRenderTarget, RenderTarget, Color};
+use core::{AsRenderTarget, RenderTarget, Texture, Rect, Color, texture, TextureFilter};
+use backend::glium as backend;
 use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
 use glium::vertex::MultiVerticesSource;
 use glium::{Program, DrawParameters, DrawError};
+
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
 #[derive(Clone)]
@@ -292,6 +294,39 @@ pub fn draw<'b, 'v, V, I, U>(display: &Display, vb: V, ib: I, program: &Program,
     where I: Into<IndicesSource<'b>>, U: Uniforms, V: MultiVerticesSource<'v>
 {
     display.frame.borrow_mut().as_mut().unwrap().draw(vb, ib, program, uniforms, draw_parameters)
+}
+
+/// Copies given texture to given display.
+pub fn copy_from_texture(display: &Display, source: &Texture, filter: TextureFilter) {
+    texture::handle(source).as_surface().fill(display.frame.borrow().as_ref().unwrap(), backend::magnify_filter(filter));
+}
+
+/// Copies given display to given texture.
+pub fn copy_to_texture(display: &Display, target: &Texture, filter: TextureFilter) {
+    display.frame.borrow().as_ref().unwrap().fill(&texture::handle(target).as_surface(), backend::magnify_filter(filter));
+}
+
+/// Copies the source rectangle to the target rectangle on the given display.
+pub fn copy_rect(display: &Display, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+    let height = display.frame.borrow().as_ref().unwrap().get_dimensions().1;
+    let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, height, target_rect, height);
+    display.frame.borrow().as_ref().unwrap().blit_color(&glium_src_rect, display.frame.borrow().as_ref().unwrap(), &glium_target_rect, backend::magnify_filter(filter));
+}
+
+/// Copies the source rectangle from the given texture to the target rectangle on the given display.
+pub fn copy_rect_from_texture(display: &Display, source: &Texture, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+    let target_height = display.frame.borrow().as_ref().unwrap().get_dimensions().1;
+    let source_height = texture::handle(source).as_surface().get_dimensions().1;
+    let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, source_height, target_rect, target_height);
+    texture::handle(source).as_surface().blit_color(&glium_src_rect, display.frame.borrow().as_ref().unwrap(), &glium_target_rect, backend::magnify_filter(filter));
+}
+
+/// Copies the source rectangle from the given display to the target rectangle on the given texture.
+pub fn copy_rect_to_texture(display: &Display, target: &Texture, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+    let source_height = display.frame.borrow().as_ref().unwrap().get_dimensions().1;
+    let target_height = texture::handle(target).as_surface().get_dimensions().1;
+    let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, source_height, target_rect, target_height);
+    display.frame.borrow().as_ref().unwrap().blit_color(&glium_src_rect, &texture::handle(target).as_surface(), &glium_target_rect, backend::magnify_filter(filter));
 }
 
 /// Clears the display with given color without swapping buffers.

@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, Texture, utils, blendmodes};
+use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, Texture, TextureFilter, utils, blendmodes};
 
 pub fn main() {
     let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Drawing to textures example".to_string(), ..DisplayInfo::default() });
@@ -35,12 +35,15 @@ pub fn main() {
         });
 
         if (frame.elapsed_f32 / 1.5) as u32 % 2 == 0 {
-            // Draw surface to the display.
-            renderer.draw_rect((0., 0.), (640., 480.), blendmodes::COPY, None, Some(&surface));
+            // Copies surface to the display.
+            renderer.copy_from(&surface, TextureFilter::Linear);
         } else {
             // Draw the sprites to display.
             renderer.draw_layer(&layer, 0);
         }
+
+        // Draw a small thumbnail of surface
+        renderer.copy_rect_from(&surface, (0., 0., 640., 480.), (512., 384., 128., 96.), TextureFilter::Linear);
 
         display.swap_frame();
         !display.poll_events().was_closed()

@@ -1,4 +1,4 @@
-use radiant_rs::{Postprocessor, RenderContext, Renderer, Color, Texture, Program, BlendMode, blendmodes};
+use radiant_rs::{Postprocessor, RenderContext, Renderer, Color, Texture, TextureFilter, Program, BlendMode, blendmodes};
 use std::sync::Mutex;
 
 pub struct Bloom {
@@ -29,7 +29,7 @@ impl Postprocessor for Bloom {
         // Copy to progressively smaller textures
         for i in 1..spread {
             renderer.render_to(&self.targets[0][i], || {
-                renderer.draw_rect((0., 0.), self.dimensions, blendmodes::COPY, None, Some(&self.targets[0][i-1]));
+                renderer.copy_from(&self.targets[0][i-1], TextureFilter::Linear);
             });
         }
 
