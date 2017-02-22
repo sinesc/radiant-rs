@@ -12,7 +12,7 @@ To view the reference, scroll down or collapse this block using the [-] to the l
 
 The examples folder contains multiple small examples. They can be run via `cargo run --example <example name>`, e.g.
 
-`cargo run --example demo_blobs` to run demo_blobs.rs
+`cargo run --release --example demo_blobs` to run demo_blobs.rs
 
 # Basic rendering
 
