@@ -9,7 +9,7 @@ pub use core::{
     Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator,
     Result, Error
 };
-pub use maths::{Mat4, Vec2, Vec3, Angle, Point2, Point3, Rect, VecType};
+pub use maths::{Mat4, Vec2, Vec3, Angle, Point2, Rect, VecType};
 
 pub mod utils {
     //! Optional utility features. These may eventually be moved into the example code or a separate library.

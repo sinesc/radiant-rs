@@ -22,6 +22,7 @@ impl<T> From<Vec2<T>> for Point2<T> where T: Float + Copy + Clone + Debug {
 pub struct Rect<T: Copy + Clone + Debug = f32>(pub Point2<T>, pub Point2<T>);
 
 impl<T> Rect<T> where T: Copy + Clone + Debug {
+    /// Creates a new rectangle with given dimensions.
     pub fn new(x1: T, y1: T, x2: T, y2: T) -> Self {
         Rect(Point2(x1, y1), Point2(x2, y2))
     }

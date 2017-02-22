@@ -11,15 +11,6 @@ pub use self::vec3::Vec3;
 pub use self::angle::Angle;
 pub use self::rect::{Point2, Rect};
 
-/// A 3-dimensional point.
-pub type Point3<T = f32> = Vec3<T>;
-
-// required due to #26953
-#[allow(non_snake_case)]
-pub fn Point3<T: Debug + Float>(x: T, y: T, z: T) -> Point3<T> {
-    Vec3(x, y, z)
-}
-
 /// Trait for values that can be converted to a vector.
 pub trait VecType<T: Copy + fmt::Debug + Float> {
     /// Returns the given value as a Vec3
