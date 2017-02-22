@@ -7,7 +7,7 @@ out vec4 f_color;
 
 const float PI = 3.1415926538;
 const float intensity = 0.8;
-const float range = 0.06;
+const float range = 0.16;
 
 void main() {
 
