@@ -1,7 +1,8 @@
 #version 140
 
 in vec2 v_tex_coords;
-uniform sampler2D tex;
+in vec4 v_color;
+
 out vec4 f_color;
 
 const float PI = 3.1415926538;
@@ -18,9 +19,9 @@ void main() {
 
     vec2 offset = vec2(radius * sin(angle), radius * cos(angle));
 
-    f_color = texture2D(tex, v_tex_coords + offset) * intensity * 0.05
-                + texture2D(tex, v_tex_coords + offset * 0.8) * intensity * 0.15
-                + texture2D(tex, v_tex_coords + offset * 0.6) * intensity * 0.3
-                + texture2D(tex, v_tex_coords + offset * 0.4) * intensity * 0.5
-                + texture2D(tex, v_tex_coords) * (1.0 - intensity);
+    f_color = v_color * (sheet(v_tex_coords + offset) * intensity * 0.05
+                + sheet(v_tex_coords + offset * 0.8) * intensity * 0.15
+                + sheet(v_tex_coords + offset * 0.6) * intensity * 0.3
+                + sheet(v_tex_coords + offset * 0.4) * intensity * 0.5
+                + sheet(v_tex_coords) * (1.0 - intensity));
 }

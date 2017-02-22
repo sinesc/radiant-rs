@@ -18,7 +18,7 @@ pub fn main() {
 
     // The basic postprocessor previously introduced.
     let program = Program::from_string(&renderer.context(), include_str!("../res/ripple.fs")).unwrap();
-    let ripple_effect = postprocessors::Basic::new(&renderer.context(), program, "tex");
+    let ripple_effect = postprocessors::Basic::new(&renderer.context(), program);
 
     // A custom example bloom effect postprocessor. Here, the arguments define the bloom
     // quality (3 iterations), bloom spread (1) and the blendmode used internally during the iterations.
