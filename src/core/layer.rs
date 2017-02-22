@@ -18,15 +18,19 @@ pub struct Vertex {
 }
 implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
 
-/// A non-blocking, thread-safe drawing surface.
+/// A wait-free, thread-safe drawing surface for text and sprites.
 ///
 /// In radiant_rs, sprite drawing happens on layers. Layers provide transformation capabilities in
 /// the form of model- and view-matrices and the layer's blendmode and color determine
-/// how sprites are rendered onto the display. Layers can be rendered multiple times using
+/// how sprites are rendered to the drawing target. Layers can be rendered multiple times using
 /// different matrices, blendmodes or colors without having to redraw their contents first.
 ///
-/// Multiple threads can draw onto the same layer without blocking. However, manipulating layer
-/// properties may block other threads from manipulating the same property.
+/// For convenience, layers are created with a view-matrix that maps the given dimensions to the
+/// entirety of the drawing target. The layer itself is infinite though, and can be transformed at any
+/// time before rendering.
+///
+/// Drawing to a layer is a wait-free atomic operation that can be safely performed from multiple threads at
+/// the same time. Modifying layer properties like the matrices may cause other threads to wait.
 pub struct Layer {
     view_matrix     : Mutex<Mat4<f32>>,
     model_matrix    : Mutex<Mat4<f32>>,
@@ -42,7 +46,8 @@ unsafe impl Sync for Layer { }
 
 impl Layer {
 
-    /// Creates a new layer with given dimensions.
+    /// Creates a new layer with given dimensions, meaning that is is created with
+    /// a view matrix that maps the given dimensions to the entirety of the drawing target.
     pub fn new<T>(dimensions: T) -> Self where Vec2<f32>: From<T> {
         Self::create(dimensions, None)
     }

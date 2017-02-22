@@ -17,9 +17,6 @@ const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
 /// The renderer itself is not thread-safe. Instead, draw or write onto layers (from any one or
 /// more threads)  and present those layers using the renderer once your threads have concluded
 /// drawing.
-///
-/// Alternatively to directly drawing on layers, [`Scene`](scene/struct.Scene.html) provides a higher
-/// level abstraction.
 #[derive(Clone)]
 pub struct Renderer {
     context         : RenderContext,
@@ -150,12 +147,13 @@ impl Renderer {
         self
     }
 
-    /// Copies a rectangle from the source to the current target.
+    /// Copies a rectangle from the source to the current target. This is a blitting operation that uses integral pixel coordinates (top/left = 0/0).
+    /// Coordinates must be entirely contained within their respective sources. No blending is performed.
     pub fn copy_rect_from<R, S, T>(self: &Self, source: &R, source_rect: S, target_rect: T, filter: TextureFilter) where R: AsRenderTarget, Rect<i32>: From<S> + From<T> {
         self.current_target().blit_rect(&source.as_render_target(), source_rect.into(), target_rect.into(), filter);
     }
 
-    /// Copies the entire source, overwriting the entire current target.
+    /// Copies the entire source, overwriting the entire current target. This is a blitting operation, no blending is performed.
     pub fn copy_from<R>(self: &Self, source: &R, filter: TextureFilter) where R: AsRenderTarget {
         self.current_target().blit(&source.as_render_target(), filter);
     }

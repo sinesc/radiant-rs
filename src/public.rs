@@ -21,6 +21,6 @@ pub mod utils {
 pub mod scene {
     //! Optional scene abstraction.
     //!
-    //! Currently **work in progress** and not particularly useful yet.
+    //! Currently ~~**work in progress**~~ and not particularly useful yet.
     pub use core::{OpId, LayerId, SpriteId, FontId, Op, Scene};
 }
