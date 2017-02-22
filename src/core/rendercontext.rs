@@ -14,8 +14,8 @@ pub const INITIAL_CAPACITY: usize = 512;
 /// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
 #[derive(Clone)]
 pub struct RenderContext (Arc<Mutex<RenderContextData>>);
-unsafe impl<'a> Send for RenderContext { }
-unsafe impl<'a> Sync for RenderContext { }
+unsafe impl Send for RenderContext { }
+unsafe impl Sync for RenderContext { }
 
 impl RenderContext {
     /// Retrieves the display associated with this rendercontext.
@@ -27,7 +27,7 @@ impl RenderContext {
 pub fn new(data: RenderContextData) -> RenderContext {
     RenderContext(Arc::new(Mutex::new(data)))
 }
-pub fn lock<'b>(context: &'b RenderContext) -> MutexGuard<'b, RenderContextData> {
+pub fn lock<'a>(context: &'a RenderContext) -> MutexGuard<'a, RenderContextData> {
     context.0.lock().unwrap()
 }
 

@@ -28,7 +28,7 @@ pub struct Renderer {
     empty_texture   : Texture,
 }
 
-impl<'a> Renderer {
+impl Renderer {
 
     /// Returns a new renderer instance.
     pub fn new(display: &Display) -> core::Result<Self> {
