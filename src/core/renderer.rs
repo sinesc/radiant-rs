@@ -151,7 +151,7 @@ impl<'a> Renderer {
     }
 
     /// Copies a rectangle from the source to the current target.
-    pub fn copy_rect_from<R, S, T>(self: &Self, source: &R, source_rect: S, target_rect: T, filter: TextureFilter) where R: AsRenderTarget, Rect<f32>: From<S> + From<T> {
+    pub fn copy_rect_from<R, S, T>(self: &Self, source: &R, source_rect: S, target_rect: T, filter: TextureFilter) where R: AsRenderTarget, Rect<i32>: From<S> + From<T> {
         self.current_target().blit_rect(&source.as_render_target(), source_rect.into(), target_rect.into(), filter);
     }
 

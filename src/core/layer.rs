@@ -157,7 +157,7 @@ pub fn program(layer: &Layer) -> Option<&Program> {
 }
 
 /// Draws a rectangle on given layer.
-pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Point2) {
+pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
 
     layer.dirty.store(true, Ordering::Relaxed);
 

@@ -117,7 +117,7 @@ void main() {
 extern crate image;
 #[macro_use] extern crate lazy_static;
 extern crate regex;
-extern crate num;
+extern crate num_traits;
 extern crate rusttype;
 extern crate unicode_normalization;
 extern crate font_loader;

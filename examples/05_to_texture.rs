@@ -43,7 +43,7 @@ pub fn main() {
         }
 
         // Draw a small thumbnail of surface
-        renderer.copy_rect_from(&surface, (0., 0., 640., 480.), (512., 384., 128., 96.), TextureFilter::Linear);
+        renderer.copy_rect_from(&surface, (0, 0, 640, 480), (512, 384, 128, 96), TextureFilter::Linear);
 
         display.swap_frame();
         !display.poll_events().was_closed()

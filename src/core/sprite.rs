@@ -62,24 +62,24 @@ impl<'a> Sprite {
     }
 
     /// Draws a sprite onto the given layer.
-    pub fn draw<T>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color) -> &Self where Vec2<f32>: From<T> {
+    pub fn draw<T>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color) -> &Self where Point2: From<T> {
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
         let dim = Point2(self.width, self.height);
-        let scale = Point2(1.0, 1.0);
-        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Vec2::from(position), self.anchor, dim, color, 0.0, scale);
+        let scale = Vec2(1.0, 1.0);
+        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
         self
     }
 
     /// Draws a sprite onto the given layer and applies given color, rotation and scaling.
-    pub fn draw_transformed<T, U>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Vec2<f32>: From<T> + From<U> {
+    pub fn draw_transformed<T, U>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Point2: From<T>, Vec2: From<U> {
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
         let anchor = Point2(self.anchor.0, self.anchor.1);
         let dim = Point2(self.width, self.height);
-        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Vec2::from(position), anchor, dim, color, rotation, Vec2::from(scale));
+        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Point2::from(position), anchor, dim, color, rotation, Vec2::from(scale));
         self
     }
 

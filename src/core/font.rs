@@ -234,7 +234,7 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
     context.font_cache.queue(font.font_id, &glyphs);
 
     let anchor = Point2(0.0, 0.0);
-    let scale = Point2(scale_x, scale_y);
+    let scale = Vec2(scale_x, scale_y);
     let cos_rot = rotation.cos();
     let sin_rot = rotation.sin();
 

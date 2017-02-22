@@ -9,16 +9,7 @@ pub use self::mat4::Mat4;
 pub use self::vec2::Vec2;
 pub use self::vec3::Vec3;
 pub use self::angle::Angle;
-pub use self::rect::Rect;
-
-/// A 2-dimensional point.
-pub type Point2<T = f32> = Vec2<T>;
-
-// required due to #26953
-#[allow(non_snake_case)]
-pub fn Point2<T: Debug + Float>(x: T, y: T) -> Point2<T> {
-    Vec2(x, y)
-}
+pub use self::rect::{Point2, Rect};
 
 /// A 3-dimensional point.
 pub type Point3<T = f32> = Vec3<T>;

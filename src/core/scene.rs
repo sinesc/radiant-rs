@@ -1,6 +1,6 @@
 use prelude::*;
 use avec::AVec;
-use maths::{Mat4, Vec2};
+use maths::{Mat4, Vec2, Point2};
 use core::{self, Renderer, RenderContext, Layer, Font, Sprite, Color};
 use BlendMode;
 
@@ -123,7 +123,7 @@ impl Scene {
     }
 
     /// Draws a sprite onto given layer.
-    pub fn sprite<T>(self: &Self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color) -> &Self where Vec2<f32>: From<T> {
+    pub fn sprite<T>(self: &Self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color) -> &Self where Point2: From<T> {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
         assert_eq!(self.scene_id, layer_id.1);
@@ -133,7 +133,7 @@ impl Scene {
     }
 
     /// Draws a sprite with given rotation and scaling onto given layer.
-    pub fn sprite_transformed<T, U>(self: &Self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Vec2<f32>: From<T>+From<U> {
+    pub fn sprite_transformed<T, U>(self: &Self, layer_id: LayerId, sprite_id: SpriteId, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Point2: From<T>, Vec2: From<U> {
         let layers = self.layers.get();
         let sprites = self.sprites.get();
         assert_eq!(self.scene_id, layer_id.1);

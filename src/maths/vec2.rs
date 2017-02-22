@@ -1,5 +1,5 @@
 use prelude::*;
-use maths::{Vec3, VecType, Angle, Rect};
+use maths::{Vec3, VecType, Angle, Rect, Point2};
 use core::{Uniform, AsUniform};
 
 /// A 2-dimensional vector.
@@ -107,6 +107,12 @@ impl<T> VecType<T> for Vec2<T> where T: Debug + Float {
 
 impl<T> From<(T, T)> for Vec2<T> where T: Debug + Float {
     fn from(source: (T, T)) -> Self {
+        Vec2(source.0, source.1)
+    }
+}
+
+impl<T> From<Point2<T>> for Vec2<T> where T: Debug + Float {
+    fn from(source: Point2<T>) -> Self {
         Vec2(source.0, source.1)
     }
 }

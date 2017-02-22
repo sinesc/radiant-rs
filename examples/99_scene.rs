@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Color, blendmodes, utils, Point2};
+use radiant_rs::{DisplayInfo, Display, Renderer, Color, blendmodes, utils, Vec2};
 use radiant_rs::scene::{Scene, Op};
 
 // !note that the Scene API is WIP and will likely change a lot. Scenes are intended as thread-safe
@@ -17,7 +17,7 @@ pub fn main() {
 
     // Define a few scene operations to be run each frame
     scene.op(Op::SetBlendmode(layer_id, blendmodes::MAX));
-    scene.op(Op::RotateViewMatrixAt(layer_id, 1.0, Point2(320., 240.), 1.0));
+    scene.op(Op::RotateViewMatrixAt(layer_id, 1.0, Vec2(320., 240.), 1.0));
     scene.op(Op::RotateModelMatrix(layer_id, 1.0, -2.0));
     scene.op(Op::Draw(layer_id));
 

@@ -307,14 +307,14 @@ pub fn copy_to_texture(display: &Display, target: &Texture, filter: TextureFilte
 }
 
 /// Copies the source rectangle to the target rectangle on the given display.
-pub fn copy_rect(display: &Display, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+pub fn copy_rect(display: &Display, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
     let height = display.frame.borrow().as_ref().unwrap().get_dimensions().1;
     let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, height, target_rect, height);
     display.frame.borrow().as_ref().unwrap().blit_color(&glium_src_rect, display.frame.borrow().as_ref().unwrap(), &glium_target_rect, backend::magnify_filter(filter));
 }
 
 /// Copies the source rectangle from the given texture to the target rectangle on the given display.
-pub fn copy_rect_from_texture(display: &Display, source: &Texture, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+pub fn copy_rect_from_texture(display: &Display, source: &Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
     let target_height = display.frame.borrow().as_ref().unwrap().get_dimensions().1;
     let source_height = texture::handle(source).as_surface().get_dimensions().1;
     let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, source_height, target_rect, target_height);
@@ -322,7 +322,7 @@ pub fn copy_rect_from_texture(display: &Display, source: &Texture, source_rect: 
 }
 
 /// Copies the source rectangle from the given display to the target rectangle on the given texture.
-pub fn copy_rect_to_texture(display: &Display, target: &Texture, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+pub fn copy_rect_to_texture(display: &Display, target: &Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
     let source_height = display.frame.borrow().as_ref().unwrap().get_dimensions().1;
     let target_height = texture::handle(target).as_surface().get_dimensions().1;
     let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, source_height, target_rect, target_height);

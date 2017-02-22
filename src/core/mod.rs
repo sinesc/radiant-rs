@@ -37,7 +37,7 @@ use glium::vertex::MultiVerticesSource;
 use glium::{self, Surface, DrawParameters};
 use image;
 use prelude::*;
-use maths::Rect;
+use maths::{Rect};
 
 /// A target for rendering.
 pub trait AsRenderTarget {
@@ -82,7 +82,7 @@ impl RenderTarget {
         }
     }
     /// Blits a source rect to a rect on the target.
-    fn blit_rect(self: &Self, source: &RenderTarget, source_rect: Rect, target_rect: Rect, filter: TextureFilter) {
+    fn blit_rect(self: &Self, source: &RenderTarget, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
         match *self {
             RenderTarget::Display(ref target_display) => {
                 match *source {

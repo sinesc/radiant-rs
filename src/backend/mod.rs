@@ -7,7 +7,7 @@ pub mod glium {
     use maths::Rect;
     use glium as ext;
 
-    pub fn blit_coords(source_rect: Rect, source_height: u32, target_rect: Rect, target_height: u32) -> (ext::Rect, ext::BlitTarget) {
+    pub fn blit_coords(source_rect: Rect<i32>, source_height: u32, target_rect: Rect<i32>, target_height: u32) -> (ext::Rect, ext::BlitTarget) {
         (ext::Rect {
             left: (source_rect.0).0 as u32,
             bottom: (source_height as i32 - (source_rect.1).1 as i32 - (source_rect.0).1 as i32) as u32,

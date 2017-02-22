@@ -1,4 +1,4 @@
-use num::traits::*;
+use prelude::*;
 
 /// A very simple, seedable random number generator based on sin(). It is provided to simplify
 /// experimentation with the library but not suitable for applications that require good quality

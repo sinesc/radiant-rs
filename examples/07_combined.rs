@@ -58,8 +58,8 @@ pub fn main() {
         renderer.draw_layer(&layer, 0);
 
         // Draw small thumbnails of the intermediate and final surface
-        renderer.copy_rect_from(&thumbnail, (0., 0., 640., 480.), (512., 288., 128., 96.), TextureFilter::Linear);
-        renderer.copy_rect_from(&surface, (0., 0., 640., 480.), (512., 384., 128., 96.), TextureFilter::Linear);
+        renderer.copy_rect_from(&thumbnail, (0, 0, 640, 480), (512, 288, 128, 96), TextureFilter::Linear);
+        renderer.copy_rect_from(&surface, (0, 0, 640, 480), (512, 384, 128, 96), TextureFilter::Linear);
 
         layer.set_view_matrix(prev_view_matrix);
         display.swap_frame();

@@ -10,4 +10,4 @@ pub use std::fmt::Debug;
 pub use std::fs::File;
 pub use std::cmp::PartialOrd;
 pub use std::convert::From;
-pub use num::traits::{Float, FromPrimitive, ToPrimitive, NumCast};
+pub use num_traits::{Float, PrimInt, FromPrimitive, ToPrimitive, NumCast};
