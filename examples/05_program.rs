@@ -10,8 +10,10 @@ pub fn main() {
     let program = Program::from_string(&renderer.context(), include_str!("../res/ripple.fs")).unwrap();
 
     // Two layers, one with the default program, the other one with the custom program.
+    // Cloning a layer like this creates a new layer that references the contents of the
+    // source layer but has its own matrices, program, and so on.
     let layer = Layer::new((320., 240.));
-    let layer_custom = Layer::with_program((320., 240.), program);
+    let layer_custom = layer.clone_with_program(program);
 
     // Translate them to the left/right.
     layer.view_matrix().translate((-80., 0.));
@@ -19,18 +21,14 @@ pub fn main() {
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());
+        layer.clear();
 
+        // Draw to "both" layers.
         let frame_id = (frame.elapsed_f32 * 30.0) as u32;
-
-        // Draw to both layers.
-        for target in [ &layer_custom, &layer ].iter() {
-            target.clear();
-            sprite.draw(&target, frame_id, (160., 120.), Color::white());
-            sprite.draw(&target, frame_id, (130., 100.), Color::red());
-            sprite.draw(&target, frame_id, (190., 100.), Color::green());
-            sprite.draw(&target, frame_id, (160., 155.), Color::blue());
-            target.model_matrix().rotate(frame.delta_f32);
-        }
+        sprite.draw(&layer, frame_id, (160., 120.), Color::white());
+        sprite.draw(&layer, frame_id, (130., 100.), Color::red());
+        sprite.draw(&layer, frame_id, (190., 100.), Color::green());
+        sprite.draw(&layer, frame_id, (160., 155.), Color::blue());
 
         // Draw both layers.
         renderer.draw_layer(&layer, 0);

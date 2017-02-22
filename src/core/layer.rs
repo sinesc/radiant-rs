@@ -5,20 +5,7 @@ use maths::{Mat4, Point2, Rect};
 use core::{blendmodes, BlendMode, rendercontext, RenderContextData, Color, display, Program};
 use maths::Vec2;
 
-#[derive(Copy, Clone, Default)]
-pub struct Vertex {
-    position    : [f32; 2],
-    offset      : [f32; 2],
-    rotation    : f32,
-    color       : Color,
-    bucket_id   : u32,
-    texture_id  : u32,
-    texture_uv  : [f32; 2],
-    components  : u32,
-}
-implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
-
-/// A wait-free, thread-safe drawing surface for text and sprites.
+/// A drawing surface for text and sprites that implements send+sync and is wait-free for drawing operations.
 ///
 /// In radiant_rs, sprite drawing happens on layers. Layers provide transformation capabilities in
 /// the form of model- and view-matrices and the layer's blendmode and color determine
@@ -36,13 +23,17 @@ pub struct Layer {
     model_matrix    : Mutex<Mat4<f32>>,
     blend           : Mutex<BlendMode>,
     color           : Mutex<Color>,
-    vertex_data     : AVec<Vertex>,
-    vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
-    dirty           : AtomicBool,
+    contents        : Arc<LayerContents>,
     program         : Option<Program>,
 }
-unsafe impl Send for Layer { }
-unsafe impl Sync for Layer { }
+
+impl Clone for Layer {
+    /// Creates a new layer that references the contents of this layer but has its own
+    /// color, blendmode and set of matrices.
+    fn clone(self: &Self) -> Self {
+        self.create_clone(None)
+    }
+}
 
 impl Layer {
 
@@ -55,6 +46,12 @@ impl Layer {
     /// Creates a new layer with given dimensions and fragment program.
     pub fn with_program<T>(dimensions: T, program: Program) -> Self where Vec2<f32>: From<T> {
         Self::create(dimensions, Some(program))
+    }
+
+    /// Creates a new layer that references the contents of this layer but has its own
+    /// color, blendmode, program and set of matrices.
+    pub fn clone_with_program(self: &Self, program: Program) -> Self {
+        self.create_clone(Some(program))
     }
 
     /// Sets a global color multiplicator. Setting this to white means that the layer contents
@@ -120,19 +117,19 @@ impl Layer {
     /// Removes all previously added object from the layer. Typically invoked after the layer has
     /// been rendered.
     pub fn clear(self: &Self) -> &Self {
-        self.dirty.store(true, Ordering::Relaxed);
-        self.vertex_data.clear();
+        self.contents.dirty.store(true, Ordering::Relaxed);
+        self.contents.vertex_data.clear();
         self
     }
 
     /// Returns the number of sprites the layer can hold without having to perform a blocking reallocation.
     pub fn capacity(self: &Self) -> usize {
-        self.vertex_data.capacity() / 4
+        self.contents.vertex_data.capacity() / 4
     }
 
     /// Returns the number of sprites currently stored the layer.
     pub fn len(self: &Self) -> usize {
-        self.vertex_data.len() / 4
+        self.contents.vertex_data.len() / 4
     }
 
     /// Returns the layer wrapped in an std::Arc
@@ -148,9 +145,23 @@ impl Layer {
             model_matrix    : Mutex::new(Mat4::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
-            vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
-            vertex_buffer   : Mutex::new(None),
-            dirty           : AtomicBool::new(true),
+            contents        : Arc::new(LayerContents {
+                vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
+                vertex_buffer   : Mutex::new(None),
+                dirty           : AtomicBool::new(true),
+            }),
+            program         : program,
+        }
+    }
+
+    /// Creates a clone.
+    fn create_clone(self: &Self, program: Option<Program>) -> Self {
+        Layer {
+            view_matrix     : Mutex::new(self.view_matrix().deref().clone()),
+            model_matrix    : Mutex::new(self.model_matrix().deref().clone()),
+            blend           : Mutex::new(self.blendmode().deref().clone()),
+            color           : Mutex::new(self.color().deref().clone()),
+            contents        : self.contents.clone(),
             program         : program,
         }
     }
@@ -164,7 +175,7 @@ pub fn program(layer: &Layer) -> Option<&Program> {
 /// Draws a rectangle on given layer.
 pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
 
-    layer.dirty.store(true, Ordering::Relaxed);
+    layer.contents.dirty.store(true, Ordering::Relaxed);
 
     // corner positions relative to x/y
 
@@ -178,7 +189,7 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32,
 
     // get vertex_data slice and draw into it
 
-    let map = layer.vertex_data.map(4);
+    let map = layer.contents.vertex_data.map(4);
 
     map.set(0, Vertex {
         position    : [pos.0, pos.1],
@@ -230,7 +241,7 @@ pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<
 
     // prepare vertexbuffer if not already done
 
-    let mut vertex_buffer_guard = layer.vertex_buffer.lock().unwrap();
+    let mut vertex_buffer_guard = layer.contents.vertex_buffer.lock().unwrap();
 
     let num_vertices = {
         let mut vertex_buffer = vertex_buffer_guard.deref_mut();
@@ -238,18 +249,18 @@ pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<
         // prepare vertexbuffer if not already done
 
         if vertex_buffer.is_none() {
-            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.vertex_data.capacity()).unwrap());
+            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.contents.vertex_data.capacity()).unwrap());
         }
 
         // copy layer data to vertexbuffer
 
-        if layer.dirty.swap(false, Ordering::Relaxed) {
-            let vertex_data = layer.vertex_data.get();
+        if layer.contents.dirty.swap(false, Ordering::Relaxed) {
+            let vertex_data = layer.contents.vertex_data.get();
             let num_vertices = vertex_data.len();
             if num_vertices > 0 {
                 // resize as neccessary
                 if num_vertices > vertex_buffer.as_ref().unwrap().len() {
-                    *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.vertex_data.capacity()).unwrap());
+                    *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.contents.vertex_data.capacity()).unwrap());
                 }
                 // copy data to buffer
                 let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
@@ -257,9 +268,33 @@ pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<
             }
             num_vertices
         } else {
-            layer.vertex_data.len()
+            layer.contents.vertex_data.len()
         }
     };
 
     (vertex_buffer_guard, num_vertices)
+}
+
+unsafe impl Send for Layer { }
+unsafe impl Sync for Layer { }
+
+/// A glium vertex.
+#[derive(Copy, Clone, Default)]
+pub struct Vertex {
+    position    : [f32; 2],
+    offset      : [f32; 2],
+    rotation    : f32,
+    color       : Color,
+    bucket_id   : u32,
+    texture_id  : u32,
+    texture_uv  : [f32; 2],
+    components  : u32,
+}
+implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
+
+/// Layer contents, shared among layer clones.
+struct LayerContents {
+    vertex_data     : AVec<Vertex>,
+    vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
+    dirty           : AtomicBool,
 }

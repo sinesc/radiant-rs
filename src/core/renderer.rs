@@ -43,7 +43,7 @@ impl Renderer {
     }
 
     /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext.html)
-    /// is thread-safe and required by [`Font`](struct.Font.html), [`Sprite`](struct.Sprite.html)
+    /// implements send+sync and is required by [`Font`](struct.Font.html), [`Sprite`](struct.Sprite.html)
     /// and [`Texture`](struct.Texture.html) to create new instances.
     pub fn context(self: &Self) -> RenderContext {
         self.context.clone()
