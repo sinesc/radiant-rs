@@ -1,10 +1,10 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Color, utils};
+use radiant_rs::{Display, Color, utils};
 
 pub fn main() {
 
     // Create a display to render to
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Empty window example".to_string(), ..DisplayInfo::default() });
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Empty window example").build();
 
     // A simple mainloop helper (just an optional utility function)
     utils::renderloop(|_| {

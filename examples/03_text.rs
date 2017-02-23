@@ -1,8 +1,8 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Font, FontInfo, Color, utils};
+use radiant_rs::{Display, Renderer, Layer, Font, FontInfo, Color, utils};
 
 pub fn main() {
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Text example".to_string(), ..DisplayInfo::default() });
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Text example").build();
     let renderer = Renderer::new(&display).unwrap();
     let layer = Layer::new((640., 480.));
 

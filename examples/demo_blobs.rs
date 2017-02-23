@@ -5,7 +5,7 @@ use radiant_rs::*;
 mod bloom;
 
 pub fn main() {
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, ..DisplayInfo::default() });
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Swirling blobs demo").build();
     let renderer = Renderer::new(&display).unwrap();
     let input = Input::new(&display);
 

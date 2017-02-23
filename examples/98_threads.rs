@@ -1,10 +1,10 @@
 extern crate radiant_rs;
-use radiant_rs::{Color, Renderer, Layer, DisplayInfo, Display, Font, FontInfo, blendmodes, utils};
+use radiant_rs::{Color, Renderer, Layer, Display, Font, FontInfo, blendmodes, utils};
 use std::thread;
 use std::sync::{Arc, Barrier};
 
 pub fn main() {
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Threads example".to_string(), ..DisplayInfo::default() });
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Threads example").build();
     let renderer = Renderer::new(&display).unwrap();
 
     // Create a layer and a font, wrapped in Arcs

@@ -34,7 +34,7 @@ impl Renderer {
         let context = rendercontext::new(context_data);
         let target = vec![ RenderTarget::Display(display.clone()) ];
         let identity_texture = Texture::new(&context, 1, 1);
-        identity_texture.as_render_target().clear(Color::white());
+        identity_texture.clear(Color::white());
 
         Ok(Renderer {
             empty_texture   : identity_texture,

@@ -1,8 +1,8 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, utils, blendmodes};
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, utils, blendmodes};
 
 pub fn main() {
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Matrix example".to_string(), ..DisplayInfo::default() });
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Matrix example").build();
     let renderer = Renderer::new(&display).unwrap();
     let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.));

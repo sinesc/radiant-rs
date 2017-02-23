@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Color, blendmodes, utils, Vec2};
+use radiant_rs::{Display, Renderer, Color, blendmodes, utils, Vec2};
 use radiant_rs::scene::{Scene, Op};
 
 // !note that the Scene API is WIP and will likely change a lot. Scenes are intended as thread-safe
@@ -7,7 +7,7 @@ use radiant_rs::scene::{Scene, Op};
 // in his application. They are not intended to become classical scene graphs.
 
 pub fn main() {
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Scene example".to_string(), ..DisplayInfo::default() });
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Scene example").build();
     let renderer = Renderer::new(&display).unwrap();
 
     // Create a scene with one layer and load a sprite for later use

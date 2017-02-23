@@ -1,8 +1,8 @@
 extern crate radiant_rs;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Color, utils, blendmodes};
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, utils, blendmodes};
 
 pub fn main() {
-    let display = Display::new(DisplayInfo { width: 640, height: 480, vsync: true, title: "Sprites example".to_string(), ..DisplayInfo::default() });
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Sprites example").build();
 
     // Create a renderer. It is used to draw to a rendertarget (usually a frame).
     let renderer = Renderer::new(&display).unwrap();

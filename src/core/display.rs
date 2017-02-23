@@ -6,38 +6,12 @@ use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUT
 use core::monitor;
 use core::{AsRenderTarget, RenderTarget, Texture, Rect, Color, texture, TextureFilter};
 use maths::Point2;
+use core::builder::*;
 use backend::glium as backend;
 use glium::index::IndicesSource;
 use glium::uniforms::Uniforms;
 use glium::vertex::MultiVerticesSource;
 use glium::{Program, DrawParameters, DrawError};
-
-
-/// A struct describing a [`Display`](struct.Display.html) to be created.
-#[derive(Clone)]
-pub struct DisplayInfo {
-    pub width       : u32,
-    pub height      : u32,
-    pub title       : String,
-    pub transparent : bool,
-    pub decorations : bool,
-    pub monitor     : i32,
-    pub vsync       : bool,
-}
-
-impl Default for DisplayInfo {
-    fn default() -> DisplayInfo {
-        DisplayInfo {
-            width       : 640,
-            height      : 480,
-            title       : "".to_string(),
-            transparent : false,
-            decorations : true,
-            monitor     : -1,
-            vsync       : false,
-        }
-   }
-}
 
 /// A target to render to, e.g. a window or full screen.
 #[derive(Clone)]
@@ -48,6 +22,11 @@ pub struct Display {
 }
 
 impl Display {
+
+    /// Returns a display builder for display construction.
+    pub fn builder() -> DisplayBuilder {
+        create_displaybuilder()
+    }
 
     /// Creates a new instance from given [`DisplayInfo`](struct.DisplayInfo.html).
     pub fn new(descriptor: DisplayInfo) -> Display {
@@ -344,4 +323,30 @@ impl AsRenderTarget for Display {
     fn as_render_target(self: &Self) -> RenderTarget {
         RenderTarget::Display(self.clone())
     }
+}
+
+/// A struct describing a [`Display`](struct.Display.html) to be created.
+#[derive(Clone)]
+pub struct DisplayInfo {
+    pub width       : u32,
+    pub height      : u32,
+    pub title       : String,
+    pub transparent : bool,
+    pub decorations : bool,
+    pub monitor     : i32,
+    pub vsync       : bool,
+}
+
+impl Default for DisplayInfo {
+    fn default() -> DisplayInfo {
+        DisplayInfo {
+            width       : 640,
+            height      : 480,
+            title       : "".to_string(),
+            transparent : false,
+            decorations : true,
+            monitor     : -1,
+            vsync       : false,
+        }
+   }
 }

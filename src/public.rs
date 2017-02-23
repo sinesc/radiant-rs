@@ -19,6 +19,7 @@ pub mod utils {
 pub mod builders {
     //! Builder structures returned by various methods.
     pub use core::DrawRectBuilder;
+    pub use core::DisplayBuilder;
 }
 
 #[deprecated(note="Removed for being out of scope of this library")]

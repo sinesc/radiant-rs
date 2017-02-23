@@ -13,6 +13,7 @@ mod texture;
 mod program;
 mod uniform;
 mod postprocessor;
+mod builder;
 
 pub use self::blendmode::*;
 pub use self::input::*;
@@ -29,6 +30,7 @@ pub use self::texture::*;
 pub use self::program::*;
 pub use self::uniform::*;
 pub use self::postprocessor::*;
+pub use self::builder::*;
 use backend::glium as backend;
 
 use glium::index::IndicesSource;
