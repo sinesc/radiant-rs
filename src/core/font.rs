@@ -1,110 +1,11 @@
 use prelude::*;
 use core::{self, layer, Layer, rendercontext, RenderContext, Color};
 use maths::{Point2, Vec2, Rect};
+use core::builder::*;
 use rusttype;
 use glium;
 use font_loader::system_fonts;
-
 use std::borrow::Cow;
-
-/// A struct used to filter the result of [`Font::query_specific()`](struct.Font.html#method.query_specific)
-/// or to describe a [`Font`](struct.Font.html) to be created from a system font
-/// via [`Font::from_info()`](struct.Font.html#method.from_info).
-#[derive(Clone)]
-pub struct FontInfo {
-    pub italic      : bool,
-    pub oblique     : bool,
-    pub bold        : bool,
-    pub monospace   : bool,
-    pub family      : String,
-    pub size        : f32,
-}
-
-impl Default for FontInfo {
-    fn default() -> FontInfo {
-        FontInfo {
-            italic      : false,
-            oblique     : false,
-            bold        : false,
-            monospace   : false,
-            family      : "".to_string(),
-            size        : 10.0,
-        }
-   }
-}
-
-pub struct FontCache {
-    cache   : Mutex<rusttype::gpu_cache::Cache>,
-    queue   : Mutex<Vec<(rusttype::Rect<u32>, Vec<u8>)>>,
-    dirty   : AtomicBool,
-}
-
-impl FontCache {
-    pub fn new(width: u32, height: u32, scale_tolerance: f32, position_tolerance: f32) -> FontCache {
-        FontCache {
-            cache: Mutex::new(rusttype::gpu_cache::Cache::new(width, height, scale_tolerance, position_tolerance)),
-            queue: Mutex::new(Vec::new()),
-            dirty: AtomicBool::new(false),
-        }
-    }
-
-    pub fn queue(self: &Self, font_id: usize, glyphs: &[rusttype::PositionedGlyph]) {
-
-        let mut cache = self.cache.lock().unwrap();
-        let mut queue = self.queue.lock().unwrap();
-        let mut dirties = false;
-
-        for glyph in glyphs {
-            cache.queue_glyph(font_id, glyph.clone());
-        }
-
-        cache.cache_queued(|rect, data| {
-            queue.push((rect, data.to_vec()));
-            dirties = true;
-        }).unwrap();
-
-        if dirties {
-            self.dirty.store(dirties, Ordering::Relaxed);
-        }
-    }
-
-    pub fn update(self: &Self, texture: &glium::texture::Texture2d) {
-
-        if self.dirty.load(Ordering::Relaxed) {
-            let mut queue = self.queue.lock().unwrap();
-            for &(ref rect, ref data) in queue.deref() {
-                texture.main_level().write(
-                    glium::Rect {
-                        left: rect.min.x,
-                        bottom: rect.min.y,
-                        width: rect.width(),
-                        height: rect.height()
-                    },
-                    glium::texture::RawImage2d {
-                        data: Cow::Borrowed(&data),
-                        width: rect.width(),
-                        height: rect.height(),
-                        format: glium::texture::ClientFormat::U8
-                    }
-                );
-            }
-            queue.clear();
-            self.dirty.store(false, Ordering::Relaxed);
-        }
-    }
-
-    pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point2, Point2)> {
-        let cache = self.cache.lock().unwrap();
-        if let Ok(Some((uv_rect, screen_rect))) = cache.rect_for(font_id, glyph) {
-            let uv = Rect::new(uv_rect.min.x, uv_rect.min.y, uv_rect.max.x, uv_rect.max.y);
-            let pos = Point2(screen_rect.min.x as f32, screen_rect.min.y as f32);
-            let dim = Point2((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
-            Some((uv, pos, dim))
-        } else {
-            None
-        }
-    }
-}
 
 static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
@@ -127,6 +28,11 @@ pub struct Font {
 }
 
 impl Font {
+
+    /// Returns a font builder for font construction.
+    pub fn builder(context: &RenderContext) -> FontBuilder {
+        create_fontbuilder(context)
+    }
 
     /// Creates a font instance from a file
     pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Font> {
@@ -316,4 +222,104 @@ fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
         property = property.monospace();
     }
     property.build()
+}
+
+/// A wrapper around rusttype's font cache.
+pub struct FontCache {
+    cache   : Mutex<rusttype::gpu_cache::Cache>,
+    queue   : Mutex<Vec<(rusttype::Rect<u32>, Vec<u8>)>>,
+    dirty   : AtomicBool,
+}
+
+impl FontCache {
+    /// Creates a new fontcache instant.
+    pub fn new(width: u32, height: u32, scale_tolerance: f32, position_tolerance: f32) -> FontCache {
+        FontCache {
+            cache: Mutex::new(rusttype::gpu_cache::Cache::new(width, height, scale_tolerance, position_tolerance)),
+            queue: Mutex::new(Vec::new()),
+            dirty: AtomicBool::new(false),
+        }
+    }
+    /// Queues a glyph for caching.
+    pub fn queue(self: &Self, font_id: usize, glyphs: &[rusttype::PositionedGlyph]) {
+
+        let mut cache = self.cache.lock().unwrap();
+        let mut queue = self.queue.lock().unwrap();
+        let mut dirties = false;
+
+        for glyph in glyphs {
+            cache.queue_glyph(font_id, glyph.clone());
+        }
+
+        cache.cache_queued(|rect, data| {
+            queue.push((rect, data.to_vec()));
+            dirties = true;
+        }).unwrap();
+
+        if dirties {
+            self.dirty.store(dirties, Ordering::Relaxed);
+        }
+    }
+    /// Updates the font cache texture.
+    pub fn update(self: &Self, texture: &glium::texture::Texture2d) {
+        if self.dirty.load(Ordering::Relaxed) {
+            let mut queue = self.queue.lock().unwrap();
+            for &(ref rect, ref data) in queue.deref() {
+                texture.main_level().write(
+                    glium::Rect {
+                        left: rect.min.x,
+                        bottom: rect.min.y,
+                        width: rect.width(),
+                        height: rect.height()
+                    },
+                    glium::texture::RawImage2d {
+                        data: Cow::Borrowed(&data),
+                        width: rect.width(),
+                        height: rect.height(),
+                        format: glium::texture::ClientFormat::U8
+                    }
+                );
+            }
+            queue.clear();
+            self.dirty.store(false, Ordering::Relaxed);
+        }
+    }
+    /// Returns a rectangle of uv coordinates for the given glyph as well as its offset and dimensions.
+    pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point2, Point2)> {
+        let cache = self.cache.lock().unwrap();
+        if let Ok(Some((uv_rect, screen_rect))) = cache.rect_for(font_id, glyph) {
+            let uv = Rect::new(uv_rect.min.x, uv_rect.min.y, uv_rect.max.x, uv_rect.max.y);
+            let pos = Point2(screen_rect.min.x as f32, screen_rect.min.y as f32);
+            let dim = Point2((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
+            Some((uv, pos, dim))
+        } else {
+            None
+        }
+    }
+}
+
+/// A struct used to filter the result of [`Font::query_specific()`](struct.Font.html#method.query_specific)
+/// or to describe a [`Font`](struct.Font.html) to be created from a system font
+/// via [`Font::from_info()`](struct.Font.html#method.from_info).
+#[derive(Clone)]
+pub struct FontInfo {
+    pub italic      : bool,
+    pub oblique     : bool,
+    pub bold        : bool,
+    pub monospace   : bool,
+    pub family      : String,
+    pub size        : f32,
+}
+
+impl Default for FontInfo {
+    fn default() -> FontInfo {
+        FontInfo {
+            italic      : false,
+            oblique     : false,
+            bold        : false,
+            monospace   : false,
+            family      : "".to_string(),
+            size        : 10.0,
+        }
+   }
 }

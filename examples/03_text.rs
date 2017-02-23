@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Font, FontInfo, Color, utils};
+use radiant_rs::{Display, Renderer, Layer, Font, Color, utils};
 
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Text example").build();
@@ -7,9 +7,9 @@ pub fn main() {
     let layer = Layer::new((640., 480.));
 
     // A few fonts (here from a known systemfont, could also come from a file)
-    let small = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 16.0, ..FontInfo::default() } );
+    let small = Font::builder(&renderer.context()).family("Arial").size(16.0).build().unwrap();
     let large = small.with_size(48.0);
-    let tiny_it = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), italic: true, size: 12.0, ..FontInfo::default() } );
+    let tiny_it = Font::builder(&renderer.context()).family("Arial").italic().size(12.0).build().unwrap();
 
     utils::renderloop(|frame| {
         layer.clear();

@@ -110,19 +110,18 @@ void main() {
     f_color = sheet(v_tex_coords) * v_color;
 }
 ```
-
 */
 
+#[macro_use] extern crate enum_primitive;
+#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate glium;
 extern crate image;
-#[macro_use] extern crate lazy_static;
 extern crate regex;
 extern crate num_traits;
 extern crate rusttype;
 extern crate unicode_normalization;
 extern crate font_loader;
 extern crate avec;
-#[macro_use] extern crate enum_primitive;
 extern crate palette;
 
 mod prelude;

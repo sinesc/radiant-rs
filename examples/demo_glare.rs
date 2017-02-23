@@ -8,7 +8,7 @@ pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Glare effect demo").build();
     let renderer = Renderer::new(&display).unwrap();
     let input = Input::new(&display);
-    let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 12.0, ..FontInfo::default() } );
+    let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
 
     // Load spritesheet containing components for rgba and a "lightmap". Create custom postprocessor.
     let sprite = Sprite::from_file(&renderer.context(), r"res/battery_lightmapped_128x128x15x2.png").unwrap();

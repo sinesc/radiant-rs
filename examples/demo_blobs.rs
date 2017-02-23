@@ -14,7 +14,7 @@ pub fn main() {
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
     let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
-    let font = Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 12.0, ..FontInfo::default() } );
+    let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
     let big_red_font = font.with_size(24.0).with_color(Color::red());
 
     // Clone a couple of layer matrices to play around with

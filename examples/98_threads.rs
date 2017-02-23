@@ -1,5 +1,5 @@
 extern crate radiant_rs;
-use radiant_rs::{Color, Renderer, Layer, Display, Font, FontInfo, blendmodes, utils};
+use radiant_rs::{Color, Renderer, Layer, Display, Font, blendmodes, utils};
 use std::thread;
 use std::sync::{Arc, Barrier};
 
@@ -10,7 +10,7 @@ pub fn main() {
     // Create a layer and a font, wrapped in Arcs
     let layer = Arc::new(Layer::new((640., 480.)));
     layer.set_blendmode(blendmodes::LIGHTEN);
-    let font = Arc::new(Font::from_info(&renderer.context(), FontInfo { family: "Arial".to_string(), size: 20.0, ..FontInfo::default() }));
+    let font = Arc::new(Font::builder(&renderer.context()).family("Arial").size(20.0).build().unwrap());
 
     // Even though it would be safe to draw without coordination from multiple threads
     // while continously rendering from the main thread, you still want to present

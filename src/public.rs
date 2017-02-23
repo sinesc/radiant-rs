@@ -20,6 +20,7 @@ pub mod builders {
     //! Builder structures returned by various methods.
     pub use core::DrawRectBuilder;
     pub use core::DisplayBuilder;
+    pub use core::FontBuilder;
 }
 
 #[deprecated(note="Removed for being out of scope of this library")]
