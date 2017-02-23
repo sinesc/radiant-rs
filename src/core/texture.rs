@@ -1,5 +1,6 @@
 use prelude::*;
 use core::{display, rendercontext, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
+use maths::Point2;
 use glium;
 use glium::Surface;
 
@@ -91,10 +92,11 @@ impl Default for TextureInfo {
 /// [`Renderer::draw_rect()`](struct.Renderer.html#method.draw_rect).
 #[derive(Clone)]
 pub struct Texture {
-    handle  : Rc<glium::texture::Texture2d>,
-    minify  : TextureFilter,
-    magnify : TextureFilter,
-    wrap    : TextureWrap,
+    handle      : Rc<glium::texture::Texture2d>,
+    minify      : TextureFilter,
+    magnify     : TextureFilter,
+    wrap        : TextureWrap,
+    dimensions  : Point2<u32>,
 }
 
 impl Texture {
@@ -132,25 +134,31 @@ impl Texture {
         texture.as_surface().clear_color(0.0, 0.0, 0.0, 0.0);
 
         Texture {
-            handle  : Rc::new(texture),
-            minify  : info.minify,
-            magnify : info.magnify,
-            wrap    : info.wrap,
+            handle      : Rc::new(texture),
+            minify      : info.minify,
+            magnify     : info.magnify,
+            wrap        : info.wrap,
+            dimensions  : Point2(info.width, info.height),
         }
     }
     /// Clones texture with new filters and wrapping function. Both source and clone reference the same texture data.
     pub fn clone_with_options(self: &Self, minify: TextureFilter, magnify: TextureFilter, wrap: TextureWrap) -> Self {
         Texture {
-            handle  : self.handle.clone(),
-            minify  : minify,
-            magnify : magnify,
-            wrap    : wrap,
+            handle      : self.handle.clone(),
+            minify      : minify,
+            magnify     : magnify,
+            wrap        : wrap,
+            dimensions  : self.dimensions,
         }
     }
     /// Clears the texture with given color.
     pub fn clear(self: &Self, color: Color) {
         let Color(r, g, b, a) = color;
         self.handle.as_surface().clear_color(r, g, b, a);
+    }
+    /// Returns the dimensions of the texture.
+    pub fn dimensions(self: &Self) -> Point2<u32> {
+        self.dimensions
     }
 }
 

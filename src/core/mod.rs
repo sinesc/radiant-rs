@@ -14,21 +14,21 @@ mod program;
 mod uniform;
 mod postprocessor;
 
-pub use self::blendmode::{BlendMode, blendmodes};
-pub use self::input::{Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator};
-pub use self::display::{Display, DisplayInfo};
-pub use self::sprite::Sprite;
-pub use self::renderer::Renderer;
-pub use self::font::{Font, FontInfo, FontCache};
-pub use self::layer::Layer;
-pub use self::rendercontext::{RenderContext, RenderContextData, RenderContextTexture, RenderContextTextureArray};
-pub use self::color::Color;
+pub use self::blendmode::*;
+pub use self::input::*;
+pub use self::display::*;
+pub use self::sprite::*;
+pub use self::renderer::*;
+pub use self::font::*;
+pub use self::layer::*;
+pub use self::rendercontext::*;
+pub use self::color::*;
 pub use self::scene::*;
-pub use self::monitor::Monitor;
-pub use self::texture::{Texture, TextureInfo, TextureFilter, TextureWrap, TextureFormat};
-pub use self::program::Program;
-pub use self::uniform::{Uniform, AsUniform, UniformList, GliumUniform};
-pub use self::postprocessor::{Postprocessor, postprocessors};
+pub use self::monitor::*;
+pub use self::texture::*;
+pub use self::program::*;
+pub use self::uniform::*;
+pub use self::postprocessor::*;
 use backend::glium as backend;
 
 use glium::index::IndicesSource;
@@ -37,7 +37,7 @@ use glium::vertex::MultiVerticesSource;
 use glium::{self, Surface, DrawParameters};
 use image;
 use prelude::*;
-use maths::{Rect};
+use maths::{Rect, Point2};
 
 /// A target for rendering.
 pub trait AsRenderTarget {
@@ -79,6 +79,20 @@ impl RenderTarget {
                 texture::handle(texture).as_surface().clear_color(r, g, b, a);
             }
             RenderTarget::None => { }
+        }
+    }
+    /// Returns the dimensions of the target.
+    fn dimensions(self: &Self) -> Point2<u32> {
+        match *self {
+            RenderTarget::Display(ref display) => {
+                display.dimensions().into()
+            },
+            RenderTarget::Texture(ref texture) => {
+                texture::handle(texture).as_surface().get_dimensions().into()
+            }
+            RenderTarget::None => {
+                Point2(0, 0)
+            }
         }
     }
     /// Blits a source rect to a rect on the target.

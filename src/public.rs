@@ -16,6 +16,11 @@ pub mod utils {
     pub use misc::{renderloop, mainloop, LoopState, lerp, approach, min, max, Rng, Periodic};
 }
 
+pub mod builders {
+    //! Builder structures returned by various methods.
+    pub use core::DrawRectBuilder;
+}
+
 #[deprecated(note="Removed for being out of scope of this library")]
 #[allow(deprecated)]
 pub mod scene {

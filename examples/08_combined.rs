@@ -46,11 +46,11 @@ pub fn main() {
                         renderer.clear(Color::transparent());
                         renderer.draw_layer(&layer, 0);
                     });
-                    renderer.draw_rect((0., 0.), (640., 480.), blendmodes::ALPHA, None, Some(&darken));
+                    renderer.rect((0., 0., 640., 480.)).blendmode(&blendmodes::ALPHA).texture(&darken).draw();
                     renderer.copy_from(&thumbnail, TextureFilter::Linear);
                 });
             });
-            renderer.draw_rect((0., 0.), (640., 480.), blendmodes::ALPHA, None, Some(&darken));
+            renderer.rect((0., 0., 640., 480.)).blendmode(&blendmodes::ALPHA).texture(&darken).draw();
         });
 
         // Draw processed texture to display. Also draw the original layer ontop.

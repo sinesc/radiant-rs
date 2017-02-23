@@ -17,6 +17,18 @@ impl<T> From<Vec2<T>> for Point2<T> where T: Float + Copy + Clone + Debug {
     }
 }
 
+impl From<Point2<f32>> for [ f32; 2 ] {
+    fn from(source: Point2<f32>) -> Self {
+        [ source.0, source.1 ]
+    }
+}
+
+impl From<Point2<f32>> for (f32, f32) {
+    fn from(source: Point2<f32>) -> Self {
+        (source.0, source.1)
+    }
+}
+
 /// A rectangle.
 #[derive(Copy, Clone)]
 pub struct Rect<T: Copy + Clone + Debug = f32>(pub Point2<T>, pub Point2<T>);
@@ -31,6 +43,30 @@ impl<T> Rect<T> where T: Copy + Clone + Debug {
 impl<T> From<(T, T, T, T)> for Rect<T> where T: Copy + Clone + Debug {
     fn from(source: (T, T, T, T)) -> Self {
         Rect(Point2(source.0, source.1), Point2(source.2, source.3))
+    }
+}
+
+impl<T> From<((T, T), (T, T))> for Rect<T> where T: Copy + Clone + Debug {
+    fn from(source: ((T, T), (T, T))) -> Self {
+        Rect(Point2((source.0).0, (source.0).1), Point2((source.1).0, (source.1).1))
+    }
+}
+
+impl<T> From<(Point2<T>, (T, T))> for Rect<T> where T: Copy + Clone + Debug {
+    fn from(source: (Point2<T>, (T, T))) -> Self {
+        Rect(source.0, Point2((source.1).0, (source.1).1))
+    }
+}
+
+impl<T> From<((T, T), Point2<T>)> for Rect<T> where T: Copy + Clone + Debug {
+    fn from(source: ((T, T), Point2<T>)) -> Self {
+        Rect(Point2((source.0).0, (source.0).1), source.1)
+    }
+}
+
+impl<T> From<(Point2<T>, Point2<T>)> for Rect<T> where T: Copy + Clone + Debug {
+    fn from(source: (Point2<T>, Point2<T>)) -> Self {
+        Rect(source.0, source.1)
     }
 }
 

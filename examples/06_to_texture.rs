@@ -31,7 +31,7 @@ pub fn main() {
         // First we draw the sprites, then we blend the low opacity black on top (to fade previously drawn contents)
         renderer.render_to(&surface, || {
             renderer.draw_layer(&layer, 0);
-            renderer.draw_rect((0., 0.), (640., 480.), blendmodes::ALPHA, None, Some(&darken));
+            renderer.rect((0., 0., 640., 480.)).blendmode(&blendmodes::ALPHA).texture(&darken).draw();
         });
 
         if (frame.elapsed_f32 / 1.5) as u32 % 2 == 0 {
