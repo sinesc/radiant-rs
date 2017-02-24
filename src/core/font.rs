@@ -59,6 +59,11 @@ impl Font {
         system_fonts::query_specific(&mut build_property(&info))
     }
 
+    /// Returns a query builder to retrieve the names of all available system fonts with the given properties (e.g. monospace)
+    pub fn query() -> FontQueryBuilder {
+        create_fontquerybuilder()
+    }
+
     /// Returns a new font instance with given size
     pub fn with_size(self: &Self, size: f32) -> Font {
         let mut font = (*self).clone();
