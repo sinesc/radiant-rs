@@ -1,13 +1,16 @@
+#[allow(deprecated)]
 use core::{Result, Font, FontInfo, RenderContext};
 
 /// A Font builder.
 #[must_use]
+#[allow(deprecated)]
 pub struct FontBuilder<'a> {
     info    : FontInfo,
     context : &'a RenderContext,
     file    : Option<&'a str>,
 }
 
+#[allow(deprecated)]
 pub fn create_fontbuilder<'a>(context: &'a RenderContext) -> FontBuilder {
     FontBuilder {
         context : context,
@@ -16,6 +19,7 @@ pub fn create_fontbuilder<'a>(context: &'a RenderContext) -> FontBuilder {
     }
 }
 
+#[allow(deprecated)]
 impl<'a> FontBuilder<'a> {
     /// Sets a family for the Font. The font will be retrieved from the operating system.
     /// Mutually exclusive with file().
@@ -50,6 +54,7 @@ impl<'a> FontBuilder<'a> {
         self
     }
     /// Returns the constructed Font instance.
+    #[allow(deprecated)]
     pub fn build(self: Self) -> Result<Font> {
         if let Some(file) = self.file {
             Font::from_file(self.context, file)

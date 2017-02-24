@@ -1,18 +1,22 @@
+#[allow(deprecated)]
 use core::{Display, DisplayInfo};
 use maths::Point2;
 
 /// A display builder.
 #[must_use]
+#[allow(deprecated)]
 pub struct DisplayBuilder {
     info: DisplayInfo,
 }
 
+#[allow(deprecated)]
 pub fn create_displaybuilder() -> DisplayBuilder {
     DisplayBuilder {
         info: DisplayInfo { ..DisplayInfo::default() }
     }
 }
 
+#[allow(deprecated)]
 impl DisplayBuilder {
     /// Sets a width for the display.
     pub fn width(mut self: Self, width: u32) -> Self {

@@ -1,17 +1,21 @@
+#[allow(deprecated)]
 use core::{Font, FontInfo};
 
 /// A FontQueryBuilder builder, returned from Font::query().
 #[must_use]
+#[allow(deprecated)]
 pub struct FontQueryBuilder {
     info: FontInfo,
 }
 
+#[allow(deprecated)]
 pub fn create_fontquerybuilder() -> FontQueryBuilder {
     FontQueryBuilder {
         info: FontInfo { ..FontInfo::default() },
     }
 }
 
+#[allow(deprecated)]
 impl FontQueryBuilder {
     /// Sets a family for the Fonts.
     pub fn family(mut self: Self, family: &str) -> Self {
@@ -33,7 +37,8 @@ impl FontQueryBuilder {
         self.info.monospace = true;
         self
     }
-    /// Returns the constructed Font instance.
+    /// Returns a vector of matching font families.
+    #[allow(deprecated)]
     pub fn fetch(self: Self) -> Vec<String> {
         /*if let Some(file) = self.file {
             Font::from_file(self.context, file)

@@ -1,12 +1,12 @@
 pub use core::{
     BlendMode, blendmodes,
-    Display, DisplayInfo, Monitor,
-    Renderer, RenderContext, RenderTarget, AsRenderTarget,
-    Layer, Sprite, Font, FontInfo, Color,
-    Texture, TextureInfo, TextureFormat, TextureFilter, TextureWrap,
+    Display, Monitor,
+    Renderer, RenderTarget, AsRenderTarget,
+    Layer, Sprite, Font, Color,
+    Texture, TextureFormat, TextureFilter, TextureWrap,
     Program, Uniform, AsUniform,
     Postprocessor, postprocessors,
-    Input, InputId, InputState, InputIterator, InputUpIterator, InputDownIterator,
+    Input, InputId, InputState,
     Result, Error
 };
 pub use maths::{Mat4, Vec2, Vec3, Angle, Point2, Rect, VecType};
@@ -16,12 +16,13 @@ pub mod utils {
     pub use misc::{renderloop, mainloop, LoopState, lerp, approach, min, max, Rng, Periodic};
 }
 
-pub mod builders {
-    //! Builder structures returned by various methods.
-    pub use core::DrawRectBuilder;
-    pub use core::DisplayBuilder;
-    pub use core::FontBuilder;
-    pub use core::TextureBuilder;
+pub mod support {
+    //! Support structures returned by various methods. Usually not required to be created manually.
+
+    pub use core::{RenderContext, InputIterator, InputUpIterator, InputDownIterator};
+    pub use core::{DrawRectBuilder, DisplayBuilder, FontBuilder, FontQueryBuilder, TextureBuilder};
+    #[allow(deprecated)]
+    pub use core::{DisplayInfo, FontInfo, TextureInfo};
 }
 
 #[deprecated(note="Removed for being out of scope of this library")]

@@ -155,7 +155,7 @@ impl Color {
     }
 
     /// Returns the instance's channels as a tuple.
-    #[deprecated(since="0.2", note="Use into() instead")]
+    #[deprecated(since="0.2", note="Use into() instead.")]
     pub fn as_tuple(self: &Self) -> (f32, f32, f32, f32) {
         (self.0, self.1, self.2, self.3)
     }
@@ -201,7 +201,7 @@ impl Color {
     }
 
     /// Returns opaque magenta color.
-    #[deprecated(since="0.2", note="Use magenta() instead")]
+    #[deprecated(since="0.2", note="Use magenta() instead.")]
     pub fn puple() -> Color {
         Self::magenta()
     }

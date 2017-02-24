@@ -20,12 +20,22 @@ pub struct Texture {
 }
 
 impl Texture {
-    /// Returns a font builder for font construction.
+    /// Returns a textu builder for texture construction.
+    ///
+    /// ```
+    /// let tex = Texture::builder(&rendercontext)
+    ///                     .dimensions((640, 480))
+    ///                     .magnify(TextureFilter::Nearest)
+    ///                     .minify(TextureFilter::Linear)
+    ///                     .build()
+    ///                     .unwrap();
+    /// ```
     pub fn builder(context: &RenderContext) -> TextureBuilder {
         create_texturebuilder(context)
     }
     /// Creates a new texture with given dimensions. The texture will use linear interpolation
     /// for magnification or minification and internally use the `F16F16F16F16` format.
+    #[allow(deprecated)]
     pub fn new(context: &RenderContext, width: u32, height: u32) -> Self {
         Self::from_info(context, TextureInfo {
             width: width,
@@ -34,6 +44,7 @@ impl Texture {
         })
     }
     /// Creates a new texture with given dimensions and filters. It will internally use the `F16F16F16F16` format.
+    #[allow(deprecated)]
     pub fn filtered(context: &RenderContext, width: u32, height: u32, minify: TextureFilter, magnify: TextureFilter) -> Self {
         Self::from_info(context, TextureInfo {
             width: width,
@@ -43,7 +54,28 @@ impl Texture {
             ..TextureInfo::default()
         })
     }
+    /// Clones texture with new filters and wrapping function. Both source and clone reference the same texture data.
+    pub fn clone_with_options(self: &Self, minify: TextureFilter, magnify: TextureFilter, wrap: TextureWrap) -> Self {
+        Texture {
+            handle      : self.handle.clone(),
+            minify      : minify,
+            magnify     : magnify,
+            wrap        : wrap,
+            dimensions  : self.dimensions,
+        }
+    }
+    /// Clears the texture with given color.
+    pub fn clear(self: &Self, color: Color) {
+        let Color(r, g, b, a) = color;
+        self.handle.as_surface().clear_color(r, g, b, a);
+    }
+    /// Returns the dimensions of the texture.
+    pub fn dimensions(self: &Self) -> Point2<u32> {
+        self.dimensions
+    }
     /// Creates a new texture from given TextureInfo struct.
+    #[deprecated(since="0.5", note="Use builder() instead.")]
+    #[allow(deprecated)]
     pub fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
         let context = rendercontext::lock(context);
 
@@ -64,25 +96,6 @@ impl Texture {
             wrap        : info.wrap,
             dimensions  : Point2(info.width, info.height),
         }
-    }
-    /// Clones texture with new filters and wrapping function. Both source and clone reference the same texture data.
-    pub fn clone_with_options(self: &Self, minify: TextureFilter, magnify: TextureFilter, wrap: TextureWrap) -> Self {
-        Texture {
-            handle      : self.handle.clone(),
-            minify      : minify,
-            magnify     : magnify,
-            wrap        : wrap,
-            dimensions  : self.dimensions,
-        }
-    }
-    /// Clears the texture with given color.
-    pub fn clear(self: &Self, color: Color) {
-        let Color(r, g, b, a) = color;
-        self.handle.as_surface().clear_color(r, g, b, a);
-    }
-    /// Returns the dimensions of the texture.
-    pub fn dimensions(self: &Self) -> Point2<u32> {
-        self.dimensions
     }
 }
 
@@ -197,6 +210,8 @@ pub enum TextureFormat {
 
 /// A struct used to describe a [`Texture`](struct.Texture.html) to be created via [`Texture::from_info()`](struct.Texture.html#method.from_info).
 #[derive(Clone)]
+#[deprecated(since="0.5", note="See Texture::builder() instead.")]
+#[allow(deprecated)]
 pub struct TextureInfo {
     pub minify  : TextureFilter,
     pub magnify : TextureFilter,
@@ -206,6 +221,7 @@ pub struct TextureInfo {
     pub height  : u32,
 }
 
+#[allow(deprecated)]
 impl Default for TextureInfo {
     fn default() -> TextureInfo {
         TextureInfo {

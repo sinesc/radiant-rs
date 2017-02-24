@@ -30,6 +30,10 @@ pub struct Font {
 impl Font {
 
     /// Returns a font builder for font construction.
+    ///
+    /// ```
+    /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
+    /// ```
     pub fn builder(context: &RenderContext) -> FontBuilder {
         create_fontbuilder(context)
     }
@@ -43,23 +47,16 @@ impl Font {
         Ok(create_font(context, font_data, 12.0))
     }
 
-    /// Creates a new font instance from given FontInfo struct
-    pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
-        let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
-        create_font(context, font_data, info.size)
-    }
-
     /// Returns the names of all available system fonts
     pub fn query_all() -> Vec<String> {
         system_fonts::query_all()
     }
 
-    /// Returns the names of all available system fonts with the given properties (e.g. monospace)
-    pub fn query_specific(info: FontInfo) -> Vec<String> {
-        system_fonts::query_specific(&mut build_property(&info))
-    }
-
     /// Returns a query builder to retrieve the names of all available system fonts with the given properties (e.g. monospace)
+    ///
+    /// ```
+    /// let monospace_fonts = Font::query().monospace().italic().fetch();
+    /// ```
     pub fn query() -> FontQueryBuilder {
         create_fontquerybuilder()
     }
@@ -103,6 +100,21 @@ impl Font {
     /// Returns the font wrapped in an std::Arc
     pub fn arc(self: Self) -> Arc<Self> {
         Arc::new(self)
+    }
+
+    /// Returns the names of all available system fonts with the given properties (e.g. monospace)
+    #[deprecated(since="0.5", note="Use query() instead.")]
+    #[allow(deprecated)]
+    pub fn query_specific(info: FontInfo) -> Vec<String> {
+        system_fonts::query_specific(&mut build_property(&info))
+    }
+
+    /// Creates a new font instance from given FontInfo struct
+    #[deprecated(since="0.5", note="Use builder() instead.")]
+    #[allow(deprecated)]
+    pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
+        let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
+        create_font(context, font_data, info.size)
     }
 }
 
@@ -209,6 +221,7 @@ fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width:
 }
 
 /// builds a FontProperty for the underlying system_fonts library
+#[allow(deprecated)]
 fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
     let mut property = system_fonts::FontPropertyBuilder::new();
     if info.family != "" {
@@ -306,6 +319,8 @@ impl FontCache {
 /// A struct used to filter the result of [`Font::query_specific()`](struct.Font.html#method.query_specific)
 /// or to describe a [`Font`](struct.Font.html) to be created from a system font
 /// via [`Font::from_info()`](struct.Font.html#method.from_info).
+#[deprecated(since="0.5", note="See Font::builder() instead.")]
+#[allow(deprecated)]
 #[derive(Clone)]
 pub struct FontInfo {
     pub italic      : bool,
@@ -316,6 +331,7 @@ pub struct FontInfo {
     pub size        : f32,
 }
 
+#[allow(deprecated)]
 impl Default for FontInfo {
     fn default() -> FontInfo {
         FontInfo {

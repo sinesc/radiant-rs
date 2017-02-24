@@ -21,38 +21,16 @@ pub struct Display {
     input_data: Arc<RwLock<InputData>>,
 }
 
+#[allow(deprecated)]
 impl Display {
 
     /// Returns a display builder for display construction.
+    ///
+    /// ```
+    /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
+    /// ```
     pub fn builder() -> DisplayBuilder {
         create_displaybuilder()
-    }
-
-    /// Creates a new instance from given [`DisplayInfo`](struct.DisplayInfo.html).
-    pub fn new(descriptor: DisplayInfo) -> Display {
-
-        let mut builder = WindowBuilder::new()
-            .with_dimensions(descriptor.width, descriptor.height)
-            .with_title(descriptor.title)
-            .with_transparency(descriptor.transparent)
-            .with_decorations(descriptor.decorations);
-
-        if descriptor.monitor >= 0 {
-            let monitor = Self::monitor(descriptor.monitor as u32);
-            if monitor.is_some() {
-                builder = builder.with_fullscreen(monitor::get_id(monitor.unwrap()));
-            }
-            // !todo error
-        }
-        if descriptor.vsync {
-            builder = builder.with_vsync();
-        }
-
-        Display {
-            handle: builder.build_glium().unwrap(),
-            frame: Rc::new(RefCell::new(None)),
-            input_data: Arc::new(RwLock::new(InputData::new())),
-        }
     }
 
     /// Sets the window title.
@@ -253,6 +231,35 @@ impl Display {
         result
     }
 
+    /// Creates a new instance from given [`DisplayInfo`](struct.DisplayInfo.html).
+    #[deprecated(since="0.5", note="Use Display::builder() instead.")]
+    #[allow(deprecated)]
+    pub fn new(descriptor: DisplayInfo) -> Display {
+
+        let mut builder = WindowBuilder::new()
+            .with_dimensions(descriptor.width, descriptor.height)
+            .with_title(descriptor.title)
+            .with_transparency(descriptor.transparent)
+            .with_decorations(descriptor.decorations);
+
+        if descriptor.monitor >= 0 {
+            let monitor = Self::monitor(descriptor.monitor as u32);
+            if monitor.is_some() {
+                builder = builder.with_fullscreen(monitor::get_id(monitor.unwrap()));
+            }
+            // !todo error
+        }
+        if descriptor.vsync {
+            builder = builder.with_vsync();
+        }
+
+        Display {
+            handle: builder.build_glium().unwrap(),
+            frame: Rc::new(RefCell::new(None)),
+            input_data: Arc::new(RwLock::new(InputData::new())),
+        }
+    }
+    
     /// returns a reference to the underlying glutin window
     fn window(self: &Self) -> glium::backend::glutin_backend::WinRef {
         self.handle.get_window().unwrap()
@@ -327,6 +334,8 @@ impl AsRenderTarget for Display {
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
 #[derive(Clone)]
+#[deprecated(since="0.5", note="See Display::builder() instead.")]
+#[allow(deprecated)]
 pub struct DisplayInfo {
     pub width       : u32,
     pub height      : u32,
@@ -337,6 +346,7 @@ pub struct DisplayInfo {
     pub vsync       : bool,
 }
 
+#[allow(deprecated)]
 impl Default for DisplayInfo {
     fn default() -> DisplayInfo {
         DisplayInfo {

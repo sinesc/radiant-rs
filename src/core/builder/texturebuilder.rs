@@ -3,12 +3,14 @@ use maths::*;
 
 /// A Texture builder.
 #[must_use]
+#[allow(deprecated)]
 pub struct TextureBuilder<'a> {
     info    : TextureInfo,
     context : &'a RenderContext,
     //file    : Option<&'a str>,
 }
 
+#[allow(deprecated)]
 pub fn create_texturebuilder<'a>(context: &'a RenderContext) -> TextureBuilder {
     TextureBuilder {
         context : context,
@@ -17,6 +19,7 @@ pub fn create_texturebuilder<'a>(context: &'a RenderContext) -> TextureBuilder {
     }
 }
 
+#[allow(deprecated)]
 impl<'a> TextureBuilder<'a> {
     /// Sets a width for the texture.
     pub fn width(mut self: Self, width: u32) -> Self {
@@ -36,26 +39,27 @@ impl<'a> TextureBuilder<'a> {
         self
     }
     /// Sets a minification filter for the texture.
-    pub fn minify(mut self: Self, minify: &TextureFilter) -> Self {
-        self.info.minify = *minify;
+    pub fn minify(mut self: Self, minify: TextureFilter) -> Self {
+        self.info.minify = minify;
         self
     }
     /// Sets a magnification filter for the texture.
-    pub fn magnify(mut self: Self, magnify: &TextureFilter) -> Self {
-        self.info.magnify = *magnify;
+    pub fn magnify(mut self: Self, magnify: TextureFilter) -> Self {
+        self.info.magnify = magnify;
         self
     }
     /// Sets a wrapping type for the texture.
-    pub fn wrap(mut self: Self, wrap: &TextureWrap) -> Self {
-        self.info.wrap = *wrap;
+    pub fn wrap(mut self: Self, wrap: TextureWrap) -> Self {
+        self.info.wrap = wrap;
         self
     }
     /// Sets an internal format for the texture.
-    pub fn format(mut self: Self, format: &TextureFormat) -> Self {
-        self.info.format = *format;
+    pub fn format(mut self: Self, format: TextureFormat) -> Self {
+        self.info.format = format;
         self
     }
     /// Returns the constructed Texture instance.
+    #[allow(deprecated)]
     pub fn build(self: Self) -> Result<Texture> {
         /*if let Some(file) = self.file {
             Texture::from_file(self.context, file)
