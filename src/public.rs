@@ -21,6 +21,7 @@ pub mod builders {
     pub use core::DrawRectBuilder;
     pub use core::DisplayBuilder;
     pub use core::FontBuilder;
+    pub use core::TextureBuilder;
 }
 
 #[deprecated(note="Removed for being out of scope of this library")]
