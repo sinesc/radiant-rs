@@ -11,9 +11,8 @@ static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
 /// A font used for writing on a [`Layer`](struct.Layer.html).
 ///
-/// Fonts can be created from files, registered system fonts or existing font objects.
-/// When creating fonts from system fonts, a [`FontInfo`](struct.FontInfo.html) structure can be
-/// used to define requirements for the font, e.g. "any available monospace font".
+/// Use [`Font::builder()`](#method.builder) to create a new font from a registered system font or
+/// a local file. The [`Font::from_file()`](#method.from_file) is a shortcut to achieve the latter.
 ///
 /// In addition to the usual properties of a font, radiant also assigns a fixed color and size
 /// to each font object. Instead of modifying these properties, you can clone a new font
@@ -29,7 +28,7 @@ pub struct Font {
 
 impl Font {
 
-    /// Returns a font builder for font construction.
+    /// Returns a [font builder](support/struct.FontBuilder.html) for font construction.
     ///
     /// ```
     /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
@@ -38,7 +37,7 @@ impl Font {
         create_fontbuilder(context)
     }
 
-    /// Creates a font instance from a file
+    /// Creates a font instance from a file.
     pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Font> {
         use std::io::Read;
         let mut f = File::open(Path::new(file))?;
@@ -47,12 +46,12 @@ impl Font {
         Ok(create_font(context, font_data, 12.0))
     }
 
-    /// Returns the names of all available system fonts
+    /// Returns the names of all available system fonts.
     pub fn query_all() -> Vec<String> {
         system_fonts::query_all()
     }
 
-    /// Returns a query builder to retrieve the names of all available system fonts with the given properties (e.g. monospace)
+    /// Returns a query builder to retrieve the names of all available system fonts with the given properties (e.g. monospace).
     ///
     /// ```
     /// let monospace_fonts = Font::query().monospace().italic().fetch();
@@ -61,21 +60,21 @@ impl Font {
         create_fontquerybuilder()
     }
 
-    /// Returns a new font instance with given size
+    /// Returns a new font instance with given size.
     pub fn with_size(self: &Self, size: f32) -> Font {
         let mut font = (*self).clone();
         font.size = size;
         font
     }
 
-    /// Returns a new font instance with given color
+    /// Returns a new font instance with given color.
     pub fn with_color(self: &Self, color: Color) -> Font {
         let mut font = (*self).clone();
         font.color = color;
         font
     }
 
-    /// Write to given layer
+    /// Write to given layer.
     pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T) -> &Font where Vec2<f32>: From<T> {
         let position = Vec2::from(position);
         write(self, layer, text, position.0, position.1, 0.0, self.color, 0.0, 1.0, 1.0);
@@ -97,19 +96,19 @@ impl Font {
         self
     }
 
-    /// Returns the font wrapped in an std::Arc
+    /// Returns the font wrapped in an std::Arc.
     pub fn arc(self: Self) -> Arc<Self> {
         Arc::new(self)
     }
 
-    /// Returns the names of all available system fonts with the given properties (e.g. monospace)
+    /// Returns the names of all available system fonts with the given properties (e.g. monospace).
     #[deprecated(since="0.5", note="Use query() instead.")]
     #[allow(deprecated)]
     pub fn query_specific(info: FontInfo) -> Vec<String> {
         system_fonts::query_specific(&mut build_property(&info))
     }
 
-    /// Creates a new font instance from given FontInfo struct
+    /// Creates a new font instance from given FontInfo struct.
     #[deprecated(since="0.5", note="Use builder() instead.")]
     #[allow(deprecated)]
     pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
@@ -118,7 +117,7 @@ impl Font {
     }
 }
 
-/// creates a new cache texture for the renderer.
+/// Creates a new cache texture for the renderer.
 pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -> glium::texture::Texture2d {
     glium::texture::Texture2d::with_format(
         display,
@@ -133,7 +132,7 @@ pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -
     ).unwrap()
 }
 
-/// creates a new unique font
+/// Creates a new unique font
 fn create_font(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
     Font {
         data    : font_data,
@@ -144,7 +143,7 @@ fn create_font(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
     }
 }
 
-/// write text to given layer using given font
+/// Write text to given layer using given font
 fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
 
     // !todo probably expensive, but rusttype is completely opaque. would be nice to be able to store Font::info outside of a "may or may not own" container
@@ -172,7 +171,7 @@ fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32,
     }
 }
 
-/// layout a paragraph of glyphs
+/// Layout a paragraph of glyphs
 fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width: f32, text: &str) -> Vec<rusttype::PositionedGlyph<'a>> {
 
     use unicode_normalization::UnicodeNormalization;
@@ -220,7 +219,7 @@ fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width:
     result
 }
 
-/// builds a FontProperty for the underlying system_fonts library
+/// Builds a FontProperty for the underlying system_fonts library
 #[allow(deprecated)]
 fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
     let mut property = system_fonts::FontPropertyBuilder::new();

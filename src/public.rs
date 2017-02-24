@@ -1,7 +1,7 @@
 pub use core::{
     BlendMode, blendmodes,
     Display, Monitor,
-    Renderer, RenderTarget, AsRenderTarget,
+    Renderer, RenderTarget, RenderContext, AsRenderTarget,
     Layer, Sprite, Font, Color,
     Texture, TextureFormat, TextureFilter, TextureWrap,
     Program, Uniform, AsUniform,
@@ -19,7 +19,7 @@ pub mod utils {
 pub mod support {
     //! Support structures returned by various methods. Usually not required to be created manually.
 
-    pub use core::{RenderContext, InputIterator, InputUpIterator, InputDownIterator};
+    pub use core::{InputIterator, InputUpIterator, InputDownIterator};
     pub use core::{DrawRectBuilder, DisplayBuilder, FontBuilder, FontQueryBuilder, TextureBuilder};
     #[allow(deprecated)]
     pub use core::{DisplayInfo, FontInfo, TextureInfo};

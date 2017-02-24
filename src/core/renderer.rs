@@ -11,7 +11,7 @@ use maths::{Rect, Mat4};
 /// Default fragment shader program
 const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
 
-/// A renderer is used to render [`Layer`](struct.Layer.html)s or [`Scene`](scene/struct.Scene.html)s to the
+/// A renderer is used to render [`Layers`](struct.Layer.html) or [`Textures`](struct.Texture.html) to the
 /// [`Display`](struct.Display.html).
 ///
 /// The renderer itself is not thread-safe. Instead, draw or write onto layers (from any one or
@@ -110,6 +110,10 @@ impl Renderer {
     }
 
     /// Draws a rectangle to the current target. See [`DrawRectBuilder`](builders/struct.DrawRectBuilder.html) for available options.
+    ///
+    /// ```
+    /// renderer.rect((0., 0., 640., 480.)).blendmode(&blendmodes::ALPHA).texture(&darken).draw();
+    /// ```
     pub fn rect<T>(self: &Self, target_rect: T) -> DrawRectBuilder where Rect<f32>: From<T> {
         DrawRectBuilder::new(self, Rect::<f32>::from(target_rect))
     }
@@ -126,11 +130,11 @@ impl Renderer {
         let target_rect = builder.rect;
         let program = builder.program.unwrap_or(&self.program);
         let texture = builder.texture.unwrap_or(&self.empty_texture);
-        let color = builder.color.map_or(Color::white(), |c| *c);
-        let blendmode = builder.blendmode.map_or(blendmodes::ALPHA, |b| *b);
-        let model_matrix = builder.model_matrix.map_or(Mat4::identity(), |m| *m);
+        let color = builder.color.unwrap_or(Color::white());
+        let blendmode = builder.blendmode.unwrap_or(blendmodes::ALPHA);
+        let model_matrix = builder.model_matrix.unwrap_or(Mat4::identity());
         let view_matrix = match builder.view_matrix {
-            DrawRectViewSource::Matrix(matrix) => *matrix,
+            DrawRectViewSource::Matrix(matrix) => matrix,
             DrawRectViewSource::Display => {
                 let dim = context.display.dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
@@ -181,6 +185,17 @@ impl Renderer {
     }
 
     /// Reroutes draws issued within `draw_func()` to given Texture.
+    ///
+    /// ```
+    /// // Create a texture to render to.
+    /// let surface = Texture::new(&rendercontext, 640, 480);
+    ///
+    /// // Render something to it.
+    /// renderer.render_to(&surface, || {
+    ///     renderer.rect((0., 0., 640., 480.)).texture(&some_texture).draw();
+    ///     renderer.draw_layer(&some_layer, 0);
+    /// });
+    /// ```
     pub fn render_to<F>(self: &Self, texture: &Texture, mut draw_func: F) -> &Self where F: FnMut() {
         self.push_target(texture);
         draw_func();
@@ -189,6 +204,22 @@ impl Renderer {
     }
 
     /// Reroutes draws issued within `draw_func()` through the given postprocessor.
+    ///
+    /// The following example uses the `Basic` postprocessor provided by the library.
+    ///
+    /// ```
+    /// // Load a shader progam.
+    /// let my_program = Program::from_string(&rendercontext, include_str!("shader.fs")).unwrap();
+    ///
+    /// // Create the postprocessor with the program.
+    /// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program);
+    ///
+    /// // ... in your renderloop...
+    /// renderer.postprocess(&my_postprocessor, &blendmodes::ALPHA, || {
+    ///     renderer.clear(Color::black());
+    ///     renderer.draw_layer(&your_layer, 0);
+    /// });
+    /// ```
     pub fn postprocess<P, F>(self: &Self, postprocessor: &P, arg: &<P as Postprocessor>::T, mut draw_func: F) -> &Self where F: FnMut(), P: Postprocessor {
 
         // draw to temporary target using given draw_func
@@ -203,12 +234,12 @@ impl Renderer {
         postprocessor.draw(self, arg);
         self
     }
-
+/*
     /// Returns a reference to the default rendering program.
     pub fn default_program(self: &Self) -> &Program {
         self.program.deref()
     }
-
+*/
     /// Pushes a target onto the target stack
     fn push_target<T>(self: &Self, target: &T) where T: AsRenderTarget {
         self.target.borrow_mut().push(target.as_render_target().clone());
@@ -249,20 +280,20 @@ pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
 pub struct DrawRectBuilder<'a> {
     renderer    : &'a Renderer,
     rect        : Rect,
-    color       : Option<&'a Color>,
+    color       : Option<Color>,
     texture     : Option<&'a Texture>,
-    blendmode   : Option<&'a BlendMode>,
-    view_matrix : DrawRectViewSource<'a>,
-    model_matrix: Option<&'a Mat4>,
+    blendmode   : Option<BlendMode>,
+    view_matrix : DrawRectViewSource,
+    model_matrix: Option<Mat4>,
     program     : Option<&'a Program>,
 }
 
 /// The view matrix used when drawing a rectangle.
-enum DrawRectViewSource<'a> {
+enum DrawRectViewSource {
     Display,
     Target,
     Source,
-    Matrix(&'a Mat4)
+    Matrix(Mat4)
 }
 
 impl<'a> DrawRectBuilder<'a> {
@@ -279,17 +310,17 @@ impl<'a> DrawRectBuilder<'a> {
         }
     }
     /// Sets a color for drawing.
-    pub fn color(mut self: Self, color: &'a Color) -> Self {
+    pub fn color(mut self: Self, color: Color) -> Self {
         self.color = Some(color);
         self
     }
     /// Sets a model matrix for drawing.
-    pub fn model_matrix(mut self: Self, model_matrix: &'a Mat4) -> Self {
+    pub fn model_matrix(mut self: Self, model_matrix: Mat4) -> Self {
         self.model_matrix = Some(model_matrix);
         self
     }
     /// Sets a view matrix for drawing.
-    pub fn view_matrix(mut self: Self, view_matrix: &'a Mat4) -> Self {
+    pub fn view_matrix(mut self: Self, view_matrix: Mat4) -> Self {
         self.view_matrix = DrawRectViewSource::Matrix(view_matrix);
         self
     }
@@ -314,7 +345,7 @@ impl<'a> DrawRectBuilder<'a> {
         self
     }
     /// Sets the blendmode for drawing.
-    pub fn blendmode(mut self: Self, blendmode: &'a BlendMode) -> Self {
+    pub fn blendmode(mut self: Self, blendmode: BlendMode) -> Self {
         self.blendmode = Some(blendmode);
         self
     }

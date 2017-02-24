@@ -24,7 +24,7 @@ pub struct Display {
 #[allow(deprecated)]
 impl Display {
 
-    /// Returns a display builder for display construction.
+    /// Returns a [display builder](support/struct.DisplayBuilder.html) for display construction.
     ///
     /// ```
     /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
@@ -259,7 +259,7 @@ impl Display {
             input_data: Arc::new(RwLock::new(InputData::new())),
         }
     }
-    
+
     /// returns a reference to the underlying glutin window
     fn window(self: &Self) -> glium::backend::glutin_backend::WinRef {
         self.handle.get_window().unwrap()

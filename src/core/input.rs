@@ -478,7 +478,7 @@ impl Input {
         }
     }
 
-    /// Returns an iterator over all keys and buttons
+    /// Returns an iterator over all keys and buttons.
     pub fn iter(self: &Self) -> InputIterator {
         InputIterator {
             input_data: self.input_data.read().unwrap(),
@@ -496,7 +496,7 @@ impl Input {
         self.get().mouse_delta
     }
 
-    /// Returns InputState for given key
+    /// Returns InputState for given key.
     pub fn state(self: &Self, key: InputId) -> InputState {
         let id = key as usize;
         let data = self.get();
@@ -507,7 +507,7 @@ impl Input {
         }
     }
 
-    /// Returns true if given key is down/pressed
+    /// Returns true if given key is down/pressed.
     pub fn down(self: &Self, key: InputId) -> bool {
         let id = key as usize;
         let data = self.get();
@@ -518,7 +518,7 @@ impl Input {
         }
     }
 
-    /// Returns true if given key is up/released
+    /// Returns true if given key is up/released.
     pub fn up(self: &Self, key: InputId) -> bool {
         let id = key as usize;
         let data = self.get();
@@ -529,7 +529,7 @@ impl Input {
         }
     }
 
-    /// Returns input data
+    /// Returns input data.
     fn get(self: &Self) -> RwLockReadGuard<InputData> {
         self.input_data.read().unwrap()
     }

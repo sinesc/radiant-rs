@@ -1,7 +1,14 @@
 #[allow(deprecated)]
 use core::{Result, Font, FontInfo, RenderContext};
 
-/// A Font builder.
+/// A font builder.
+///
+/// Obtained from [`Font::builder()`](../struct.Font.html#method.builder).
+///
+/// ```
+/// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
+/// ```
+#[must_use]
 #[must_use]
 #[allow(deprecated)]
 pub struct FontBuilder<'a> {

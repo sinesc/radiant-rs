@@ -57,7 +57,7 @@ impl Layer {
     /// Sets a global color multiplicator. Setting this to white means that the layer contents
     /// are renderered in their original colors.
     ///
-    /// Note that [`Color`](struct.Color.html)s contain
+    /// Note that [`Colors`](struct.Color.html) contain
     /// alpha information and are not clamped to any range, so it is possible to use an overbright
     /// color to brighten the result or use the alpha channel to apply global transparency.
     pub fn set_color(self: &Self, color: Color) -> &Self {
@@ -132,7 +132,7 @@ impl Layer {
         self.contents.vertex_data.len() / 4
     }
 
-    /// Returns the layer wrapped in an std::Arc
+    /// Returns the layer wrapped in an std::Arc.
     pub fn arc(self: Self) -> Arc<Self> {
         Arc::new(self)
     }

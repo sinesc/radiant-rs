@@ -9,7 +9,7 @@ use glium::Surface;
 ///
 /// Textures serve as drawing targets for userdefined [`Postprocessors`](trait.Postprocessor.html)
 /// or custom [`Programs`](struct.Program.html). A texture can also be drawn with
-/// [`Renderer::draw_rect()`](struct.Renderer.html#method.draw_rect).
+/// [`Renderer::rect()`](struct.Renderer.html#method.rect).
 #[derive(Clone)]
 pub struct Texture {
     handle      : Rc<glium::texture::Texture2d>,

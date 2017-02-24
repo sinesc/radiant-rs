@@ -16,7 +16,7 @@ The examples folder contains multiple small examples. They can be run via `cargo
 
 # Basic rendering
 
-1. Create a [display](struct.Display.html) with `Display::new()`. This represents the window/screen.
+1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen.
 2. Create a [renderer](struct.Renderer.html) with `Renderer::new()`. It is used to draw to rendertargets like the display.
 3. Grab a context from the renderer using the `context()` method. It is required for resource loading.
 4. Load [sprites](struct.Sprite.html) or [fonts](struct.Font.html) using e.g. `Font::from_file()` or `Sprite::from_file()`.
