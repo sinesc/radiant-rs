@@ -26,8 +26,7 @@ pub fn main() {
 
     let surface = Texture::new(&renderer.context(), 640, 480);
     let thumbnail = Texture::new(&renderer.context(), 640, 480);
-    let darken = Texture::new(&renderer.context(), 1, 1);
-    darken.clear(Color(0., 0., 0., 0.06));
+    let darken = Color(0., 0., 0., 0.06);
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());
@@ -46,11 +45,11 @@ pub fn main() {
                         renderer.clear(Color::transparent());
                         renderer.draw_layer(&layer, 0);
                     });
-                    renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).texture(&darken).draw();
+                    renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).color(darken).draw();
                     renderer.copy_from(&thumbnail, TextureFilter::Linear);
                 });
             });
-            renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).texture(&darken).draw();
+            renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).color(darken).draw();
         });
 
         // Draw processed texture to display. Also draw the original layer ontop.

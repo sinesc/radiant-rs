@@ -304,7 +304,7 @@ impl<'a> DrawRectBuilder<'a> {
             color: None,
             texture: None,
             blendmode: None,
-            view_matrix: DrawRectViewSource::Display,
+            view_matrix: DrawRectViewSource::Target,
             model_matrix: None,
             program: None,
         }
