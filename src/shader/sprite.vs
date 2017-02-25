@@ -31,9 +31,9 @@ void main() {
 
     // apply global per sprite matrix (model)
 
-    vec4 final_trans = u_model * vec4(trans, 0.0, 1.0);
+    vec4 model_transformation = u_model * vec4(trans, 0.0, 1.0);
 
-    gl_Position = u_view * vec4(position + vec2(final_trans), 0.0, 1.0);
+    gl_Position = u_view * vec4(vec3(position, 0.0) + vec3(model_transformation), 1.0);
 
     // pass along to fragment shader
 

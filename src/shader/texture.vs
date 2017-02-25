@@ -14,11 +14,12 @@ out vec2 v_tex_coords;
 
 void main() {
 
-    vec2 v_pos = _rd_offset + vec2( vec4(position * _rd_dimensions, 0.0, 1.0) * u_model );
+    vec4 model_transformation = u_model * vec4(position * _rd_dimensions, 0.0, 1.0);
 
-    vec4 final = u_view * vec4(v_pos, 0.0, 1.0);
+    gl_Position = u_view * vec4(vec3(_rd_offset, 0.0) + vec3(model_transformation), 1.0);
 
-    gl_Position = final;
+    // pass along to fragment shade
+
     v_tex_coords = texture_uv;
     v_color = _rd_color;
 }
