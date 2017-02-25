@@ -28,17 +28,19 @@ pub struct Sprite {
 
 /// Sprite parameter layout type. Sprites are arranged either horizontally or
 /// vertically on the the sprite sheet..
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum SpriteLayout {
     VERTICAL,
     HORIZONTAL,
 }
 
 /// Sprite parameters as extracted from file name.
+#[derive(Debug)]
 pub struct SpriteParameters {
     dimensions  : (u32, u32),
-    num_frames  : u32,
+    num_frames  : (u32, u32),
     components  : u32,
+    inner_margin: u32,
     layout      : SpriteLayout
 }
 
@@ -144,12 +146,12 @@ fn build_raw_frames(image: &mut image::DynamicImage, sprite_parameters: &SpriteP
 
     let SpriteParameters { dimensions: (frame_width, frame_height), num_frames, components, .. } = *sprite_parameters;
     let (bucket_id, texture_size) = renderer::bucket_info(frame_width, frame_height);
-    let dimensions = image.dimensions();
+    let num_frames = num_frames.0 * num_frames.1;
     let mut raw_frames = Vec::new();
 
     for frame_id in 0..num_frames {
         for component in 0..components {
-            raw_frames.push(build_raw_frame(image, dimensions, sprite_parameters, frame_id, component, texture_size));
+            raw_frames.push(build_raw_frame(image, sprite_parameters, frame_id, component, texture_size));
         }
     }
 
@@ -159,10 +161,10 @@ fn build_raw_frames(image: &mut image::DynamicImage, sprite_parameters: &SpriteP
 
 /// Constructs a single RawFrame for a frame of a spritesheet
 /// If neccessary, pads the image up to the next power of two
-fn build_raw_frame(image: &mut image::DynamicImage, image_dimensions: (u32, u32), sprite_parameters: &SpriteParameters, frame_id: u32, component: u32, pad_size: u32) -> RenderContextTexture {
+fn build_raw_frame(image: &mut image::DynamicImage, sprite_parameters: &SpriteParameters, frame_id: u32, component: u32, pad_size: u32) -> RenderContextTexture {
 
     let SpriteParameters { dimensions: (frame_width, frame_height), .. } = *sprite_parameters;
-    let (x, y) = get_frame_coordinates(image_dimensions, sprite_parameters, frame_id, component);
+    let (x, y) = get_frame_coordinates(sprite_parameters, frame_id, component);
     let subimage = image.crop(x, y, frame_width, frame_height);
 
     if frame_width != pad_size || frame_height != pad_size {
@@ -187,21 +189,77 @@ fn build_raw_frame(image: &mut image::DynamicImage, image_dimensions: (u32, u32)
     }
 }
 
-/// Computes top/left frame coordinates for the given frame_id in a sprite-sheet
-fn get_frame_coordinates(image_dimensions: (u32, u32), sprite_parameters: &SpriteParameters, frame_id: u32, component: u32) -> (u32, u32) {
+/// Computes top/left frame coordinates for the given frame_id/component in a sprite-sheet
+fn get_frame_coordinates(sprite_parameters: &SpriteParameters, frame_id: u32, component: u32) -> (u32, u32) {
 
-    let (img_width, img_height) = image_dimensions;
-    let SpriteParameters { dimensions: (frame_width, frame_height), num_frames, components, layout } = *sprite_parameters;
+    let SpriteParameters { dimensions: (frame_width, frame_height), inner_margin, num_frames, components, layout } = *sprite_parameters;
 
-    assert!(frame_id < num_frames);
+    assert!(frame_id < num_frames.0 * num_frames.1);
     assert!(component < components);
 
     if layout == SpriteLayout::HORIZONTAL {
-        let per_line = img_width / frame_width;
-        ((frame_id % per_line) * frame_width, (frame_id / per_line) * frame_height + component  * frame_height)
+        let per_line = num_frames.0;
+        let column = frame_id % per_line;
+        let row = frame_id / per_line;
+        (column * (frame_width + inner_margin), (row + component) * (frame_height + inner_margin))
     } else {
-        let per_row = img_height / frame_height;
-        ((frame_id / per_row) * frame_width + component * frame_width, (frame_id % per_row) * frame_height)
+        let per_row = num_frames.1;
+        let row = frame_id / per_row;
+        let column = frame_id % per_row;
+        ((row + component) * (frame_width + inner_margin), column * (frame_height + inner_margin))
+    }
+}
+
+/// Parses sprite-sheet filename for dimensions and frame count
+fn parse_parameters(dimensions: (u32, u32), path: &Path) -> SpriteParameters {
+
+    // e.g. mysprite_16x16x30.png (16x16, 30 frames)
+    // mysprite_16x16x30x2.png (16x16, 30 frames, 2 components)
+    // mysprite_16x16x30+1.png (16x16, inner margin of 1 px, 30 frames)
+    // mysprite_16x16+1.png (16x16, inner margin of 1 px, all frames horizontally ordered)
+    lazy_static! { static ref MATCHER: Regex = Regex::new(r"_(\d+)x(\d+)(?:x(\d+)(?:x(\d+))?)?(?:\+(\d+))?\.").unwrap(); }
+
+    let filename = path.file_name().unwrap().to_str().unwrap();
+    let captures = MATCHER.captures(filename);
+
+    match captures {
+        Some(captures) => {
+            let frame_width = captures.at(1).unwrap().parse::<u32>().unwrap();
+            let frame_height = captures.at(2).unwrap().parse::<u32>().unwrap();
+            let frame_count = captures.at(3).unwrap_or("0").parse::<u32>().unwrap();
+            let frame_channels = captures.at(4).unwrap_or("1").parse::<u32>().unwrap();
+            let inner_margin = captures.at(5).unwrap_or("0").parse::<u32>().unwrap();
+            let frame_layout = if frame_height == dimensions.1 { SpriteLayout::HORIZONTAL } else { SpriteLayout::VERTICAL };
+
+            // calculate frame counts if not provided
+            let num_frames = if frame_count == 0 {
+                let num_x = dimensions.0 as f32 / (frame_width + inner_margin) as f32 + (inner_margin as f32 / (frame_width + inner_margin) as f32);
+                let num_y = dimensions.1 as f32 / (frame_height + inner_margin) as f32 + (inner_margin as f32 / (frame_height + inner_margin) as f32);
+                //println!("{:?}, {:?}", num_x, num_y);
+                assert!(num_x.fract() <= f32::EPSILON);
+                assert!(num_y.fract() <= f32::EPSILON);
+                (num_x as u32, num_y as u32)
+            } else if frame_layout == SpriteLayout::HORIZONTAL {
+                (frame_count, 1)
+            } else {
+                (1, frame_count)
+            };
+
+            SpriteParameters {
+                dimensions  : (frame_width, frame_height),
+                inner_margin: inner_margin,
+                num_frames  : num_frames,
+                components  : frame_channels,
+                layout      : frame_layout
+            }
+        }
+        None => SpriteParameters {
+            dimensions  : dimensions,
+            inner_margin: 0,
+            num_frames  : (1, 1),
+            components  : 1,
+            layout      : SpriteLayout::HORIZONTAL
+        }
     }
 }
 
@@ -221,37 +279,4 @@ fn convert_color(mut image: image::RgbaImage) -> image::RgbaImage {
         pixel[2] = (alpha * rgb.blue * 255.0) as u8;
     }
     image
-}
-
-/// Parses sprite-sheet filename for dimensions and frame count
-fn parse_parameters(dimensions: (u32, u32), path: &Path) -> SpriteParameters {
-
-    lazy_static! { static ref MATCHER: Regex = Regex::new(r"_(\d+)x(\d+)x(\d+)(?:x(\d+))?\.").unwrap(); }
-
-    let filename = path.file_name().unwrap().to_str().unwrap();
-    let captures = MATCHER.captures(filename);
-
-    match captures {
-        Some(captures) => {
-            let frame_width = captures.at(1).unwrap().parse::<u32>().unwrap();
-            let frame_height = captures.at(2).unwrap().parse::<u32>().unwrap();
-            let frame_count = captures.at(3).unwrap().parse::<u32>().unwrap();
-            let frame_channels = captures.at(4).unwrap_or("1").parse::<u32>().unwrap();
-            let frame_layout = if frame_height == dimensions.1 { SpriteLayout::HORIZONTAL } else { SpriteLayout::VERTICAL };
-            assert!(frame_layout == SpriteLayout::VERTICAL || frame_width * frame_count == dimensions.0);
-            assert!(frame_layout == SpriteLayout::HORIZONTAL || frame_height * frame_count == dimensions.1);
-            SpriteParameters {
-                dimensions  : (frame_width, frame_height),
-                num_frames  : frame_count,
-                components  : frame_channels,
-                layout      : frame_layout
-            }
-        }
-        None => SpriteParameters {
-            dimensions  : dimensions,
-            num_frames  : 1,
-            components  : 1,
-            layout      : SpriteLayout::HORIZONTAL
-        }
-    }
 }
