@@ -1,6 +1,5 @@
 use prelude::*;
-use maths::vec3::Vec3;
-use maths::VecType;
+use maths::{Vec3, VecType, Rect, Point2};
 use core::{Uniform, AsUniform};
 
 /// A 4x4 matrix.
@@ -33,10 +32,30 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
             .scale(Vec3(two / width, -two / height, T::one()))
     }
 
-    /// Translate matrix by given vector.
-    pub fn translate<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
+    /// Generates a orthogonal projection matrix with the given bounds
+    ///
+    /// ```
+    /// let ortho = Mat4::ortho((0., 0., 640., 480.), -1000., 1000.);
+    /// ```
+    pub fn ortho<R>(rectangle: R, near: T, far: T) -> Mat4<T> where Rect<T>: From<R> {
+        let Rect(Point2(left, top), Point2(right, bottom)) = rectangle.into();
+        let two = T::one() + T::one();
+        let zero = T::zero();
+        let lr = T::one() / (left - right);
+        let bt = T::one() / (bottom - top);
+        let nf = T::one() / (near - far);
+        Mat4([
+            [ -two * lr,            zero,               zero,               zero     ],
+            [ zero,                 -two * bt,          zero,               zero     ],
+            [ zero,                 zero,               two * nf,           zero     ],
+            [ (left + right) * lr, (top + bottom) * bt, (far + near) * nf,  T::one() ],
+        ])
+    }
 
-        let Vec3::<T>(x, y, z) = v.as_vec3(T::zero());
+    /// Translate matrix by given vector.
+    pub fn translate<V>(&mut self, translation_vector: V) -> &mut Self where V: VecType<T> {
+
+        let Vec3::<T>(x, y, z) = translation_vector.as_vec3(T::zero());
         {
             let a = &mut self.0;
             a[3][0] = a[0][0]* x + a[1][0] * y + a[2][0] * z + a[3][0];
@@ -48,9 +67,9 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
     }
 
     /// Scale matrix by given vector.
-    pub fn scale<Vector: VecType<T>>(&mut self, v: Vector) -> &mut Self {
+    pub fn scale<V>(&mut self, scaling_vector: V) -> &mut Self where V: VecType<T> {
 
-        let Vec3::<T>(x, y, z) = v.as_vec3(T::one());
+        let Vec3::<T>(x, y, z) = scaling_vector.as_vec3(T::one());
         {
             let a = &mut self.0;
             a[0][0] = a[0][0] * x;
@@ -69,11 +88,53 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
         self
     }
 
-    /// Rotates the origin around given vector.
-    pub fn rotate_axis<Vector: VecType<T>>(&mut self, rad: T, axis: Vector) -> &mut Self {
+    /// Scales at given position.
+    pub fn scale_at<P, V>(&mut self, position: P, scaling_vector: V) -> &mut Self where P: VecType<T>, V: VecType<T> {
+        let position = position.as_vec3(T::zero());
+        self.translate(position)
+            .scale(scaling_vector)
+            .translate(-position)
+    }
 
-        let Vec3::<T>(mut x, mut y, mut z) = axis.as_vec3(T::zero());
+    /// Rotates the origin around z.
+    pub fn rotate(&mut self, radians: T) -> &mut Self {
 
+        let s = radians.sin();
+        let c = radians.cos();
+        let a00 = self.0[0][0];
+        let a01 = self.0[0][1];
+        let a02 = self.0[0][2];
+        let a03 = self.0[0][3];
+        let a10 = self.0[1][0];
+        let a11 = self.0[1][1];
+        let a12 = self.0[1][2];
+        let a13 = self.0[1][3];
+
+        // Perform axis-specific matrix multiplication
+        self.0[0][0] = a00 * c + a10 * s;
+        self.0[0][1] = a01 * c + a11 * s;
+        self.0[0][2] = a02 * c + a12 * s;
+        self.0[0][3] = a03 * c + a13 * s;
+        self.0[1][0] = a10 * c - a00 * s;
+        self.0[1][1] = a11 * c - a01 * s;
+        self.0[1][2] = a12 * c - a02 * s;
+        self.0[1][3] = a13 * c - a03 * s;
+
+        self
+    }
+
+    /// Rotates around z at given position.
+    pub fn rotate_at<P>(&mut self, position: P, radians: T) -> &mut Self where P: VecType<T> {
+        let position = position.as_vec3(T::zero());
+        self.translate(position)
+            .rotate(radians)
+            .translate(-position)
+    }
+
+    /// Rotates around axis.
+    pub fn rotate_axis<V>(&mut self, radians: T, axis: V) -> &mut Self where Vec3<T>: From<V> {
+
+        let Vec3::<T>(mut x, mut y, mut z) = axis.into();
         let mut len: T = (x * x + y * y + z * z).sqrt();
 
         if len == T::zero() || len.is_normal() == false {
@@ -85,8 +146,8 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
         y = y * len;
         z = z * len;
 
-        let s: T = rad.sin();
-        let c: T = rad.cos();
+        let s: T = radians.sin();
+        let c: T = radians.cos();
         let t: T = T::one() - c;
 
         let a00 = self.0[0][0];
@@ -130,51 +191,12 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
         self
     }
 
-    /// Rotates the origin around z.
-    pub fn rotate(&mut self, rad: T) -> &mut Self {
-
-        let s = rad.sin();
-        let c = rad.cos();
-        let a00 = self.0[0][0];
-        let a01 = self.0[0][1];
-        let a02 = self.0[0][2];
-        let a03 = self.0[0][3];
-        let a10 = self.0[1][0];
-        let a11 = self.0[1][1];
-        let a12 = self.0[1][2];
-        let a13 = self.0[1][3];
-
-        // Perform axis-specific matrix multiplication
-        self.0[0][0] = a00 * c + a10 * s;
-        self.0[0][1] = a01 * c + a11 * s;
-        self.0[0][2] = a02 * c + a12 * s;
-        self.0[0][3] = a03 * c + a13 * s;
-        self.0[1][0] = a10 * c - a00 * s;
-        self.0[1][1] = a11 * c - a01 * s;
-        self.0[1][2] = a12 * c - a02 * s;
-        self.0[1][3] = a13 * c - a03 * s;
-
-        self
-    }
-
-    /// Rotates around z at given position.
-    pub fn rotate_at<Vector: VecType<T>>(&mut self, position: Vector, radians: T) -> &mut Self {
+    /// Rotates around axis at given position.
+    pub fn rotate_axis_at<P, V>(&mut self, position: P, radians: T, axis: V) -> &mut Self where P: VecType<T>, Vec3<T>: From<V> {
         let position = position.as_vec3(T::zero());
         self.translate(position)
-            .rotate(radians)
-            .translate(-position);
-
-        self
-    }
-
-    /// Scales at given position.
-    pub fn scale_at<R, S>(&mut self, position: R, scaling: S) -> &mut Self where R: VecType<T>, S: VecType<T> {
-        let position = position.as_vec3(T::zero());
-        self.translate(position)
-            .scale(scaling)
-            .translate(-position);
-
-        self
+            .rotate_axis(radians, axis)
+            .translate(-position)
     }
 
     /// Sets the matrix value from another matrix.
