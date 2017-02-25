@@ -20,7 +20,7 @@ pub mod support {
     //! Support structures returned by various methods. Usually not required to be created manually.
 
     pub use core::{InputIterator, InputUpIterator, InputDownIterator};
-    pub use core::{DrawRectBuilder, DisplayBuilder, FontBuilder, FontQueryBuilder, TextureBuilder};
+    pub use core::{DrawBuilder, DisplayBuilder, FontBuilder, FontQueryBuilder, TextureBuilder};
     #[allow(deprecated)]
     pub use core::{DisplayInfo, FontInfo, TextureInfo};
 }

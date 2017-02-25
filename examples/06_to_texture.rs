@@ -13,12 +13,9 @@ pub fn main() {
     sprite.draw(&layer, 0, (190., 100.), Color::green());
     sprite.draw(&layer, 0, (160., 155.), Color::blue());
 
-    // Two textures. We'll draw the sprites to "surface". The "darken" texture only
-    // contains black with a low opacity. We'll blend this with surface's contents.
-    // Note: there are more optimal solutions to do this (using Program). This is just to make the example pretty.
+    // A texture. Each frame we'll draw the sprites to "surface", then blend it with
+    // a low opacity black to make old contents slowly disappear.
     let surface = Texture::new(&renderer.context(), 640, 480);
-    let darken = Texture::new(&renderer.context(), 1, 1);
-    darken.clear(Color(0., 0., 0., 0.04));
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());
@@ -31,7 +28,7 @@ pub fn main() {
         // First we draw the sprites, then we blend the low opacity black on top (to fade previously drawn contents)
         renderer.render_to(&surface, || {
             renderer.draw_layer(&layer, 0);
-            renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).texture(&darken).draw();
+            renderer.fill().blendmode(blendmodes::ALPHA).color(Color(0., 0., 0., 0.04)).draw();
         });
 
         if (frame.elapsed_f32 / 1.5) as u32 % 2 == 0 {

@@ -231,7 +231,7 @@ impl Display {
         result
     }
 
-    /// Creates a new instance from given [`DisplayInfo`](struct.DisplayInfo.html).
+    /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
     #[deprecated(since="0.5", note="Use Display::builder() instead.")]
     #[allow(deprecated)]
     pub fn new(descriptor: DisplayInfo) -> Display {

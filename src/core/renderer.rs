@@ -6,10 +6,15 @@ use core::{
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
     GliumUniform, blendmodes,
 };
+use core::builder::*;
 use maths::{Rect, Mat4};
 
 /// Default fragment shader program
 const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
+
+lazy_static! {
+    static ref VIEWPORT_ONE: Mat4 = Mat4::viewport(1.0, 1.0);
+}
 
 /// A renderer is used to render [`Layers`](struct.Layer.html) or [`Textures`](struct.Texture.html) to the
 /// [`Display`](struct.Display.html).
@@ -109,16 +114,28 @@ impl Renderer {
         self
     }
 
-    /// Draws a rectangle to the current target. See [`DrawRectBuilder`](builders/struct.DrawRectBuilder.html) for available options.
+    /// Draws a rectangle to the current target. See [`DrawBuilder`](support/struct.DrawBuilder.html) for available options.
     ///
     /// ```
-    /// renderer.rect((0., 0., 640., 480.)).blendmode(&blendmodes::ALPHA).texture(&darken).draw();
+    /// renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).texture(&tex).draw();
     /// ```
-    pub fn rect<T>(self: &Self, target_rect: T) -> DrawRectBuilder where Rect<f32>: From<T> {
-        DrawRectBuilder::new(self, Rect::<f32>::from(target_rect))
+    pub fn rect<T>(self: &Self, target_rect: T) -> DrawBuilder<DrawBuilderRect> where Rect<f32>: From<T> {
+        create_drawbuilderrect(self, Rect::<f32>::from(target_rect))
     }
 
-    fn draw_rect(self: &Self, builder: DrawRectBuilder) -> &Self {
+    /// Fills the current target. See [`DrawBuilder`](support/struct.DrawBuilder.html) for available options.
+    ///
+    /// This is a specialization of `rect()` that simply fills the entire target.
+    ///
+    /// ```
+    /// renderer.fill().blendmode(blendmodes::ALPHA).texture(&tex).draw();
+    /// ```
+    pub fn fill(self: &Self) -> DrawBuilder<DrawBuilderFill> {
+        create_drawbuilderfill(self)
+    }
+
+    /// Draws the rectangle described info to the current target.
+    fn draw_rect(self: &Self, target: DrawRectInfo) -> &Self {
 
         // open context
         let mut context = rendercontext::lock(&self.context);
@@ -127,23 +144,23 @@ impl Renderer {
         context.update_index_buffer(1);
 
         // use default or custom program and texture
-        let target_rect = builder.rect;
-        let program = builder.program.unwrap_or(&self.program);
-        let texture = builder.texture.unwrap_or(&self.empty_texture);
-        let color = builder.color.unwrap_or(Color::white());
-        let blendmode = builder.blendmode.unwrap_or(blendmodes::ALPHA);
-        let model_matrix = builder.model_matrix.unwrap_or(Mat4::identity());
-        let view_matrix = match builder.view_matrix {
-            DrawRectViewSource::Matrix(matrix) => matrix,
-            DrawRectViewSource::Display => {
-                let dim = context.display.dimensions();
-                Mat4::viewport(dim.0 as f32, dim.1 as f32)
-            }
-            DrawRectViewSource::Target => {
+        let program = target.program.unwrap_or(&self.program);
+        let texture = target.texture.unwrap_or(&self.empty_texture);
+        let color = target.color.unwrap_or(Color::white());
+        let blendmode = target.blendmode.unwrap_or(blendmodes::ALPHA);
+        let model_matrix = target.model_matrix.unwrap_or(Mat4::identity());
+        let view_matrix = match target.view_matrix {
+            DrawRectInfoViewSource::Matrix(matrix) => matrix,
+            DrawRectInfoViewSource::One => *VIEWPORT_ONE,
+            DrawRectInfoViewSource::Target => {
                 let dim = self.target.borrow().last().unwrap().dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
-            DrawRectViewSource::Source => {
+            DrawRectInfoViewSource::Display => {
+                let dim = context.display.dimensions();
+                Mat4::viewport(dim.0 as f32, dim.1 as f32)
+            }
+            DrawRectInfoViewSource::Source => {
                 let dim = texture.dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
@@ -157,8 +174,8 @@ impl Renderer {
             .add("u_model", GliumUniform::Mat4(model_matrix.into()))
             .add("_rd_color", GliumUniform::Vec4(color.into()))
             .add("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)))
-            .add("_rd_offset", GliumUniform::Vec2(target_rect.0.into()))
-            .add("_rd_dimensions", GliumUniform::Vec2(target_rect.1.into()));
+            .add("_rd_offset", GliumUniform::Vec2(target.rect.0.into()))
+            .add("_rd_dimensions", GliumUniform::Vec2(target.rect.1.into()));
 
         // set up draw parameters for given blend options
         let draw_parameters = glium::draw_parameters::DrawParameters {
@@ -171,17 +188,6 @@ impl Renderer {
         let ib_slice = context.index_buffer.slice(0..6).unwrap();
         self.target.borrow().last().unwrap().draw(&context.vertex_buffer_single, &ib_slice, &program::texture(program), &glium_uniforms, &draw_parameters);
         self
-    }
-
-    /// Copies a rectangle from the source to the current target. This is a blitting operation that uses integral pixel coordinates (top/left = 0/0).
-    /// Coordinates must be entirely contained within their respective sources. No blending is performed.
-    pub fn copy_rect_from<R, S, T>(self: &Self, source: &R, source_rect: S, target_rect: T, filter: TextureFilter) where R: AsRenderTarget, Rect<i32>: From<S> + From<T> {
-        self.target.borrow().last().unwrap().blit_rect(&source.as_render_target(), source_rect.into(), target_rect.into(), filter);
-    }
-
-    /// Copies the entire source, overwriting the entire current target. This is a blitting operation, no blending is performed.
-    pub fn copy_from<R>(self: &Self, source: &R, filter: TextureFilter) where R: AsRenderTarget {
-        self.target.borrow().last().unwrap().blit(&source.as_render_target(), filter);
     }
 
     /// Reroutes draws issued within `draw_func()` to given Texture.
@@ -205,7 +211,7 @@ impl Renderer {
 
     /// Reroutes draws issued within `draw_func()` through the given postprocessor.
     ///
-    /// The following example uses the `Basic` postprocessor provided by the library.
+    /// The following example uses the [`Basic`](postprocessors/struct.Basic.html) postprocessor provided by the library.
     ///
     /// ```
     /// // Load a shader progam.
@@ -217,7 +223,7 @@ impl Renderer {
     /// // ... in your renderloop...
     /// renderer.postprocess(&my_postprocessor, &blendmodes::ALPHA, || {
     ///     renderer.clear(Color::black());
-    ///     renderer.draw_layer(&your_layer, 0);
+    ///     renderer.draw_layer(&my_layer, 0);
     /// });
     /// ```
     pub fn postprocess<P, F>(self: &Self, postprocessor: &P, arg: &<P as Postprocessor>::T, mut draw_func: F) -> &Self where F: FnMut(), P: Postprocessor {
@@ -233,6 +239,21 @@ impl Renderer {
         self.pop_target();
         postprocessor.draw(self, arg);
         self
+    }
+
+    /// Copies a rectangle from the source to the current target.
+    ///
+    /// This is a blitting operation that uses integral pixel coordinates (top/left = 0/0).
+    /// Coordinates must be entirely contained within their respective sources. No blending is performed.
+    pub fn copy_rect_from<R, S, T>(self: &Self, source: &R, source_rect: S, target_rect: T, filter: TextureFilter) where R: AsRenderTarget, Rect<i32>: From<S> + From<T> {
+        self.target.borrow().last().unwrap().blit_rect(&source.as_render_target(), source_rect.into(), target_rect.into(), filter);
+    }
+
+    /// Copies the entire source, overwriting the entire current target.
+    ///
+    /// This is a blitting operation, no blending is performed.
+    pub fn copy_from<R>(self: &Self, source: &R, filter: TextureFilter) where R: AsRenderTarget {
+        self.target.borrow().last().unwrap().blit(&source.as_render_target(), filter);
     }
 /*
     /// Returns a reference to the default rendering program.
@@ -259,7 +280,12 @@ impl Renderer {
     }
 }
 
-/// returns the appropriate bucket_id and padded texture size for the given texture size
+/// Internal: Draws using Renderer::draw_rect
+pub fn draw_rect(renderer: &Renderer, info: DrawRectInfo) {
+    renderer.draw_rect(info);
+}
+
+/// Returns the appropriate bucket_id and padded texture size for the given texture size
 pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
     let size = 2u32.pow(ln2);
@@ -269,93 +295,22 @@ pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
     (bucket_id, size)
 }
 
-// Below implements the builder anti-pattern. !todo There seems to be no good method
-// to extract this into a submodule because rect() needs access to the private
-// fields and build() needs access to the renderer's private draw_rect().
-// An alternative would be to do the drawing in build() but that would move even
-// more code where it doesn't belong.
-
-/// A rectangle builder.
-#[must_use]
-pub struct DrawRectBuilder<'a> {
-    renderer    : &'a Renderer,
-    rect        : Rect,
-    color       : Option<Color>,
-    texture     : Option<&'a Texture>,
-    blendmode   : Option<BlendMode>,
-    view_matrix : DrawRectViewSource,
-    model_matrix: Option<Mat4>,
-    program     : Option<&'a Program>,
+/// A struct used to describe a rectangle for Renderer::rect
+pub struct DrawRectInfo<'a> {
+    pub rect        : Rect,
+    pub color       : Option<Color>,
+    pub texture     : Option<&'a Texture>,
+    pub blendmode   : Option<BlendMode>,
+    pub view_matrix : DrawRectInfoViewSource,
+    pub model_matrix: Option<Mat4>,
+    pub program     : Option<&'a Program>,
 }
 
 /// The view matrix used when drawing a rectangle.
-enum DrawRectViewSource {
+pub enum DrawRectInfoViewSource {
     Display,
     Target,
     Source,
+    One,
     Matrix(Mat4)
-}
-
-impl<'a> DrawRectBuilder<'a> {
-    fn new(renderer: &'a Renderer, rect: Rect) -> Self {
-        DrawRectBuilder {
-            renderer: renderer,
-            rect: rect,
-            color: None,
-            texture: None,
-            blendmode: None,
-            view_matrix: DrawRectViewSource::Target,
-            model_matrix: None,
-            program: None,
-        }
-    }
-    /// Sets a color for drawing.
-    pub fn color(mut self: Self, color: Color) -> Self {
-        self.color = Some(color);
-        self
-    }
-    /// Sets a model matrix for drawing.
-    pub fn model_matrix(mut self: Self, model_matrix: Mat4) -> Self {
-        self.model_matrix = Some(model_matrix);
-        self
-    }
-    /// Sets a view matrix for drawing.
-    pub fn view_matrix(mut self: Self, view_matrix: Mat4) -> Self {
-        self.view_matrix = DrawRectViewSource::Matrix(view_matrix);
-        self
-    }
-    /// Uses the view matrix of the display for drawing.
-    pub fn view_display(mut self: Self) -> Self {
-        self.view_matrix = DrawRectViewSource::Display;
-        self
-    }
-    /// Uses the view matrix of the target for drawing.
-    pub fn view_target(mut self: Self) -> Self {
-        self.view_matrix = DrawRectViewSource::Target;
-        self
-    }
-    /// Uses the view matrix of the source for drawing.
-    pub fn view_source(mut self: Self) -> Self {
-        self.view_matrix = DrawRectViewSource::Source;
-        self
-    }
-    /// Sets the texture for drawing.
-    pub fn texture(mut self: Self, texture: &'a Texture) -> Self {
-        self.texture = Some(texture);
-        self
-    }
-    /// Sets the blendmode for drawing.
-    pub fn blendmode(mut self: Self, blendmode: BlendMode) -> Self {
-        self.blendmode = Some(blendmode);
-        self
-    }
-    /// Sets the program used to draw.
-    pub fn program(mut self: Self, program: &'a Program) -> Self {
-        self.program = Some(program);
-        self
-    }
-    /// Draws the rectangle.
-    pub fn draw(self: Self) {
-        self.renderer.draw_rect(self);
-    }
 }

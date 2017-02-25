@@ -93,7 +93,7 @@ To access the default sampler, the following wrappers are provided:
 - `vec2 sheetSize()` Retrieves the dimensions of the texture.
 - `vec4 sheet(in vec2 texture_coords)` Retrieves texels from the texture.
 - `vec4 sheetComponent(in vec2 texture_coords, in uint component)` Samples a specific sprite
-component instead of the default one set by render_layer().
+component instead of the default one set by `Renderer::draw_layer()`.
 - `vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset)` Like textureOffset().
 
 Example: (This is the default shader used by radiant.)

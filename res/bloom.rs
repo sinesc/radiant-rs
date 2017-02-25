@@ -5,7 +5,6 @@ pub struct Bloom {
     targets         : [[Texture; 5]; 2],
     blur_program    : Mutex<Program>,
     combine_program : Mutex<Program>,
-    dimensions      : Point2,
     iterations      : u32,
     iter_blend      : BlendMode,
     spread          : u8,
@@ -42,7 +41,7 @@ impl Postprocessor for Bloom {
             blur.set_uniform("horizontal", &true);
             for i in 0..spread {
                 renderer.render_to(&self.targets[1][i], || {
-                    renderer.rect(((0., 0.), self.dimensions)).view_display().blendmode(self.iter_blend).program(&blur).texture(&self.targets[0][i]).draw();
+                    renderer.fill().blendmode(self.iter_blend).program(&blur).texture(&self.targets[0][i]).draw();
                 });
             }
 
@@ -50,7 +49,7 @@ impl Postprocessor for Bloom {
             blur.set_uniform("horizontal", &false);
             for i in 0..spread {
                 renderer.render_to(&self.targets[0][i], || {
-                    renderer.rect(((0., 0.), self.dimensions)).view_display().blendmode(self.iter_blend).program(&blur).texture(&self.targets[1][i]).draw();
+                    renderer.fill().blendmode(self.iter_blend).program(&blur).texture(&self.targets[1][i]).draw();
                 });
             }
         }
@@ -61,7 +60,7 @@ impl Postprocessor for Bloom {
         use std::ops::DerefMut;
         let mut combine = self.combine_program.lock().unwrap();
         let combine = combine.deref_mut();
-        renderer.rect(Rect(Point2(0., 0.), self.dimensions)).view_display().blendmode(*blendmode).program(&combine).draw();
+        renderer.fill().blendmode(*blendmode).program(&combine).draw();
         self.targets[0][0].clear(Color::transparent());
     }
 }
@@ -78,7 +77,6 @@ impl Bloom {
         let result = Bloom {
             blur_program    : Mutex::new(blur_program),
             combine_program : Mutex::new(combine_program),
-            dimensions      : Point2(width as f32, height as f32),
             iterations      : iterations,
             iter_blend      : iter_blend,
             spread          : spread,

@@ -1,5 +1,5 @@
 use core::{Texture, Renderer, RenderContext, Program, BlendMode, Postprocessor, Color};
-use maths::{Mat4, Point2};
+use maths::{Point2};
 
 /// A basic postprocessor that applies a Program to the given input once.
 ///
@@ -17,12 +17,12 @@ use maths::{Mat4, Point2};
 /// // ... in your renderloop...
 /// renderer.postprocess(&my_postprocessor, &blendmodes::ALPHA, || {
 ///     renderer.clear(Color::black());
-///     renderer.draw_layer(&your_layer, 0);
+///     renderer.draw_layer(&my_layer, 0);
 /// });
 /// ```
 pub struct Basic {
-    source      : Texture,
-    program     : Program,
+    source  : Texture,
+    program : Program,
 }
 
 impl Postprocessor for Basic {
@@ -32,7 +32,7 @@ impl Postprocessor for Basic {
         &self.source
     }
     fn draw(self: &Self, renderer: &Renderer, blendmode: &Self::T) {
-        renderer.rect((-1.0, 1.0, 2.0, -2.0)).view_matrix(Mat4::identity()).blendmode(*blendmode).program(&self.program).texture(&self.source).draw();
+        renderer.fill().blendmode(*blendmode).program(&self.program).texture(&self.source).draw();
     }
 }
 
