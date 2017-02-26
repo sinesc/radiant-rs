@@ -32,11 +32,75 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
             .scale(Vec3(two / width, -two / height, T::one()))
     }
 
-    /// Generates a orthogonal projection matrix with the given bounds
-    ///
-    /// ```
-    /// let ortho = Mat4::ortho((0., 0., 640., 480.), -1000., 1000.);
-    /// ```
+    /// Creates a look-at matrix with the given eye position, target position, and up-vector.
+    pub fn look_at<E, C, U>(eye: E, target: C, up: U) -> Mat4<T> where E: VecType<T>, C: VecType<T>, U: VecType<T> {
+
+        let eye = eye.as_vec3(T::zero());
+        let target = target.as_vec3(T::zero());
+        let up = up.as_vec3(T::zero());
+        let zero = T::zero();
+        let one = T::one();
+
+        if (eye.0 - target.0).abs() < T::epsilon() && (eye.1 - target.1).abs() < T::epsilon() && (eye.2 - target.2).abs() < T::epsilon() {
+            return Self::identity();
+        }
+
+        let mut z0 = eye.0 - target.0;
+        let mut z1 = eye.1 - target.1;
+        let mut z2 = eye.2 - target.2;
+
+        let recip_len = (z0 * z0 + z1 * z1 + z2 * z2).sqrt().recip();
+        z0 = z0 * recip_len;
+        z1 = z1 * recip_len;
+        z2 = z2 * recip_len;
+
+        let mut x0 = up.1 * z2 - up.2 * z1;
+        let mut x1 = up.2 * z0 - up.0 * z2;
+        let mut x2 = up.0 * z1 - up.1 * z0;
+        let len = (x0 * x0 + x1 * x1 + x2 * x2).sqrt();
+
+        if len < T::epsilon() {
+            x0 = zero;
+            x1 = zero;
+            x2 = zero;
+        } else {
+            let recip_len = len.recip();
+            x0 = x0 * recip_len;
+            x1 = x1 * recip_len;
+            x2 = x2 * recip_len;
+        }
+
+        let mut y0 = z1 * x2 - z2 * x1;
+        let mut y1 = z2 * x0 - z0 * x2;
+        let mut y2 = z0 * x1 - z1 * x0;
+        let len = (y0 * y0 + y1 * y1 + y2 * y2).sqrt();
+
+        if len < T::epsilon() {
+            y0 = zero;
+            y1 = zero;
+            y2 = zero;
+        } else {
+            let recip_len = len.recip();
+            y0 = y0 * recip_len;
+            y1 = y1 * recip_len;
+            y2 = y2 * recip_len;
+        }
+
+        Mat4([
+            [ x0, y0, z0, zero ],
+            [ x1, y1, z1, zero ],
+            [ x2, y2, z2, zero ],
+            [
+                -(x0 * eye.0 + x1 * eye.1 + x2 * eye.2),
+                -(y0 * eye.0 + y1 * eye.1 + y2 * eye.2),
+                -(z0 * eye.0 + z1 * eye.1 + z2 * eye.2),
+                one
+            ]
+        ])
+    }
+
+    /// Creates an orthogonal projection matrix with the given rectangular bounds at the
+    /// near and far clipping plane.
     pub fn ortho<R>(rectangle: R, near: T, far: T) -> Mat4<T> where Rect<T>: From<R> {
         let Rect(Point2(left, top), Point2(right, bottom)) = rectangle.into();
         let two = T::one() + T::one();
@@ -49,6 +113,37 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
             [ zero,                 -two * bt,          zero,               zero     ],
             [ zero,                 zero,               two * nf,           zero     ],
             [ (left + right) * lr, (top + bottom) * bt, (far + near) * nf,  T::one() ],
+        ])
+    }
+
+    /// Creates a frustum projection matrix with the given rectangular bounds at the
+    /// near clipping plane and rectangle * (far / near) at the far clipping plane.
+    pub fn frustum<R>(rectangle: R, near: T, far: T) -> Mat4<T> where Rect<T>: From<R> {
+        let Rect(Point2(left, top), Point2(right, bottom)) = rectangle.into();
+        let two = T::one() + T::one();
+        let zero = T::zero();
+        let rl = (right - left).recip();
+        let tb = (top - bottom).recip();
+        let nf = (near - far).recip();
+        Mat4([
+            [ (near * two) * rl, zero, zero, zero ],
+            [ zero, (near * two) * tb, zero, zero ],
+            [ (right + left) * rl, (top + bottom) * tb, (far + near) * nf, -T::one() ],
+            [ zero, zero, (far * near * two) * nf, zero ]
+        ])
+    }
+
+    /// Creates a perspective projection matrix with the given field of view, aspect and
+    /// near/far clipping planes.
+    pub fn perspective(fov_y: T, aspect: T, near: T, far: T) -> Mat4<T> {
+        let two = T::one() + T::one();
+        let f = (fov_y / two).tan().recip();
+        let nf = (near - far).recip();
+        Mat4([
+            [ f / aspect,   T::zero(),  T::zero(),              T::zero() ],
+            [ T::zero(),    f,          T::zero(),              T::zero() ],
+            [ T::zero(),    T::zero(),  (far + near) * nf,      -T::one() ],
+            [ T::zero(),    T::zero(),  two * far * near * nf,  T::zero() ],
         ])
     }
 
