@@ -26,8 +26,13 @@ path = "src/lib.rs"
 
 [[bin]]
 doc = false
-name = "demos"
+name = "blobs"
 path = "src/main.rs"
+
+[[bin]]
+doc = false
+name = "tileset"
+path = "tools/tileset.rs"
 
 [[example]]
 name = "01_empty"
