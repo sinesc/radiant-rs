@@ -1,7 +1,7 @@
 # radiant-rs
 Thread-safe Rust sprite rendering engine with a friendly API and custom shader support.
 
-This is work-in-progress. The API is incomplete and will likely still change somewhat. Have a look if you like, but don't depend on it :)
+API still WIP, expect minor but possibly annoying breakage.
 
 [Getting started and reference here](https://sinesc.github.io/doc/radiant_rs/).
 
