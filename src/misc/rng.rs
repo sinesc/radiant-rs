@@ -32,4 +32,10 @@ impl Rng {
         let max = max.to_f64().unwrap();
         T::from_f64(min + base * (max - min)).unwrap()
     }
+
+    /// Returns a random item from given slice.
+    pub fn chose<'a, T>(self: &mut Self, source: &'a [ T ]) -> &'a T {
+        let index = self.range(0, source.len());
+        &source[index]
+    }
 }
