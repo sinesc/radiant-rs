@@ -1,6 +1,5 @@
 use prelude::*;
 use core::{display, Display};
-use glium::glutin;
 
 pub const NUM_KEYS: usize = 256;
 pub const NUM_BUTTONS: usize = 16;
@@ -16,6 +15,8 @@ pub enum InputState {
     Down,
     /// The key has just been released. This state is reported only once per key-release.
     Released,
+    /// The key is still being held down. When used as text-input, a letter repeat is expected.
+    Repeat,
 }
 
 pub struct InputData {
@@ -238,159 +239,97 @@ impl InputId {
     }
 }
 
-pub fn input_id_from_glutin(key: glutin::VirtualKeyCode) -> InputId {
-    use glium::glutin::VirtualKeyCode as VK;
-    match key {
-        VK::Key1          => InputId::Key1,
-        VK::Key2          => InputId::Key2,
-        VK::Key3          => InputId::Key3,
-        VK::Key4          => InputId::Key4,
-        VK::Key5          => InputId::Key5,
-        VK::Key6          => InputId::Key6,
-        VK::Key7          => InputId::Key7,
-        VK::Key8          => InputId::Key8,
-        VK::Key9          => InputId::Key9,
-        VK::Key0          => InputId::Key0,
-        VK::A             => InputId::A,
-        VK::B             => InputId::B,
-        VK::C             => InputId::C,
-        VK::D             => InputId::D,
-        VK::E             => InputId::E,
-        VK::F             => InputId::F,
-        VK::G             => InputId::G,
-        VK::H             => InputId::H,
-        VK::I             => InputId::I,
-        VK::J             => InputId::J,
-        VK::K             => InputId::K,
-        VK::L             => InputId::L,
-        VK::M             => InputId::M,
-        VK::N             => InputId::N,
-        VK::O             => InputId::O,
-        VK::P             => InputId::P,
-        VK::Q             => InputId::Q,
-        VK::R             => InputId::R,
-        VK::S             => InputId::S,
-        VK::T             => InputId::T,
-        VK::U             => InputId::U,
-        VK::V             => InputId::V,
-        VK::W             => InputId::W,
-        VK::X             => InputId::X,
-        VK::Y             => InputId::Y,
-        VK::Z             => InputId::Z,
-        VK::Escape        => InputId::Escape,
-        VK::F1            => InputId::F1,
-        VK::F2            => InputId::F2,
-        VK::F3            => InputId::F3,
-        VK::F4            => InputId::F4,
-        VK::F5            => InputId::F5,
-        VK::F6            => InputId::F6,
-        VK::F7            => InputId::F7,
-        VK::F8            => InputId::F8,
-        VK::F9            => InputId::F9,
-        VK::F10           => InputId::F10,
-        VK::F11           => InputId::F11,
-        VK::F12           => InputId::F12,
-        VK::F13           => InputId::F13,
-        VK::F14           => InputId::F14,
-        VK::F15           => InputId::F15,
-        VK::Snapshot      => InputId::Snapshot,
-        VK::Scroll        => InputId::Scroll,
-        VK::Pause         => InputId::Pause,
-        VK::Insert        => InputId::Insert,
-        VK::Home          => InputId::Home,
-        VK::Delete        => InputId::Delete,
-        VK::End           => InputId::End,
-        VK::PageDown      => InputId::PageDown,
-        VK::PageUp        => InputId::PageUp,
-        VK::Left          => InputId::CursorLeft,
-        VK::Up            => InputId::CursorUp,
-        VK::Right         => InputId::CursorRight,
-        VK::Down          => InputId::CursorDown,
-        VK::Back          => InputId::Backspace,
-        VK::Return        => InputId::Return,
-        VK::Space         => InputId::Space,
-        VK::Numlock       => InputId::Numlock,
-        VK::Numpad0       => InputId::Numpad0,
-        VK::Numpad1       => InputId::Numpad1,
-        VK::Numpad2       => InputId::Numpad2,
-        VK::Numpad3       => InputId::Numpad3,
-        VK::Numpad4       => InputId::Numpad4,
-        VK::Numpad5       => InputId::Numpad5,
-        VK::Numpad6       => InputId::Numpad6,
-        VK::Numpad7       => InputId::Numpad7,
-        VK::Numpad8       => InputId::Numpad8,
-        VK::Numpad9       => InputId::Numpad9,
-        VK::AbntC1        => InputId::AbntC1,
-        VK::AbntC2        => InputId::AbntC2,
-        VK::Add           => InputId::Add,
-        VK::Apostrophe    => InputId::Apostrophe,
-        VK::Apps          => InputId::Apps,
-        VK::At            => InputId::At,
-        VK::Ax            => InputId::Ax,
-        VK::Backslash     => InputId::Backslash,
-        VK::Calculator    => InputId::Calculator,
-        VK::Capital       => InputId::Capital,
-        VK::Colon         => InputId::Colon,
-        VK::Comma         => InputId::Comma,
-        VK::Convert       => InputId::Convert,
-        VK::Decimal       => InputId::Decimal,
-        VK::Divide        => InputId::Divide,
-        VK::Equals        => InputId::Equals,
-        VK::Grave         => InputId::Grave,
-        VK::Kana          => InputId::Kana,
-        VK::Kanji         => InputId::Kanji,
-        VK::LAlt          => InputId::LAlt,
-        VK::LBracket      => InputId::LBracket,
-        VK::LControl      => InputId::LControl,
-        VK::LMenu         => InputId::LMenu,
-        VK::LShift        => InputId::LShift,
-        VK::LWin          => InputId::LWin,
-        VK::Mail          => InputId::Mail,
-        VK::MediaSelect   => InputId::MediaSelect,
-        VK::MediaStop     => InputId::MediaStop,
-        VK::Minus         => InputId::Minus,
-        VK::Multiply      => InputId::Multiply,
-        VK::Mute          => InputId::Mute,
-        VK::MyComputer    => InputId::MyComputer,
-        VK::NextTrack     => InputId::NextTrack,
-        VK::NoConvert     => InputId::NoConvert,
-        VK::NumpadComma   => InputId::NumpadComma,
-        VK::NumpadEnter   => InputId::NumpadEnter,
-        VK::NumpadEquals  => InputId::NumpadEquals,
-        VK::OEM102        => InputId::OEM102,
-        VK::Period        => InputId::Period,
-        VK::PlayPause     => InputId::PlayPause,
-        VK::Power         => InputId::Power,
-        VK::PrevTrack     => InputId::PrevTrack,
-        VK::RAlt          => InputId::RAlt,
-        VK::RBracket      => InputId::RBracket,
-        VK::RControl      => InputId::RControl,
-        VK::RMenu         => InputId::RMenu,
-        VK::RShift        => InputId::RShift,
-        VK::RWin          => InputId::RWin,
-        VK::Semicolon     => InputId::Semicolon,
-        VK::Slash         => InputId::Slash,
-        VK::Sleep         => InputId::Sleep,
-        VK::Stop          => InputId::Stop,
-        VK::Subtract      => InputId::Subtract,
-        VK::Sysrq         => InputId::Sysrq,
-        VK::Tab           => InputId::Tab,
-        VK::Underline     => InputId::Underline,
-        VK::Unlabeled     => InputId::Unlabeled,
-        VK::VolumeDown    => InputId::VolumeDown,
-        VK::VolumeUp      => InputId::VolumeUp,
-        VK::Wake          => InputId::Wake,
-        VK::WebBack       => InputId::WebBack,
-        VK::WebFavorites  => InputId::WebFavorites,
-        VK::WebForward    => InputId::WebForward,
-        VK::WebHome       => InputId::WebHome,
-        VK::WebRefresh    => InputId::WebRefresh,
-        VK::WebSearch     => InputId::WebSearch,
-        VK::WebStop       => InputId::WebStop,
-        VK::Yen           => InputId::Yen,
-        VK::Compose       => InputId::Compose,
-        VK::NavigateForward => InputId::NavigateForward,
-        VK::NavigateBackward => InputId::NavigateBackward,
+/// Basic keyboard and mouse support.
+#[derive(Clone)]
+pub struct Input {
+    input_data: Arc<RwLock<InputData>>,
+}
+
+impl Input {
+
+    /// Creates a new instance.
+    pub fn new(display: &Display) -> Self {
+        Input {
+            input_data: display::input_data(display).clone(),
+        }
+    }
+
+    /// Returns an iterator over all keys and buttons.
+    pub fn iter(self: &Self) -> InputIterator {
+        InputIterator {
+            input_data: self.input_data.read().unwrap(),
+            position: 0,
+        }
+    }
+
+    /// Returns current mouse coordinates relative to the window.
+    pub fn mouse(self: &Self) -> (i32, i32) {
+        self.get().mouse
+    }
+
+    /// Returns mouse delta coordinates since last [`Display::poll_events()`](struct.Display.html#method.poll_events).
+    pub fn mouse_delta(self: &Self) -> (i32, i32) {
+        self.get().mouse_delta
+    }
+
+    /// Returns true if given key is down/pressed.
+    pub fn down(self: &Self, key: InputId) -> bool {
+        let id = key as usize;
+        let data = self.get();
+        if id < NUM_KEYS {
+            (data.key[id] == InputState::Pressed) || (data.key[id] == InputState::Down) || (data.key[id] == InputState::Repeat)
+        } else {
+            (data.button[id - NUM_KEYS] == InputState::Pressed) || (data.button[id - NUM_KEYS] == InputState::Down)
+        }
+    }
+
+    /// Returns true if given key was just pressed or repeated due to still being held down (if report_repeats is true).
+    pub fn pressed(self: &Self, key: InputId, report_repeats: bool) -> bool {
+        let id = key as usize;
+        let data = self.get();
+        if id < NUM_KEYS {
+            (data.key[id] == InputState::Pressed) || (report_repeats && data.key[id] == InputState::Repeat)
+        } else {
+            (data.button[id - NUM_KEYS] == InputState::Pressed)
+        }
+    }
+
+    /// Returns true if given key is up/released.
+    pub fn up(self: &Self, key: InputId) -> bool {
+        let id = key as usize;
+        let data = self.get();
+        if id < NUM_KEYS {
+            (data.key[id] == InputState::Released) || (data.key[id] == InputState::Up)
+        } else {
+            (data.button[id - NUM_KEYS] == InputState::Released) || (data.button[id - NUM_KEYS] == InputState::Up)
+        }
+    }
+
+    /// Returns true if given key was just released.
+    pub fn released(self: &Self, key: InputId) -> bool {
+        let id = key as usize;
+        let data = self.get();
+        if id < NUM_KEYS {
+            (data.key[id] == InputState::Released)
+        } else {
+            (data.button[id - NUM_KEYS] == InputState::Released)
+        }
+    }
+
+    /// Returns InputState for given key.
+    pub fn state(self: &Self, key: InputId) -> InputState {
+        let id = key as usize;
+        let data = self.get();
+        if id < NUM_KEYS {
+            data.key[id]
+        } else {
+            data.button[id - NUM_KEYS]
+        }
+    }
+
+    /// Returns input data.
+    fn get(self: &Self) -> RwLockReadGuard<InputData> {
+        self.input_data.read().unwrap()
     }
 }
 
@@ -460,77 +399,5 @@ impl<'a> Iterator for InputUpIterator<'a> {
             }
         }
         None
-    }
-}
-
-/// Basic keyboard and mouse support.
-#[derive(Clone)]
-pub struct Input {
-    input_data: Arc<RwLock<InputData>>,
-}
-
-impl Input {
-
-    /// Creates a new instance.
-    pub fn new(display: &Display) -> Self {
-        Input {
-            input_data: display::input_data(display).clone(),
-        }
-    }
-
-    /// Returns an iterator over all keys and buttons.
-    pub fn iter(self: &Self) -> InputIterator {
-        InputIterator {
-            input_data: self.input_data.read().unwrap(),
-            position: 0,
-        }
-    }
-
-    /// Returns current mouse coordinates relative to the window.
-    pub fn mouse(self: &Self) -> (i32, i32) {
-        self.get().mouse
-    }
-
-    /// Returns mouse delta coordinates since last [`Display::poll_events()`](struct.Display.html#method.poll_events).
-    pub fn mouse_delta(self: &Self) -> (i32, i32) {
-        self.get().mouse_delta
-    }
-
-    /// Returns InputState for given key.
-    pub fn state(self: &Self, key: InputId) -> InputState {
-        let id = key as usize;
-        let data = self.get();
-        if id < NUM_KEYS {
-            data.key[id]
-        } else {
-            data.button[id - NUM_KEYS]
-        }
-    }
-
-    /// Returns true if given key is down/pressed.
-    pub fn down(self: &Self, key: InputId) -> bool {
-        let id = key as usize;
-        let data = self.get();
-        if id < NUM_KEYS {
-            (data.key[id] == InputState::Pressed) || (data.key[id] == InputState::Down)
-        } else {
-            (data.button[id - NUM_KEYS] == InputState::Pressed) || (data.key[id - NUM_KEYS] == InputState::Down)
-        }
-    }
-
-    /// Returns true if given key is up/released.
-    pub fn up(self: &Self, key: InputId) -> bool {
-        let id = key as usize;
-        let data = self.get();
-        if id < NUM_KEYS {
-            (data.key[id] == InputState::Released) || (data.key[id] == InputState::Up)
-        } else {
-            (data.button[id - NUM_KEYS] == InputState::Released) || (data.key[id - NUM_KEYS] == InputState::Up)
-        }
-    }
-
-    /// Returns input data.
-    fn get(self: &Self) -> RwLockReadGuard<InputData> {
-        self.input_data.read().unwrap()
     }
 }

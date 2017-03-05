@@ -2,7 +2,7 @@ use glium;
 use glium::{DisplayBuild, Surface};
 use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton};
 use prelude::*;
-use core::input::{InputData, InputState, input_id_from_glutin, NUM_KEYS, NUM_BUTTONS};
+use core::input::{InputData, InputState, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
 use core::{AsRenderTarget, RenderTarget, Texture, Rect, Color, texture, TextureFilter};
 use maths::Point2;
@@ -141,84 +141,86 @@ impl Display {
     /// [`Input`](struct.Input.html) for basic keyboard and mouse support.
     pub fn poll_events(self: &Self) -> &Self {
         let mut input_data = self.input_data.write().unwrap();
-        let window = self.window();
 
-        for event in self.handle.poll_events() {
+        // !todo poll_id, check if released/pressed(poll_id) == poll_id
+        for key_id in 0..NUM_KEYS {
+            match input_data.key[key_id] {
+                InputState::Pressed | InputState::Repeat => {
+                    input_data.key[key_id] = InputState::Down;
+                }
+                InputState::Released => {
+                    input_data.key[key_id] = InputState::Up;
+                }
+                _ => { }
+            }
+        }
+
+        for button_id in 0..NUM_BUTTONS {
+            match input_data.button[button_id] {
+                InputState::Pressed => {
+                    input_data.button[button_id] = InputState::Down;
+                }
+                InputState::Released => {
+                    input_data.button[button_id] = InputState::Up;
+                }
+                _ => { }
+            }
+        }
+
+        for event in backend::poll_events(&self.handle) {
             match event {
-                Event::KeyboardInput(element_state, _, Some(virtual_code)) => {
-                    let key_id = input_id_from_glutin(virtual_code) as usize;
-                    if key_id < NUM_KEYS {
-                        let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
-                        let current_state = input_data.key[key_id];
-
-                        input_data.key[key_id] = if current_state == InputState::Up && new_state == InputState::Down {
-                            InputState::Pressed
-                        } else if current_state == InputState::Down && new_state == InputState::Up {
-                            InputState::Released
-                        } else {
-                            new_state
-                        };
+                backend::Event::KeyboardInput(key_id, down) => {
+                    let currently_down = match input_data.key[key_id] {
+                        InputState::Down | InputState::Pressed | InputState::Repeat => true,
+                        _ => false
+                    };
+                    if !currently_down && down {
+                        input_data.key[key_id] = InputState::Pressed;
+                    } else if currently_down && !down {
+                        input_data.key[key_id] = InputState::Released;
+                    } else if currently_down && down {
+                        input_data.key[key_id] = InputState::Repeat;
                     }
                 },
-                /*Event::KeyboardInput(element_state, scan_code, _) => {
-                    let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
-                    let current_state = input_data.key[scan_code as usize];
-
-                    input_data.key[scan_code as usize] = if current_state == InputState::Up && new_state == InputState::Down {
-                        InputState::Pressed
-                    } else if current_state == InputState::Down && new_state == InputState::Up {
-                        InputState::Released
-                    } else {
-                        new_state
-                    };
-                },*/
-                Event::MouseMoved(x, y) => {
+                backend::Event::MouseMoved(x, y) => {
                     if input_data.cursor_grabbed {
                         let center = ((input_data.dimensions.0 / 2) as i32, (input_data.dimensions.1 / 2) as i32);
                         let old_mouse = input_data.mouse;
                         let delta = (x - center.0, y - center.1);
                         input_data.mouse = (old_mouse.0 + delta.0, old_mouse.1 + delta.1);
                         input_data.mouse_delta = delta;
+                        let window = self.window();
                         window.set_cursor_position(center.0, center.1).unwrap();
                     } else {
                         input_data.mouse = (x, y);
                     }
                 },
-                Event::MouseInput(element_state, button) => {
-                    let button_id = match button {
-                        MouseButton::Left => 0,
-                        MouseButton::Middle => 1,
-                        MouseButton::Right => 2,
-                        MouseButton::Other(x) => (x - 1) as usize,
+                backend::Event::MouseInput(button_id, down) => {
+                    let currently_down = match input_data.button[button_id] {
+                        InputState::Down | InputState::Pressed => true,
+                        _ => false
                     };
-                    if button_id < NUM_BUTTONS {
-                        let new_state = if element_state == ElementState::Pressed { InputState::Down } else { InputState::Up };
-                        let current_state = input_data.button[button_id];
-
-                        input_data.button[button_id] = if current_state == InputState::Up && new_state == InputState::Down {
-                            InputState::Pressed
-                        } else if current_state == InputState::Down && new_state == InputState::Up {
-                            InputState::Released
-                        } else {
-                            new_state
-                        };
+                    if !currently_down && down {
+                        input_data.button[button_id] = InputState::Pressed
+                    } else if currently_down && !down {
+                        input_data.button[button_id] = InputState::Released
                     }
                 },
-                Event::Focused(true) => {
+                backend::Event::Focused => {
                     // restore grab after focus loss
                     if input_data.cursor_grabbed {
+                        let window = self.window();
                         window.set_cursor_state(glium::glutin::CursorState::Normal).unwrap();
                         window.set_cursor_state(glium::glutin::CursorState::Grab).unwrap();
                     }
                 }
-                Event::Closed => {
+                backend::Event::Closed => {
                     input_data.should_close = true;
                 }
-                _ => ()
             }
         }
 
-        input_data.dimensions = window.get_inner_size_pixels().unwrap_or((0, 0));
+        input_data.dimensions = self.window().get_inner_size_pixels().unwrap_or((0, 0));
 
         self
     }
