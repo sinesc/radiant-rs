@@ -1,5 +1,5 @@
 use prelude::*;
-use maths::{Vec3, VecType, Rect, Point2};
+use maths::{Vec2, Vec3, VecType, Rect, Point2};
 use core::{Uniform, AsUniform};
 
 /// A 4x4 matrix.
@@ -397,6 +397,31 @@ impl<T: Debug + Float> Mul<T> for Mat4<T> {
             [ a[2][0] * b, a[2][1] * b, a[2][2] * b, a[2][3] * b ],
             [ a[3][0] * b, a[3][1] * b, a[3][2] * b, a[3][3] * b ],
         ])
+    }
+}
+
+impl<T> Mul<Vec2<T>> for Mat4<T> where T: Debug + Float {
+    type Output = Vec2<T>;
+    /// Multiplies the matrix with given vector operand, using 0 as z-component and 1 as w-component of the vector.
+    fn mul(self, other: Vec2<T>) -> Vec2<T> {
+        let mat = self.0;
+        Vec2(
+            other.0 * mat[0][0] + other.1 * mat[1][0] + mat[2][0] + mat[3][0],
+            other.0 * mat[0][1] + other.1 * mat[1][1] + mat[2][0] + mat[3][1]
+        )
+    }
+}
+
+impl<T> Mul<Vec3<T>> for Mat4<T> where T: Debug + Float {
+    type Output = Vec3<T>;
+    /// Multiplies the matrix with given vector operand using 1 as w-component of the vector.
+    fn mul(self, other: Vec3<T>) -> Vec3<T> {
+        let mat = self.0;
+        Vec3::<T>(
+            other.0 * mat[0][0] + other.1 * mat[1][0] + other.2 * mat[2][0] + mat[3][0],
+            other.0 * mat[0][1] + other.1 * mat[1][1] + other.2 * mat[2][1] + mat[3][1],
+            other.0 * mat[0][2] + other.1 * mat[1][2] + other.2 * mat[2][2] + mat[3][2]
+        )
     }
 }
 
