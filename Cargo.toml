@@ -20,6 +20,9 @@ enum_primitive = "0.1.0"
 avec = "0.1.0"
 palette = "0.2.1"
 
+[dev-dependencies]
+tiled = "0.4"
+
 [lib]
 name = "radiant_rs"
 path = "src/lib.rs"
@@ -82,3 +85,7 @@ path = "examples/demo_blobs.rs"
 [[example]]
 name = "demo_glare"
 path = "examples/demo_glare.rs"
+
+[[example]]
+name = "demo_tiles"
+path = "examples/demo_tiles.rs"
