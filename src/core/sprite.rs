@@ -229,7 +229,7 @@ fn parse_parameters(dimensions: (u32, u32), path: &Path) -> SpriteParameters {
             let frame_count = captures.at(3).unwrap_or("0").parse::<u32>().unwrap();
             let frame_channels = captures.at(4).unwrap_or("1").parse::<u32>().unwrap();
             let inner_margin = captures.at(5).unwrap_or("0").parse::<u32>().unwrap();
-            let frame_layout = if frame_height == dimensions.1 { SpriteLayout::HORIZONTAL } else { SpriteLayout::VERTICAL };
+            let frame_layout = if frame_height == dimensions.1 || frame_count == 0 { SpriteLayout::HORIZONTAL } else { SpriteLayout::VERTICAL };
 
             // calculate frame counts if not provided
             let num_frames = if frame_count == 0 {
