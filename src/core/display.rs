@@ -1,6 +1,6 @@
 use glium;
 use glium::{DisplayBuild, Surface};
-use glium::glutin::{WindowBuilder, Event, ElementState, MouseButton};
+use glium::glutin::WindowBuilder;
 use prelude::*;
 use core::input::{InputData, InputState, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
