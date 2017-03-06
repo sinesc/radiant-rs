@@ -54,20 +54,24 @@ name = "04_matrix"
 path = "examples/04_matrix.rs"
 
 [[example]]
-name = "05_program"
-path = "examples/05_program.rs"
+name = "05_tiles"
+path = "examples/05_tiles.rs"
 
 [[example]]
-name = "06_to_texture"
-path = "examples/06_to_texture.rs"
+name = "06_program"
+path = "examples/06_program.rs"
 
 [[example]]
-name = "07_postprocessor"
-path = "examples/07_postprocessor.rs"
+name = "07_to_texture"
+path = "examples/07_to_texture.rs"
 
 [[example]]
-name = "08_combined"
-path = "examples/08_combined.rs"
+name = "08_postprocessor"
+path = "examples/08_postprocessor.rs"
+
+[[example]]
+name = "09_combined"
+path = "examples/09_combined.rs"
 
 [[example]]
 name = "98_threads"
@@ -85,7 +89,3 @@ path = "examples/demo_blobs.rs"
 [[example]]
 name = "demo_glare"
 path = "examples/demo_glare.rs"
-
-[[example]]
-name = "demo_tiles"
-path = "examples/demo_tiles.rs"
