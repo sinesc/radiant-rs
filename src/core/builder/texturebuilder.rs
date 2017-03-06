@@ -3,14 +3,12 @@ use maths::*;
 
 /// A Texture builder.
 #[must_use]
-#[allow(deprecated)]
 pub struct TextureBuilder<'a> {
     info    : TextureInfo,
     context : &'a RenderContext,
     //file    : Option<&'a str>,
 }
 
-#[allow(deprecated)]
 pub fn create_texturebuilder<'a>(context: &'a RenderContext) -> TextureBuilder {
     TextureBuilder {
         context : context,
@@ -19,7 +17,6 @@ pub fn create_texturebuilder<'a>(context: &'a RenderContext) -> TextureBuilder {
     }
 }
 
-#[allow(deprecated)]
 impl<'a> TextureBuilder<'a> {
     /// Sets a width for the texture.
     pub fn width(mut self: Self, width: u32) -> Self {
@@ -59,12 +56,11 @@ impl<'a> TextureBuilder<'a> {
         self
     }
     /// Returns the constructed Texture instance.
-    #[allow(deprecated)]
     pub fn build(self: Self) -> Result<Texture> {
         /*if let Some(file) = self.file {
             Texture::from_file(self.context, file)
         } else {*/
-            Ok(Texture::from_info(self.context, self.info))
+            Ok(texture::from_info(self.context, self.info))
         //}
     }
 }

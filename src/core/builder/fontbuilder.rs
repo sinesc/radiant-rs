@@ -1,5 +1,4 @@
-#[allow(deprecated)]
-use core::{Result, Font, FontInfo, RenderContext};
+use core::{Result, Font, FontInfo, RenderContext, font};
 
 /// A font builder.
 ///
@@ -9,15 +8,12 @@ use core::{Result, Font, FontInfo, RenderContext};
 /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
 /// ```
 #[must_use]
-#[must_use]
-#[allow(deprecated)]
 pub struct FontBuilder<'a> {
     info    : FontInfo,
     context : &'a RenderContext,
     file    : Option<&'a str>,
 }
 
-#[allow(deprecated)]
 pub fn create_fontbuilder<'a>(context: &'a RenderContext) -> FontBuilder {
     FontBuilder {
         context : context,
@@ -26,7 +22,6 @@ pub fn create_fontbuilder<'a>(context: &'a RenderContext) -> FontBuilder {
     }
 }
 
-#[allow(deprecated)]
 impl<'a> FontBuilder<'a> {
     /// Sets a family for the Font. The font will be retrieved from the operating system.
     /// Mutually exclusive with file().
@@ -61,12 +56,11 @@ impl<'a> FontBuilder<'a> {
         self
     }
     /// Returns the constructed Font instance.
-    #[allow(deprecated)]
     pub fn build(self: Self) -> Result<Font> {
         if let Some(file) = self.file {
             Font::from_file(self.context, file)
         } else {
-            Ok(Font::from_info(self.context, self.info))
+            Ok(font::from_info(self.context, self.info))
         }
     }
 }

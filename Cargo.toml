@@ -77,10 +77,6 @@ path = "examples/09_combined.rs"
 name = "98_threads"
 path = "examples/98_threads.rs"
 
-[[example]]
-name = "99_scene"
-path = "examples/99_scene.rs"
-
 
 [[example]]
 name = "demo_blobs"

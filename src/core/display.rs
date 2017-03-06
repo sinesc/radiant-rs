@@ -21,7 +21,6 @@ pub struct Display {
     input_data: Arc<RwLock<InputData>>,
 }
 
-#[allow(deprecated)]
 impl Display {
 
     /// Returns a [display builder](support/struct.DisplayBuilder.html) for display construction.
@@ -234,9 +233,7 @@ impl Display {
     }
 
     /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
-    #[deprecated(since="0.5", note="Use Display::builder() instead.")]
-    #[allow(deprecated)]
-    pub fn new(descriptor: DisplayInfo) -> Display {
+    fn new(descriptor: DisplayInfo) -> Display {
 
         let mut builder = WindowBuilder::new()
             .with_dimensions(descriptor.width, descriptor.height)
@@ -266,6 +263,11 @@ impl Display {
     fn window(self: &Self) -> glium::backend::glutin_backend::WinRef {
         self.handle.get_window().unwrap()
     }
+}
+
+/// Crate: Creates a new renderer.
+pub fn create(descriptor: DisplayInfo) -> Display {
+    Display::new(descriptor)
 }
 
 /// Returns the glium display handle
@@ -336,8 +338,6 @@ impl AsRenderTarget for Display {
 
 /// A struct describing a [`Display`](struct.Display.html) to be created.
 #[derive(Clone)]
-#[deprecated(since="0.5", note="See Display::builder() instead.")]
-#[allow(deprecated)]
 pub struct DisplayInfo {
     pub width       : u32,
     pub height      : u32,
@@ -348,7 +348,6 @@ pub struct DisplayInfo {
     pub vsync       : bool,
 }
 
-#[allow(deprecated)]
 impl Default for DisplayInfo {
     fn default() -> DisplayInfo {
         DisplayInfo {

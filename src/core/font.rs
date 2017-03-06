@@ -102,19 +102,25 @@ impl Font {
     }
 
     /// Returns the names of all available system fonts with the given properties (e.g. monospace).
-    #[deprecated(since="0.5", note="Use query() instead.")]
-    #[allow(deprecated)]
-    pub fn query_specific(info: FontInfo) -> Vec<String> {
+    fn query_specific(info: FontInfo) -> Vec<String> {
         system_fonts::query_specific(&mut build_property(&info))
     }
 
     /// Creates a new font instance from given FontInfo struct.
-    #[deprecated(since="0.5", note="Use builder() instead.")]
-    #[allow(deprecated)]
-    pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
+    fn from_info(context: &RenderContext, info: FontInfo) -> Font {
         let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
         create_font(context, font_data, info.size)
     }
+}
+
+/// Crate: Returns the names of all available system fonts with the given properties (e.g. monospace).
+pub fn query_specific(info: FontInfo) -> Vec<String> {
+    Font::query_specific(info)
+}
+
+/// Crate: Creates a new font instance from given FontInfo struct.
+pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
+    Font::from_info(context, info)
 }
 
 /// Creates a new cache texture for the renderer.
@@ -220,7 +226,6 @@ fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width:
 }
 
 /// Builds a FontProperty for the underlying system_fonts library
-#[allow(deprecated)]
 fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
     let mut property = system_fonts::FontPropertyBuilder::new();
     if info.family != "" {
@@ -318,8 +323,6 @@ impl FontCache {
 /// A struct used to filter the result of [`Font::query_specific()`](struct.Font.html#method.query_specific)
 /// or to describe a [`Font`](struct.Font.html) to be created from a system font
 /// via [`Font::from_info()`](struct.Font.html#method.from_info).
-#[deprecated(since="0.5", note="See Font::builder() instead.")]
-#[allow(deprecated)]
 #[derive(Clone)]
 pub struct FontInfo {
     pub italic      : bool,
@@ -330,7 +333,6 @@ pub struct FontInfo {
     pub size        : f32,
 }
 
-#[allow(deprecated)]
 impl Default for FontInfo {
     fn default() -> FontInfo {
         FontInfo {

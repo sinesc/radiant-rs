@@ -35,7 +35,6 @@ impl Texture {
     }
     /// Creates a new texture with given dimensions. The texture will use linear interpolation
     /// for magnification or minification and internally use the `F16F16F16F16` format.
-    #[allow(deprecated)]
     pub fn new(context: &RenderContext, width: u32, height: u32) -> Self {
         Self::from_info(context, TextureInfo {
             width: width,
@@ -44,7 +43,6 @@ impl Texture {
         })
     }
     /// Creates a new texture with given dimensions and filters. It will internally use the `F16F16F16F16` format.
-    #[allow(deprecated)]
     pub fn filtered(context: &RenderContext, width: u32, height: u32, minify: TextureFilter, magnify: TextureFilter) -> Self {
         Self::from_info(context, TextureInfo {
             width: width,
@@ -74,9 +72,7 @@ impl Texture {
         self.dimensions
     }
     /// Creates a new texture from given TextureInfo struct.
-    #[deprecated(since="0.5", note="Use builder() instead.")]
-    #[allow(deprecated)]
-    pub fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
+    fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
         let context = rendercontext::lock(context);
 
         let texture = glium::texture::Texture2d::empty_with_format(
@@ -97,6 +93,11 @@ impl Texture {
             dimensions  : Point2(info.width, info.height),
         }
     }
+}
+
+/// Crate: Creates a new texture from given TextureInfo struct.
+pub fn from_info(context: &RenderContext, info: TextureInfo) -> Texture {
+    Texture::from_info(context, info)
 }
 
 /// Returns the texture handle.
@@ -210,8 +211,6 @@ pub enum TextureFormat {
 
 /// A struct used to describe a [`Texture`](struct.Texture.html) to be created via [`Texture::from_info()`](struct.Texture.html#method.from_info).
 #[derive(Clone)]
-#[deprecated(since="0.5", note="See Texture::builder() instead.")]
-#[allow(deprecated)]
 pub struct TextureInfo {
     pub minify  : TextureFilter,
     pub magnify : TextureFilter,
@@ -221,7 +220,6 @@ pub struct TextureInfo {
     pub height  : u32,
 }
 
-#[allow(deprecated)]
 impl Default for TextureInfo {
     fn default() -> TextureInfo {
         TextureInfo {

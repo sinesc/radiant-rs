@@ -1,7 +1,7 @@
 use prelude::*;
 use glium;
 use core::{
-    self, texture, layer, scene, rendercontext, blendmode, program, uniform,
+    self, texture, layer, rendercontext, blendmode, program, uniform,
     Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
     GliumUniform, blendmodes,
@@ -269,14 +269,6 @@ impl Renderer {
     /// Pops a target from the target stack
     fn pop_target(self: &Self) {
         self.target.borrow_mut().pop();
-    }
-
-    /// Draws given scene to the current target.
-    #[deprecated(note="Removed for being out of scope of this library")]
-    #[allow(deprecated)]
-    pub fn draw_scene(self: &Self, scene: &scene::Scene, per_frame_multiplier: f32) -> &Self {
-        scene::draw(scene, self, per_frame_multiplier);
-        self
     }
 }
 

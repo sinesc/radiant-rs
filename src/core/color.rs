@@ -154,12 +154,6 @@ impl Color {
         self
     }
 
-    /// Returns the instance's channels as a tuple.
-    #[deprecated(since="0.2", note="Use into() instead.")]
-    pub fn as_tuple(self: &Self) -> (f32, f32, f32, f32) {
-        (self.0, self.1, self.2, self.3)
-    }
-
     /// Returns opaque white color.
     pub fn white() -> Color {
         Color(1.0, 1.0, 1.0, 1.0)
@@ -198,12 +192,6 @@ impl Color {
     /// Returns opaque magenta color.
     pub fn magenta() -> Color {
         Color(1.0, 0.0, 1.0, 1.0)
-    }
-
-    /// Returns opaque magenta color.
-    #[deprecated(since="0.2", note="Use magenta() instead.")]
-    pub fn puple() -> Color {
-        Self::magenta()
     }
 
     /// Hue to rgb helper function uses by hsl.

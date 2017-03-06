@@ -13,7 +13,7 @@ pub fn main() {
     sprite.draw(&layer, 0, (190., 100.), Color::green());
     sprite.draw(&layer, 0, (160., 155.), Color::blue());
 
-    // A texture. Each frame we'll draw the sprites to "surface", then blend it with
+    // A texture. Each frame we'll draw the sprites to "surface", then blended with
     // a low opacity black to make old contents slowly disappear.
     let surface = Texture::new(&renderer.context(), 640, 480);
 

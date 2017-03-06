@@ -1,5 +1,4 @@
-#[allow(deprecated)]
-use core::{Display, DisplayInfo};
+use core::{Display, DisplayInfo, display};
 use maths::Point2;
 
 /// A display builder.
@@ -10,19 +9,16 @@ use maths::Point2;
 /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
 /// ```
 #[must_use]
-#[allow(deprecated)]
 pub struct DisplayBuilder {
     info: DisplayInfo,
 }
 
-#[allow(deprecated)]
 pub fn create_displaybuilder() -> DisplayBuilder {
     DisplayBuilder {
         info: DisplayInfo { ..DisplayInfo::default() }
     }
 }
 
-#[allow(deprecated)]
 impl DisplayBuilder {
     /// Sets a width for the display.
     pub fn width(mut self: Self, width: u32) -> Self {
@@ -68,6 +64,6 @@ impl DisplayBuilder {
     }
     /// Returns the constructed display instance.
     pub fn build(self: Self) -> Display {
-        Display::new(self.info)
+        display::create(self.info)
     }
 }

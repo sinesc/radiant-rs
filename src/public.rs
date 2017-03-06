@@ -21,15 +21,4 @@ pub mod support {
 
     pub use core::{InputIterator, InputUpIterator, InputDownIterator};
     pub use core::{DrawBuilder, DisplayBuilder, FontBuilder, FontQueryBuilder, TextureBuilder};
-    #[allow(deprecated)]
-    pub use core::{DisplayInfo, FontInfo, TextureInfo};
-}
-
-#[deprecated(note="Removed for being out of scope of this library")]
-#[allow(deprecated)]
-pub mod scene {
-    //! Optional scene abstraction.
-    //!
-    //! Currently ~~**work in progress**~~ and not particularly useful yet.
-    pub use core::{OpId, LayerId, SpriteId, FontId, Op, Scene};
 }
