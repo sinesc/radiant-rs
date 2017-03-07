@@ -24,7 +24,7 @@ pub fn main() {
     let first_gid = map.tilesets[0].first_gid;
 
     // Set up an isometric transformation matrix.
-    let mut iso_transform = Mat4::identity();
+    let mut iso_transform = math::Mat4::identity();
     iso_transform.translate((320., 50., 0.));
     iso_transform.scale((64. / 2f32.sqrt(), 36. / 2f32.sqrt()));
     iso_transform.rotate(PI / 4.);
@@ -39,7 +39,7 @@ pub fn main() {
                 let tile_id = tile_layer.tiles[y][x];
                 if tile_id >= first_gid {
                     let name = tile_to_name[&(tile_id - first_gid)];
-                    let pos = iso_transform * Vec2(x as f32, y as f32);
+                    let pos = iso_transform * math::Vec2(x as f32, y as f32);
                     tileset.draw(&layers.last().unwrap(), name_to_frame_id[name], (pos.0.round(), pos.1.round()), Color::white());
                 }
             }

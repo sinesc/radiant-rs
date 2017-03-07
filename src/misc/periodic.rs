@@ -1,7 +1,7 @@
 use prelude::*;
 use super::min;
 
-/// A generic interval, testable for elapsation. !todo Is that even a word?
+/// A generic interval.
 #[derive(Copy, Clone)]
 pub struct Periodic<S = f32, T = S> {
     interval: T,
