@@ -1,7 +1,7 @@
 # radiant-rs
-Thread-safe Rust sprite rendering engine with a friendly API and custom shader support.
+Rust sprite rendering engine with a friendly API, wait-free send+sync drawing targets and custom shader support.
 
-API still WIP, expect minor but possibly annoying breakage.
+API still WIP, expect some breakage.
 
 [Getting started and reference here](https://sinesc.github.io/doc/radiant_rs/).
 
@@ -9,12 +9,7 @@ To compile the examples, use e.g. `cargo run --release --example demo_glare`. Se
 
 ## Some screenshots from the examples
 
-![Demo Screenshot](https://sinesc.github.io/images/radiant/glare.png "Demo Screenshot")
-
-![Demo Screenshot](https://sinesc.github.io/images/radiant/bloom.png "Demo Screenshot")
-
-![Demo Screenshot](https://sinesc.github.io/images/radiant/tiles2.png "Demo Screenshot")
-
-![Example Screenshot](https://sinesc.github.io/images/radiant/postprocess.png "Example Screenshot")
-
-![Example Screenshot](https://sinesc.github.io/images/radiant/to_texture.png "Example Screenshot")
+![examples/demo_glare.rs](https://sinesc.github.io/images/radiant/glare.png "examples/demo_glare.rs")
+![examples/05_tiles.rs](https://sinesc.github.io/images/radiant/tiles2.png "examples/05_tiles.rs")
+![examples/demo_blobs.rs](https://sinesc.github.io/images/radiant/bloom.png "examples/demo_blobs.rs")
+![examples/07_to_texture.rs](https://sinesc.github.io/images/radiant/to_texture.png "examples/07_to_texture.rs")
