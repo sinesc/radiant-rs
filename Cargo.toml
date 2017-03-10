@@ -29,11 +29,6 @@ path = "src/lib.rs"
 
 [[bin]]
 doc = false
-name = "blobs"
-path = "src/main.rs"
-
-[[bin]]
-doc = false
 name = "spritesheet"
 path = "tools/spritesheet.rs"
 
