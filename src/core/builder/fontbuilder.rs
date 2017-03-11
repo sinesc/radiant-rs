@@ -4,7 +4,13 @@ use core::{Result, Font, FontInfo, RenderContext, font};
 ///
 /// Obtained from [`Font::builder()`](../struct.Font.html#method.builder).
 ///
-/// ```
+/// # Examples
+///
+/// ```rust
+/// # use radiant_rs::*;
+/// # let display = Display::builder().build();
+/// # let renderer = Renderer::new(&display).unwrap();
+/// # let rendercontext = renderer.context();
 /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
 /// ```
 #[must_use]

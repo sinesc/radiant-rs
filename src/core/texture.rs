@@ -22,7 +22,13 @@ pub struct Texture {
 impl Texture {
     /// Returns a textu builder for texture construction.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
+    /// # let display = Display::builder().build();
+    /// # let renderer = Renderer::new(&display).unwrap();
+    /// # let rendercontext = renderer.context();
     /// let tex = Texture::builder(&rendercontext)
     ///                     .dimensions((640, 480))
     ///                     .magnify(TextureFilter::Nearest)

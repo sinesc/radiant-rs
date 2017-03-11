@@ -30,7 +30,13 @@ impl Font {
 
     /// Returns a [font builder](support/struct.FontBuilder.html) for font construction.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
+    /// # let display = Display::builder().build();
+    /// # let renderer = Renderer::new(&display).unwrap();
+    /// # let rendercontext = renderer.context();
     /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
     /// ```
     pub fn builder(context: &RenderContext) -> FontBuilder {
@@ -53,7 +59,10 @@ impl Font {
 
     /// Returns a query builder to retrieve the names of all available system fonts with the given properties (e.g. monospace).
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
     /// let monospace_fonts = Font::query().monospace().italic().fetch();
     /// ```
     pub fn query() -> FontQueryBuilder {

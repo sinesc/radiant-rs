@@ -5,7 +5,10 @@ use maths::Point2;
 ///
 /// Obtained from [`Display::builder()`](../struct.Display.html#method.builder).
 ///
-/// ```
+/// # Examples
+///
+/// ```rust
+/// # use radiant_rs::*;
 /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
 /// ```
 #[must_use]

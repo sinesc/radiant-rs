@@ -116,8 +116,16 @@ impl Renderer {
 
     /// Draws a rectangle to the current target. See [`DrawBuilder`](support/struct.DrawBuilder.html) for available options.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
+    /// # let display = Display::builder().build();
+    /// # let renderer = Renderer::new(&display).unwrap();
+    /// # let tex = Texture::new(&renderer.context(), 1, 1);
+    /// # display.prepare_frame();
     /// renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).texture(&tex).draw();
+    /// # display.swap_frame();
     /// ```
     pub fn rect<T>(self: &Self, target_rect: T) -> DrawBuilder<DrawBuilderRect> where Rect<f32>: From<T> {
         create_drawbuilderrect(self, Rect::<f32>::from(target_rect))
@@ -127,8 +135,16 @@ impl Renderer {
     ///
     /// This is a specialization of `rect()` that simply fills the entire target.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
+    /// # let display = Display::builder().build();
+    /// # let renderer = Renderer::new(&display).unwrap();
+    /// # let tex = Texture::new(&renderer.context(), 1, 1);
+    /// # display.prepare_frame();
     /// renderer.fill().blendmode(blendmodes::ALPHA).texture(&tex).draw();
+    /// # display.swap_frame();
     /// ```
     pub fn fill(self: &Self) -> DrawBuilder<DrawBuilderFill> {
         create_drawbuilderfill(self)
@@ -192,15 +208,25 @@ impl Renderer {
 
     /// Reroutes draws issued within `draw_func()` to given Texture.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
+    /// # let display = Display::builder().build();
+    /// # let renderer = Renderer::new(&display).unwrap();
+    /// # let some_layer = Layer::new((1.0, 1.0));
+    /// # let some_texture = Texture::new(&renderer.context(), 1, 1);
+    /// # let rendercontext = renderer.context();
     /// // Create a texture to render to.
     /// let surface = Texture::new(&rendercontext, 640, 480);
     ///
     /// // Render something to it.
+    /// # display.prepare_frame();
     /// renderer.render_to(&surface, || {
     ///     renderer.rect((0., 0., 640., 480.)).texture(&some_texture).draw();
     ///     renderer.draw_layer(&some_layer, 0);
     /// });
+    /// # display.swap_frame();
     /// ```
     pub fn render_to<F>(self: &Self, texture: &Texture, mut draw_func: F) -> &Self where F: FnMut() {
         self.push_target(texture);
@@ -213,18 +239,30 @@ impl Renderer {
     ///
     /// The following example uses the [`Basic`](postprocessors/struct.Basic.html) postprocessor provided by the library.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
+    /// # let display = Display::builder().build();
+    /// # let renderer = Renderer::new(&display).unwrap();
+    /// # let some_layer = Layer::new((1.0, 1.0));
+    /// # let some_texture = Texture::new(&renderer.context(), 1, 1);
+    /// # let rendercontext = renderer.context();
+    /// # let program_source = "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }";
+    /// # let my_layer = Layer::new((1.0, 1.0));
     /// // Load a shader progam.
-    /// let my_program = Program::from_string(&rendercontext, include_str!("shader.fs")).unwrap();
+    /// let my_program = Program::from_string(&rendercontext, &program_source).unwrap();
     ///
     /// // Create the postprocessor with the program.
     /// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program);
     ///
     /// // ... in your renderloop...
+    /// # display.prepare_frame();
     /// renderer.postprocess(&my_postprocessor, &blendmodes::ALPHA, || {
     ///     renderer.clear(Color::black());
     ///     renderer.draw_layer(&my_layer, 0);
     /// });
+    /// # display.swap_frame();
     /// ```
     pub fn postprocess<P, F>(self: &Self, postprocessor: &P, arg: &<P as Postprocessor>::T, mut draw_func: F) -> &Self where F: FnMut(), P: Postprocessor {
 
@@ -255,12 +293,12 @@ impl Renderer {
     pub fn copy_from<R>(self: &Self, source: &R, filter: TextureFilter) where R: AsRenderTarget {
         self.target.borrow().last().unwrap().blit(&source.as_render_target(), filter);
     }
-/*
+
     /// Returns a reference to the default rendering program.
     pub fn default_program(self: &Self) -> &Program {
         self.program.deref()
     }
-*/
+
     /// Pushes a target onto the target stack
     fn push_target<T>(self: &Self, target: &T) where T: AsRenderTarget {
         self.target.borrow_mut().push(target.as_render_target().clone());

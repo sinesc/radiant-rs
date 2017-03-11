@@ -40,11 +40,22 @@ Likewise, use [`Renderer::postprocess()`](struct.Renderer.html#method.postproces
 These methods can be combined/nested as shown here:
 
 ```
+# use radiant_rs::*;
+# let display = Display::builder().build();
+# let renderer = Renderer::new(&display).unwrap();
+# let layer = Layer::new((1.0, 1.0));
+# let surface = Texture::new(&renderer.context(), 1, 1);
+# let program = Program::from_string(&renderer.context(), "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }").unwrap();
+# let p2 = program.clone();
+# let effect1 = postprocessors::Basic::new(&renderer.context(), program);
+# let effect2 = postprocessors::Basic::new(&renderer.context(), p2);
+# let effect1_arguments = blendmodes::ALPHA;
+# let effect2_arguments = blendmodes::ALPHA;
 renderer.render_to(&surface, || {
     renderer.postprocess(&effect1, &effect1_arguments, || {
         renderer.postprocess(&effect2, &effect2_arguments, || {
             //...
-            renderer.draw_layer(&layer);
+            renderer.draw_layer(&layer, 1);
         });
         //... maybe draw here with only effect 1? ...
     });
@@ -98,7 +109,7 @@ component instead of the default one set by `Renderer::draw_layer()`.
 
 Example: (This is the default shader used by radiant.)
 
-```
+```text
 #version 140
 
 in vec2 v_tex_coords;

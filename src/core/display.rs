@@ -25,7 +25,10 @@ impl Display {
 
     /// Returns a [display builder](support/struct.DisplayBuilder.html) for display construction.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use radiant_rs::*;
     /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
     /// ```
     pub fn builder() -> DisplayBuilder {
