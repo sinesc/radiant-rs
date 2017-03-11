@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RenderContextTexture};
+use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RenderContextData, RenderContextTexture};
 use maths::{Point2, Vec2, Rect};
 use Color;
 use image::{self, GenericImage};
@@ -12,15 +12,12 @@ use regex::Regex;
 /// follow a specific pattern. (Future versions will add more configurable means to load sprites.)
 #[derive(Clone)]
 pub struct Sprite {
-    /// Defines the sprite origin. Defaults to (0.5, 0.5), meaning that the center of the
-    /// sprite would be drawn at the coordinates given to [`Sprite::draw()`](#method.draw). Likewise, (0.0, 0.0)
-    /// would mean that the sprite's top left corner would be drawn at the given coordinates.
-    pub anchor      : Point2,
-    width           : f32,
-    height          : f32,
-    num_frames      : u32,
-    components      : u32,
-    bucket_id       : u32,
+    anchor          : Point2<u16>,
+    width           : u16,
+    height          : u16,
+    num_frames      : u16,
+    components      : u8,
+    bucket_id       : u8,
     texture_id      : u32,
     u_max           : f32,
     v_max           : f32,
@@ -68,7 +65,7 @@ impl<'a> Sprite {
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let dim = Point2(self.width, self.height);
+        let dim = Point2(self.width as f32, self.height as f32);
         let scale = Vec2(1.0, 1.0);
         layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
         self
@@ -79,30 +76,37 @@ impl<'a> Sprite {
         let bucket_id = self.bucket_id;
         let texture_id = self.texture_id(frame_id);
         let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let anchor = Point2(self.anchor.0, self.anchor.1);
-        let dim = Point2(self.width, self.height);
-        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Point2::from(position), anchor, dim, color, rotation, Vec2::from(scale));
+        let dim = Point2(self.width as f32, self.height as f32);
+        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
+        self
+    }
+
+    /// Defines the sprite origin. Defaults to (0.5, 0.5), meaning that the center of the
+    /// sprite would be drawn at the coordinates given to [`Sprite::draw()`](#method.draw). Likewise, (0.0, 0.0)
+    /// would mean that the sprite's top left corner would be drawn at the given coordinates.
+    pub fn set_anchor(self: &mut Self, anchor: Point2) -> &Self {
+        self.anchor = Point2((anchor.0 * self.width as f32) as u16, (anchor.1 * self.height as f32) as u16);
         self
     }
 
     /// Returns the width of the sprite.
-    pub fn width(self: &Self) -> f32 {
-        self.width
+    pub fn width(self: &Self) -> u32 {
+        self.width as u32
     }
 
     /// Returns the height of the sprite.
-    pub fn height(self: &Self) -> f32 {
-        self.height
+    pub fn height(self: &Self) -> u32 {
+        self.height as u32
     }
 
     /// Returns the number of frames of the sprite.
     pub fn num_frames(self: &Self) -> u32 {
-        self.num_frames
+        self.num_frames as u32
     }
 
     /// Returns the texture id for given frame
     fn texture_id(self: &Self, frame_id: u32) -> u32 {
-        self.texture_id + (frame_id % self.num_frames) * self.components
+        self.texture_id + (frame_id % self.num_frames as u32) * (self.components as u32)
     }
 
     /// Returns the sprite wrapped in an std::Arc
@@ -129,12 +133,12 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
     let texture_id = rendercontext::lock(context).store_frames(bucket_id, raw_frames);
 
     Sprite {
-        width       : frame_width as f32,
-        height      : frame_height as f32,
-        num_frames  : num_frames,
-        components  : components,
-        anchor      : Point2(0.5, 0.5),
-        bucket_id   : bucket_id,
+        anchor      : Point2(frame_width as u16 / 2, frame_height as u16 / 2),
+        width       : frame_width as u16,
+        height      : frame_height as u16,
+        num_frames  : num_frames as u16,
+        components  : components as u8,
+        bucket_id   : bucket_id as u8,
         texture_id  : texture_id,
         u_max       : (frame_width as f32 / texture_size as f32),
         v_max       : (frame_height as f32 / texture_size as f32),

@@ -173,14 +173,14 @@ pub fn program(layer: &Layer) -> Option<&Program> {
 }
 
 /// Draws a rectangle on given layer.
-pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32, uv: Rect, pos: Point2, anchor: Point2, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
+pub fn add_rect(layer: &Layer, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<u16>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
 
     layer.contents.dirty.store(true, Ordering::Relaxed);
 
     // corner positions relative to x/y
 
-    let anchor_x = anchor.0 * dim.0;
-    let anchor_y = anchor.1 * dim.1;
+    let anchor_x = anchor.0 as f32;
+    let anchor_y = anchor.1 as f32;
 
     let offset_x0 = -anchor_x * scale.0;
     let offset_x1 = (dim.0 - anchor_x) * scale.0;
@@ -196,10 +196,10 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32,
         offset      : [offset_x0, offset_y0],
         rotation    : rotation,
         color       : color,
-        bucket_id   : bucket_id,
+        bucket_id   : bucket_id as u32, // !TODO
         texture_id  : texture_id,
-        texture_uv  : [(uv.0).0, (uv.0).1],
-        components  : components,
+        texture_uv  : uv.top_left().into(),
+        components  : components as u32, // !TODO
     });
 
     map.set(1, Vertex {
@@ -207,10 +207,10 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32,
         offset      : [offset_x1, offset_y0],
         rotation    : rotation,
         color       : color,
-        bucket_id   : bucket_id,
+        bucket_id   : bucket_id as u32, // !TODO
         texture_id  : texture_id,
-        texture_uv  : [(uv.1).0, (uv.0).1],
-        components  : components,
+        texture_uv  : uv.top_right().into(),
+        components  : components as u32, // !TODO
     });
 
     map.set(2, Vertex {
@@ -218,10 +218,10 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32,
         offset      : [offset_x0, offset_y1],
         rotation    : rotation,
         color       : color,
-        bucket_id   : bucket_id,
+        bucket_id   : bucket_id as u32, // !TODO
         texture_id  : texture_id,
-        texture_uv  : [(uv.0).0, (uv.1).1],
-        components  : components,
+        texture_uv  : uv.bottom_left().into(),
+        components  : components as u32, // !TODO
     });
 
     map.set(3, Vertex {
@@ -229,10 +229,10 @@ pub fn add_rect(layer: &Layer, bucket_id: u32, texture_id: u32, components: u32,
         offset      : [offset_x1, offset_y1],
         rotation    : rotation,
         color       : color,
-        bucket_id   : bucket_id,
+        bucket_id   : bucket_id as u32, // !TODO
         texture_id  : texture_id,
-        texture_uv  : [(uv.1).0, (uv.1).1],
-        components  : components,
+        texture_uv  : uv.bottom_right().into(),
+        components  : components as u32, // !TODO
     });
 }
 
