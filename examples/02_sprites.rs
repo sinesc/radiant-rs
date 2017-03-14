@@ -8,7 +8,7 @@ pub fn main() {
     let renderer = Renderer::new(&display).unwrap();
 
     // Create a sprite from a spritesheet file, extracting frame layout from filename.
-    let sprite = Sprite::from_file(&renderer.context(), r"res/ball_v2_32x32x18.jpg").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/ball_v2_32x32x18.jpg").unwrap();
 
     // A layer where 320x240 units correspond to the full window (which measures 640x480 pixels, so that one unit = two pixel).
     let layer = Layer::new((320., 240.));

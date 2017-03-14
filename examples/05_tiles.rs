@@ -11,13 +11,13 @@ pub fn main() {
     let renderer = Renderer::new(&display).unwrap();
 
     // Load tile-sheet as sprite, each frame will be a tile.
-    let tileset = Sprite::from_file(&renderer.context(), r"res\iso_64x128.png").unwrap();
+    let tileset = Sprite::from_file(&renderer.context(), r"res/tiles/iso_64x128.png").unwrap();
 
     // Create a HashMap that maps each tile-name to a frame_id. The sheet and the textfile were generated from a folder of images using tools/spritesheet.rs
-    let name_to_frame_id = include_str!(r"../res/iso_64x128.txt").trim().lines().enumerate().map(|(id, line)| (line, id as u32)).collect::<HashMap<_, _>>();
+    let name_to_frame_id = include_str!(r"../res/tiles/iso_64x128.txt").trim().lines().enumerate().map(|(id, line)| (line, id as u32)).collect::<HashMap<_, _>>();
 
     // Use rs-tiled to load a tilemap (free tiles from http://www.kenney.nl/)
-    let map = tiled::parse(File::open("res/iso.tmx").unwrap()).unwrap();
+    let map = tiled::parse(File::open("res/tiles/iso.tmx").unwrap()).unwrap();
 
     // Create another HashMap that maps each of tiled's local tile ids to their image file name.
     let tile_to_name = map.tilesets[0].tiles.iter().map(|tile| (tile.id, Path::new(&tile.images[0].source).file_name().unwrap().to_str().unwrap()) ).collect::<HashMap<_, _>>();
