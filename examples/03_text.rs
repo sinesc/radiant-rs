@@ -18,9 +18,9 @@ pub fn main() {
         layer.set_color(Color::from_hsl((frame.elapsed_f32/5.0).fract(), 0.5, 0.5, 1.0));
 
         // Write some text
-        large.write(&layer, "Nine squared", (210., 100.));
-        small.write(&layer, include_str!("../res/03_text.txt"), (210., 160.));
-        tiny_it.write(&layer, "https://en.wikipedia.org/wiki/Leigh_Mercer", (10., 460.));
+        large.write(&layer, "Nine squared", (210., 100.), Color::white());
+        small.write(&layer, include_str!("../res/03_text.txt"), (210., 160.), Color::white());
+        tiny_it.write(&layer, "https://en.wikipedia.org/wiki/Leigh_Mercer", (10., 460.), Color::white());
 
         // The usual clear, draw, swap, repeat.
         display.clear_frame(Color::black());

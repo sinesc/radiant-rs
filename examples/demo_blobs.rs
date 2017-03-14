@@ -15,7 +15,7 @@ pub fn main() {
 
     let sprite = Sprite::from_file(&renderer.context(), r"res/sparkles_64x64x1.png").unwrap();
     let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
-    let big_red_font = font.with_size(24.0).with_color(Color::red());
+    let big_font = font.with_size(24.0);
 
     // Clone a couple of layer matrices to play around with
     let mut view1 = spark_layer.view_matrix().clone();
@@ -52,18 +52,18 @@ pub fn main() {
                 renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
                 renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
             });
-            font.write(&text_layer, "Custom postprocessor: enabled", (240., 450.));
+            font.write(&text_layer, "Custom postprocessor: enabled", (240., 450.), Color::white());
         } else {
             // Unprocessed version
             renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
             renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
             renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
-            font.write(&text_layer, "Custom postprocessor: disabled", (240., 450.));
+            font.write(&text_layer, "Custom postprocessor: disabled", (240., 450.), Color::white());
         }
 
         // Draw text
-        big_red_font.write(&text_layer, "blobs.rs", (355., 330.));
-        font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.));
+        big_font.write(&text_layer, "blobs.rs", (355., 330.), Color::red());
+        font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.), Color::white());
         renderer.draw_layer(&text_layer, 0);
 
         display.swap_frame();

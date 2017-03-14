@@ -29,19 +29,19 @@ pub fn main() {
         // Draw top row of sprites: unprocessed components.
         let frame_id = (frame.elapsed_f32 * 30.0) as u32;
         sprite.draw(&color_layer, frame_id, (120., 100.), Color::white());
-        font.write(&color_layer, "Sprite component 0", (80., 140.));
+        font.write(&color_layer, "Sprite component 0", (80., 140.), Color::white());
 
         sprite.draw(&unprocessed_lightmap_layer, frame_id, (320., 100.), Color::white());
-        font.write(&color_layer, "Sprite component 1", (280., 140.));
+        font.write(&color_layer, "Sprite component 1", (280., 140.), Color::white());
 
         sprite.draw(&color_layer, frame_id, (520., 100.), Color::white());
         sprite.draw(&unprocessed_lightmap_layer, frame_id, (520., 100.), Color::white());
-        font.write(&color_layer, "Both components", (480., 140.));
+        font.write(&color_layer, "Both components", (480., 140.), Color::white());
 
         // Draw bottom sprite: this one uses lightmap_layer, which will be postprocessed below.
         sprite.draw(&color_layer, frame_id, (320., 380.), Color::white());
         sprite.draw(&lightmap_layer, frame_id, (320., 380.), Color::white());
-        font.write(&color_layer, "Component 0 wihout postprocessing\nComponent 1 with postprocessing", (220., 440.));
+        font.write(&color_layer, "Component 0 wihout postprocessing\nComponent 1 with postprocessing", (220., 440.), Color::white());
 
         // Draw unprocessed layers.
         renderer.draw_layer(&color_layer, 0);

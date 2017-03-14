@@ -14,15 +14,14 @@ static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 /// Use [`Font::builder()`](#method.builder) to create a new font from a registered system font or
 /// a local file. The [`Font::from_file()`](#method.from_file) is a shortcut to achieve the latter.
 ///
-/// In addition to the usual properties of a font, radiant also assigns a fixed color and size
-/// to each font object. Instead of modifying these properties, you can clone a new font
-/// with modified values using [`Font::with_color()`](struct.Font.html#method.with_color) and/or [`Font::with_size()`](struct.Font.html#method.with_size).
+/// In addition to the usual properties of a font, radiant also assigns a fixed size
+/// to each font object. Instead of modifying this value, you can clone a new font
+/// with a different size using [`Font::with_size()`](struct.Font.html#method.with_size).
 #[derive(Clone)]
 pub struct Font {
     data    : Vec<u8>,
     font_id : usize,
     size    : f32,
-    color   : Color,
     context : RenderContext,
 }
 
@@ -76,32 +75,25 @@ impl Font {
         font
     }
 
-    /// Returns a new font instance with given color.
-    pub fn with_color(self: &Self, color: Color) -> Font {
-        let mut font = (*self).clone();
-        font.color = color;
-        font
-    }
-
     /// Write to given layer.
-    pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T) -> &Font where Vec2<f32>: From<T> {
+    pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color) -> &Font where Vec2<f32>: From<T> {
         let position = Vec2::from(position);
-        write(self, layer, text, position.0, position.1, 0.0, self.color, 0.0, 1.0, 1.0);
+        write(self, layer, text, position.0, position.1, 0.0, color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels.
-    pub fn write_wrapped<T>(self: &Self, layer: &Layer, text: &str, position: T, max_width: f32) -> &Font where Vec2<f32>: From<T> {
+    pub fn write_wrapped<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32) -> &Font where Vec2<f32>: From<T> {
         let position = Vec2::from(position);
-        write(self, layer, text, position.0, position.1, max_width, self.color, 0.0, 1.0, 1.0);
+        write(self, layer, text, position.0, position.1, max_width, color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels and applies given rotation and scaling.
-    pub fn write_transformed<T, U>(self: &Self, layer: &Layer, text: &str, position: T, max_width: f32, rotation: f32, scale: U) -> &Font where Vec2<f32>: From<T>+From<U> {
+    pub fn write_transformed<T, U>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32, rotation: f32, scale: U) -> &Font where Vec2<f32>: From<T>+From<U> {
         let position = Vec2::from(position);
         let scale = Vec2::from(scale);
-        write(self, layer, text, position.0, position.1, max_width, self.color, rotation, scale.0, scale.1);
+        write(self, layer, text, position.0, position.1, max_width, color, rotation, scale.0, scale.1);
         self
     }
 
@@ -153,7 +145,6 @@ fn create_font(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
         data    : font_data,
         font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
         size    : size,
-        color   : Color::white(),
         context : context.clone(),
     }
 }

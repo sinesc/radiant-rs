@@ -29,7 +29,7 @@ pub fn main() {
             let mut rot = 0.0;
             let pos = 120.0 + (i as f32) * 20.0;
             loop {
-                font.write_transformed(&layer, &format!("Thread {} !", i+1), (pos, pos / 1.33), 0.0, rot, (1.0, 1.0));
+                font.write_transformed(&layer, &format!("Thread {} !", i+1), (pos, pos / 1.33), Color::white(), 0.0, rot, (1.0, 1.0));
                 rot += 0.01;
 
                 // wait until all other threads have also drawn, then wait until the layers have been rendered
