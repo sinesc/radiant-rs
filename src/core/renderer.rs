@@ -95,11 +95,11 @@ impl Renderer {
             .add("_rd_color", GliumUniform::Vec4(layer.color().deref().into()))
             .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
             .add("_rd_comp", GliumUniform::UnsignedInt(component))
-            .add("_rd_tex1", GliumUniform::Texture2dArray(context.tex_array[1].data.deref()))
-            .add("_rd_tex2", GliumUniform::Texture2dArray(context.tex_array[2].data.deref()))
-            .add("_rd_tex3", GliumUniform::Texture2dArray(context.tex_array[3].data.deref()))
-            .add("_rd_tex4", GliumUniform::Texture2dArray(context.tex_array[4].data.deref()))
-            .add("_rd_tex5", GliumUniform::Texture2dArray(context.tex_array[5].data.deref()));
+            .add("_rd_tex1", GliumUniform::Texture2dArray(context.tex_arrays[1].data.deref()))
+            .add("_rd_tex2", GliumUniform::Texture2dArray(context.tex_arrays[2].data.deref()))
+            .add("_rd_tex3", GliumUniform::Texture2dArray(context.tex_arrays[3].data.deref()))
+            .add("_rd_tex4", GliumUniform::Texture2dArray(context.tex_arrays[4].data.deref()))
+            .add("_rd_tex5", GliumUniform::Texture2dArray(context.tex_arrays[5].data.deref()));
 
         // set up draw parameters for given blend options
         let draw_parameters = glium::draw_parameters::DrawParameters {

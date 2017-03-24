@@ -12,15 +12,31 @@ use regex::Regex;
 /// follow a specific pattern. (Future versions will add more configurable means to load sprites.)
 #[derive(Clone)]
 pub struct Sprite {
-    anchor          : Point2<u16>,
+    anchor  : Point2<u16>,
+    data    : Arc<SpriteData>,
+}
+
+pub struct SpriteData {
     width           : u16,
     height          : u16,
     num_frames      : u16,
     components      : u8,
     bucket_id       : u8,
-    texture_id      : u32,
+    pub texture_id  : AtomicUsize,
+    pub generation  : AtomicUsize,
     u_max           : f32,
     v_max           : f32,
+    context         : Weak<Mutex<RenderContextData>>,
+}
+
+impl Drop for SpriteData {
+    fn drop(self: &mut Self) {
+        if let Some(context) = self.context.upgrade() {
+            // !todo could store id ranges in rendercontext and avoid this. it could drop ranges based on whether its own weak ref to the sprite is expired. might avoid bitfield stuff as well.
+            let mut context = context.lock().unwrap();
+            context.invalidate_frames(self.bucket_id, self.texture_id.load(Ordering::Relaxed) as u32, self.num_frames as u32 * self.components as u32)
+        }
+    }
 }
 
 /// Sprite parameter layout type. Sprites are arranged either horizontally or
@@ -62,22 +78,24 @@ impl<'a> Sprite {
 
     /// Draws a sprite onto the given layer.
     pub fn draw<T>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color) -> &Self where Point2: From<T> {
-        let bucket_id = self.bucket_id;
+        let bucket_id = self.data.bucket_id;
         let texture_id = self.texture_id(frame_id);
-        let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let dim = Point2(self.width as f32, self.height as f32);
+        let uv = Rect::new(0.0, 0.0, self.data.u_max, self.data.v_max);
+        let dim = Point2(self.data.width as f32, self.data.height as f32);
         let scale = Vec2(1.0, 1.0);
-        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
+        let generation = self.data.generation.load(Ordering::Relaxed);
+        layer::add_rect(layer, generation, bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
         self
     }
 
     /// Draws a sprite onto the given layer and applies given color, rotation and scaling.
     pub fn draw_transformed<T, U>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Point2: From<T>, Vec2: From<U> {
-        let bucket_id = self.bucket_id;
+        let bucket_id = self.data.bucket_id;
         let texture_id = self.texture_id(frame_id);
-        let uv = Rect::new(0.0, 0.0, self.u_max, self.v_max);
-        let dim = Point2(self.width as f32, self.height as f32);
-        layer::add_rect(layer, bucket_id, texture_id, self.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
+        let uv = Rect::new(0.0, 0.0, self.data.u_max, self.data.v_max);
+        let dim = Point2(self.data.width as f32, self.data.height as f32);
+        let generation = self.data.generation.load(Ordering::Relaxed);
+        layer::add_rect(layer, generation, bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
         self
     }
 
@@ -85,33 +103,33 @@ impl<'a> Sprite {
     /// sprite would be drawn at the coordinates given to [`Sprite::draw()`](#method.draw). Likewise, (0.0, 0.0)
     /// would mean that the sprite's top left corner would be drawn at the given coordinates.
     pub fn set_anchor(self: &mut Self, anchor: Point2) -> &Self {
-        self.anchor = Point2((anchor.0 * self.width as f32) as u16, (anchor.1 * self.height as f32) as u16);
+        self.anchor = Point2((anchor.0 * self.data.width as f32) as u16, (anchor.1 * self.data.height as f32) as u16);
         self
     }
 
     /// Returns the width of the sprite.
     pub fn width(self: &Self) -> u32 {
-        self.width as u32
+        self.data.width as u32
     }
 
     /// Returns the height of the sprite.
     pub fn height(self: &Self) -> u32 {
-        self.height as u32
+        self.data.height as u32
     }
 
     /// Returns the number of frames of the sprite.
     pub fn num_frames(self: &Self) -> u32 {
-        self.num_frames as u32
-    }
-
-    /// Returns the texture id for given frame
-    fn texture_id(self: &Self, frame_id: u32) -> u32 {
-        self.texture_id + (frame_id % self.num_frames as u32) * (self.components as u32)
+        self.data.num_frames as u32
     }
 
     /// Returns the sprite wrapped in an std::Arc
     pub fn arc(self: Self) -> Arc<Self> {
         Arc::new(self)
+    }
+
+    /// Returns the texture id for given frame
+    fn texture_id(self: &Self, frame_id: u32) -> u32 {
+        self.data.texture_id.load(Ordering::Relaxed) as u32 + (frame_id % self.data.num_frames as u32) * (self.data.components as u32)
     }
 }
 
@@ -130,18 +148,29 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
 
     let SpriteDescriptor { bucket_id, texture_size, frame_width, frame_height, components, raw_frames } = descriptor;
     let num_frames = (raw_frames.len() as u32 / components) as u32;
-    let texture_id = rendercontext::lock(context).store_frames(bucket_id, raw_frames);
 
-    Sprite {
-        anchor      : Point2(frame_width as u16 / 2, frame_height as u16 / 2),
+    let backref = rendercontext::weak(context);
+    let mut context = rendercontext::lock(context);
+    let texture_id = context.store_frames(bucket_id, raw_frames);
+
+    let sprite_data = Arc::new(SpriteData {
         width       : frame_width as u16,
         height      : frame_height as u16,
         num_frames  : num_frames as u16,
         components  : components as u8,
         bucket_id   : bucket_id as u8,
-        texture_id  : texture_id,
+        texture_id  : AtomicUsize::new(texture_id as usize),
         u_max       : (frame_width as f32 / texture_size as f32),
         v_max       : (frame_height as f32 / texture_size as f32),
+        context     : backref,
+        generation  : AtomicUsize::new(context.generation()),
+    });
+
+    context.store_sprite(bucket_id, Arc::downgrade(&sprite_data));
+
+    Sprite {
+        anchor: Point2(frame_width as u16 / 2, frame_height as u16 / 2),
+        data: sprite_data,
     }
 }
 

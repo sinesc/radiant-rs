@@ -114,10 +114,11 @@ impl Layer {
         self.blend.lock().unwrap()
     }
 
-    /// Removes all previously added object from the layer. Typically invoked after the layer has
+    /// Removes all previously added objects from the layer. Typically invoked after the layer has
     /// been rendered.
     pub fn clear(self: &Self) -> &Self {
-        self.contents.dirty.store(true, Ordering::Relaxed);
+        self.set_dirty(true);
+        self.set_generation(0);
         self.contents.vertex_data.clear();
         self
     }
@@ -149,6 +150,7 @@ impl Layer {
                 vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
                 vertex_buffer   : Mutex::new(None),
                 dirty           : AtomicBool::new(true),
+                generation      : AtomicUsize::new(0),
             }),
             program         : program,
         }
@@ -165,6 +167,18 @@ impl Layer {
             program         : program,
         }
     }
+
+    /// Sets or unsets the layer content generation. A generation can only be set
+    /// if the current generation is unset (generation=0). Returns true on success.
+    fn set_generation(self: &Self, generation: usize) -> bool {
+        let previous = self.contents.generation.swap(generation, Ordering::Relaxed);
+        previous == generation || generation == 0 || previous == 0
+    }
+
+    /// Sets or unsets the layers dirty state
+    fn set_dirty(self: &Self, value: bool) {
+        self.contents.dirty.store(value, Ordering::Relaxed);
+    }
 }
 
 /// Returns a reference to the layer's program, if it has any.
@@ -173,9 +187,12 @@ pub fn program(layer: &Layer) -> Option<&Program> {
 }
 
 /// Draws a rectangle on given layer.
-pub fn add_rect(layer: &Layer, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<u16>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
+pub fn add_rect(layer: &Layer, generation: usize, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<u16>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
 
-    layer.contents.dirty.store(true, Ordering::Relaxed);
+    layer.set_dirty(true);
+    if !layer.set_generation(generation) {
+        panic!("Layer contains garbage data. Note: Layers need to be cleared after performing a RenderContext::prune().");
+    }
 
     // corner positions relative to x/y
 
@@ -297,4 +314,5 @@ struct LayerContents {
     vertex_data     : AVec<Vertex>,
     vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
     dirty           : AtomicBool,
+    generation      : AtomicUsize,
 }
