@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RenderContextData, RenderContextTexture};
+use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RenderContextTexture};
 use maths::{Point2, Vec2, Rect};
 use Color;
 use image::{self, GenericImage};
@@ -19,24 +19,13 @@ pub struct Sprite {
 pub struct SpriteData {
     width           : u16,
     height          : u16,
-    num_frames      : u16,
-    components      : u8,
+    pub num_frames  : u16,
+    pub components  : u8,
     bucket_id       : u8,
     pub texture_id  : AtomicUsize,
     pub generation  : AtomicUsize,
     u_max           : f32,
     v_max           : f32,
-    context         : Weak<Mutex<RenderContextData>>,
-}
-
-impl Drop for SpriteData {
-    fn drop(self: &mut Self) {
-        if let Some(context) = self.context.upgrade() {
-            // !todo could store id ranges in rendercontext and avoid this. it could drop ranges based on whether its own weak ref to the sprite is expired. might avoid bitfield stuff as well.
-            let mut context = context.lock().unwrap();
-            context.invalidate_frames(self.bucket_id, self.texture_id.load(Ordering::Relaxed) as u32, self.num_frames as u32 * self.components as u32)
-        }
-    }
 }
 
 /// Sprite parameter layout type. Sprites are arranged either horizontally or
@@ -149,7 +138,6 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
     let SpriteDescriptor { bucket_id, texture_size, frame_width, frame_height, components, raw_frames } = descriptor;
     let num_frames = (raw_frames.len() as u32 / components) as u32;
 
-    let backref = rendercontext::weak(context);
     let mut context = rendercontext::lock(context);
     let texture_id = context.store_frames(bucket_id, raw_frames);
 
@@ -162,7 +150,6 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
         texture_id  : AtomicUsize::new(texture_id as usize),
         u_max       : (frame_width as f32 / texture_size as f32),
         v_max       : (frame_height as f32 / texture_size as f32),
-        context     : backref,
         generation  : AtomicUsize::new(context.generation()),
     });
 
@@ -268,7 +255,6 @@ fn parse_parameters(dimensions: (u32, u32), path: &Path) -> SpriteParameters {
             let num_frames = if frame_count == 0 {
                 let num_x = dimensions.0 as f32 / (frame_width + inner_margin) as f32 + (inner_margin as f32 / (frame_width + inner_margin) as f32);
                 let num_y = dimensions.1 as f32 / (frame_height + inner_margin) as f32 + (inner_margin as f32 / (frame_height + inner_margin) as f32);
-                //println!("{:?}, {:?}", num_x, num_y);
                 assert!(num_x.fract() <= f32::EPSILON);
                 assert!(num_y.fract() <= f32::EPSILON);
                 (num_x as u32, num_y as u32)

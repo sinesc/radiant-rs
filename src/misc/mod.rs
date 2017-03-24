@@ -1,14 +1,12 @@
 mod loops;
 mod rng;
 mod periodic;
-mod bitfield;
 
 use prelude::*;
 
 pub use self::loops::{renderloop, mainloop, LoopState};
 pub use self::rng::Rng;
 pub use self::periodic::Periodic;
-pub use self::bitfield::BitField;
 
 /// Interpolates between values. Returns source_value for ratio = 0.0 and target_value for ratio = 1.0.
 pub fn lerp<T, S>(source_value: &T, target_value: &T, ratio: S) -> T

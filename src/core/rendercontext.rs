@@ -1,6 +1,5 @@
 use glium;
 use core::{self, display, Display, font, SpriteData};
-use misc::BitField;
 use prelude::*;
 use std::borrow::Cow;
 
@@ -26,7 +25,8 @@ impl RenderContext {
     pub fn display(self: &Self) -> Display {
         lock(self).display.clone()
     }
-    /// Prune no longer used textures.
+    /// Prunes no longer used textures. Requires all layers to be cleared before
+    /// adding new sprites or rendering the layer.
     pub fn prune(self: &Self) {
         lock(self).prune();
     }
@@ -40,11 +40,7 @@ pub fn lock<'a>(context: &'a RenderContext) -> MutexGuard<'a, RenderContextData>
     context.0.lock().unwrap()
 }
 
-pub fn weak(context: &RenderContext) -> Weak<Mutex<RenderContextData>> {
-    Arc::downgrade(&context.0)
-}
-
-/// Individual Texture
+/// Individual Texture.
 #[derive(Clone)]
 pub struct RenderContextTexture {
     pub data    : Vec<u8>,
@@ -64,13 +60,34 @@ impl<'a> glium::texture::Texture2dDataSource<'a> for RenderContextTexture {
     }
 }
 
-/// Texture data for a single texture array
+/// A weak reference back to a sprite.
+struct SpriteBackRef (Weak<SpriteData>);
+
+impl SpriteBackRef {
+    /// Creates a new weak reference to SpriteData.
+    fn new(data: Weak<SpriteData>) -> SpriteBackRef {
+        SpriteBackRef(data)
+    }
+    /// Returns a strong reference to the SpriteData.
+    fn upgrade(self: &Self) -> Option<Arc<SpriteData>> {
+        self.0.upgrade()
+    }
+    /// Returns the texture id-range used by the referenced sprite or None, if it dropped.
+    fn range(self: &Self) -> Option<(usize, usize)> {
+        if let Some(data) = self.upgrade() {
+            Some((data.texture_id.load(Ordering::Relaxed), data.num_frames as usize * data.components as usize))
+        } else {
+            None
+        }
+    }
+}
+
+/// Texture data for a single texture array.
 pub struct RenderContextTextureArray {
     pub dirty   : bool,
     pub data    : Rc<glium::texture::Texture2dArray>,
     pub raw     : Vec<RenderContextTexture>,
-    pub valid   : BitField,
-    pub sprites : Vec<Weak<SpriteData>>,
+    sprites     : Vec<SpriteBackRef>,
 }
 
 impl RenderContextTextureArray {
@@ -79,24 +96,21 @@ impl RenderContextTextureArray {
             dirty   : false,
             data    : Rc::new(Self::create(display, &Vec::new())), // !todo why rc?
             raw     : Vec::new(),
-            valid   : BitField::new(),
             sprites : Vec::new(),
         }
     }
-    /// Store given frames to texture arrays
+    /// Store given frames to texture arrays.
     pub fn store_frames<'a>(self: &mut Self, raw_frames: Vec<RenderContextTexture>) -> u32 {
         let texture_id = self.raw.len() as u32;
-        let count = raw_frames.len();
         for frame in raw_frames {
             self.raw.push(frame);
         }
         self.dirty = true;
-        self.valid.set_range(texture_id as usize, count);
         texture_id
     }
     /// Stores a weak sprite reference in the context so that the sprite's texture_id can be updated after a cleanup.
     pub fn store_sprite(self: &mut Self, sprite_data: Weak<SpriteData>) {
-        self.sprites.push(sprite_data);
+        self.sprites.push(SpriteBackRef::new(sprite_data));
     }
     /// Generates glium texture array from given vector of textures
     fn create(display: &Display, raw: &Vec<RenderContextTexture>) -> glium::texture::Texture2dArray {
@@ -115,32 +129,50 @@ impl RenderContextTextureArray {
         }
     }
     /// Prunes no longer used textures from the array and update sprite texture ids and generations.
-    fn prune(self: &mut Self, generation: usize) {
-        if let Some(mapping) = self.valid.compress() {
-//println!("{:?}", mapping);
+    fn prune(self: &mut Self, display: &Display, generation: usize) {
+
+        let mut mapping = self.sprites.iter().filter_map(|sprite| sprite.range()).collect::<Vec<(usize, usize)>>();
+        mapping.sort_by_key(|a| a.0);
+
+        let mut num_items = 0;
+        let mut destination_map = HashMap::new();
+        for i in 0..mapping.len() {
+            let items = mapping[i].1;
+            mapping[i].1 = mapping[i].0 - num_items;
+            destination_map.insert(mapping[i].0, mapping[i].0 - mapping[i].1);
+            num_items += items;
+        }
+
+        if mapping.len() > 0 {
             // Use map to shrink raw data array. Also generate old index->new index hashmap.
             let new_size = self.raw.len() - mapping.last().unwrap().1;
-            let mut id_map = HashMap::new();
             for ai in 0..mapping.len() {
                 let end = if ai + 1 < mapping.len() { mapping[ai+1].0 } else { new_size -1 };
                 for i in (mapping[ai].0)..end {
-//println!("{:?}<->{:?}", i, destination_index);
                     let destination_index = i - mapping[ai].1;
                     self.raw.swap(i, destination_index);
-                    id_map.insert(i, destination_index);    // !todo we really only need the first of each sprite, but that's not neccessarily the range start and it might contian multiple sprites
                 }
             }
-//println!("{} -> {} - {:?}", self.raw.len(), new_size, mapping);
-            self.raw.truncate(new_size);
 
-            // Update sprite texture ids
+            // Truncate raw texture array and re-upload it.
+            self.raw.truncate(new_size);
+            self.dirty = true;
+            self.update(display);
+
+            // Update sprite texture ids and generation.
             for sprite in self.sprites.iter() {
                 if let Some(sprite) = sprite.upgrade() {
                     let texture_id = sprite.texture_id.load(Ordering::Relaxed);
-                    if let Some(new_texture_id) = id_map.get(&texture_id) {
+                    if let Some(new_texture_id) = destination_map.get(&texture_id) {
                         sprite.texture_id.store(*new_texture_id, Ordering::Relaxed);
-//println!("{}->{}", texture_id, *new_texture_id);
                     }
+                    sprite.generation.store(generation, Ordering::Relaxed);
+                }
+            }
+        } else {
+            // Texure ids have not changed, simply update generation.
+            for sprite in self.sprites.iter() {
+                if let Some(sprite) = sprite.upgrade() {
                     sprite.generation.store(generation, Ordering::Relaxed);
                 }
             }
@@ -215,17 +247,17 @@ impl RenderContextData {
     pub fn store_sprite(self: &mut Self, bucket_id: u32, sprite_data: Weak<SpriteData>) {
         self.tex_arrays[bucket_id as usize].store_sprite(sprite_data);
     }
-
+/*
     /// Marks texture array elements as no longer used
     pub fn invalidate_frames(self: &mut Self, bucket_id: u8, start: u32, count: u32) {
         self.tex_arrays[bucket_id as usize].valid.unset_range(start as usize, count as usize);
     }
-
+*/
     /// Prunes no longer used textures for all texture arrays.
     fn prune(self: &mut Self) {
         self.generation = Self::create_generation();
         for array in self.tex_arrays.iter_mut() {
-            array.prune(self.generation);
+            array.prune(&self.display, self.generation);
         }
     }
 
