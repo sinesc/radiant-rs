@@ -65,6 +65,11 @@ impl DisplayBuilder {
         self.info.vsync = true;
         self
     }
+    /// Flags the display to be initialially hidden.
+    pub fn hidden(mut self: Self) -> Self {
+        self.info.visible = false;
+        self
+    }
     /// Returns the constructed display instance.
     pub fn build(self: Self) -> Display {
         display::create(self.info)

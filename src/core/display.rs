@@ -242,7 +242,8 @@ impl Display {
             .with_dimensions(descriptor.width, descriptor.height)
             .with_title(descriptor.title)
             .with_transparency(descriptor.transparent)
-            .with_decorations(descriptor.decorations);
+            .with_decorations(descriptor.decorations)
+            .with_visibility(descriptor.visible);
 
         if descriptor.monitor >= 0 {
             let monitor = Self::monitor(descriptor.monitor as u32);
@@ -349,6 +350,7 @@ pub struct DisplayInfo {
     pub decorations : bool,
     pub monitor     : i32,
     pub vsync       : bool,
+    pub visible     : bool,
 }
 
 impl Default for DisplayInfo {
@@ -361,6 +363,7 @@ impl Default for DisplayInfo {
             decorations : true,
             monitor     : -1,
             vsync       : false,
+            visible     : true,
         }
    }
 }

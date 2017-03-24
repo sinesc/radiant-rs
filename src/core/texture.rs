@@ -26,7 +26,7 @@ impl Texture {
     ///
     /// ```rust
     /// # use radiant_rs::*;
-    /// # let display = Display::builder().build();
+    /// # let display = Display::builder().hidden().build();
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let rendercontext = renderer.context();
     /// let tex = Texture::builder(&rendercontext)
