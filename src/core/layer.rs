@@ -187,10 +187,10 @@ pub fn program(layer: &Layer) -> Option<&Program> {
 }
 
 /// Draws a rectangle on given layer.
-pub fn add_rect(layer: &Layer, generation: usize, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<u16>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
+pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<u16>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
 
     layer.set_dirty(true);
-    if !layer.set_generation(generation) {
+    if generation.is_some() && !layer.set_generation(generation.unwrap()) {
         panic!("Layer contains garbage data. Note: Layers need to be cleared after performing a RenderContext::prune().");
     }
 

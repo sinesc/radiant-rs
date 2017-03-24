@@ -73,7 +73,7 @@ impl<'a> Sprite {
         let dim = Point2(self.data.width as f32, self.data.height as f32);
         let scale = Vec2(1.0, 1.0);
         let generation = self.data.generation.load(Ordering::Relaxed);
-        layer::add_rect(layer, generation, bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
+        layer::add_rect(layer, Some(generation), bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
         self
     }
 
@@ -84,7 +84,7 @@ impl<'a> Sprite {
         let uv = Rect::new(0.0, 0.0, self.data.u_max, self.data.v_max);
         let dim = Point2(self.data.width as f32, self.data.height as f32);
         let generation = self.data.generation.load(Ordering::Relaxed);
-        layer::add_rect(layer, generation, bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
+        layer::add_rect(layer, Some(generation), bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
         self
     }
 
