@@ -128,54 +128,67 @@ impl RenderContextTextureArray {
             self.data = Rc::new(Self::create(display, &self.raw));
         }
     }
-    /// Prunes no longer used textures from the array and update sprite texture ids and generations.
-    fn prune(self: &mut Self, display: &Display, generation: usize) {
-
+    /// Returns a list of tuples containing current sprite texture_id and required negative offset.
+    fn create_prune_map(self: &Self) -> Option<Vec<(usize, usize)>> {
         let mut mapping = self.sprites.iter().filter_map(|sprite| sprite.range()).collect::<Vec<(usize, usize)>>();
         mapping.sort_by_key(|a| a.0);
-
         let mut num_items = 0;
-        let mut destination_map = HashMap::new();
         for i in 0..mapping.len() {
             let items = mapping[i].1;
             mapping[i].1 = mapping[i].0 - num_items;
-            destination_map.insert(mapping[i].0, mapping[i].0 - mapping[i].1);
             num_items += items;
         }
-
-        if mapping.len() > 0 {
-            // Use map to shrink raw data array. Also generate old index->new index hashmap.
-            let new_size = self.raw.len() - mapping.last().unwrap().1;
-            for ai in 0..mapping.len() {
-                let end = if ai + 1 < mapping.len() { mapping[ai+1].0 } else { new_size -1 };
-                for i in (mapping[ai].0)..end {
-                    let destination_index = i - mapping[ai].1;
-                    self.raw.swap(i, destination_index);
-                }
+        if mapping.len() > 0 { Some(mapping) } else { None }
+    }
+    // Shrinks raw data array using given prune-map. Returns hashmap mapping old texture index -> new texture index.
+    fn prune_raw_textures(self: &mut Self, mapping: &Vec<(usize, usize)>) -> HashMap<usize, usize> {
+        let new_size = self.raw.len() - mapping.last().unwrap().1;
+        let mut destination_map = HashMap::new();
+        for m in 0..mapping.len() {
+            destination_map.insert(mapping[m].0, mapping[m].0 - mapping[m].1);
+            let end = if m + 1 < mapping.len() { mapping[m+1].0 } else { new_size -1 };
+            for i in (mapping[m].0)..end {
+                let destination_index = i - mapping[m].1;
+                self.raw.swap(i, destination_index);
             }
-
-            // Truncate raw texture array and re-upload it.
-            self.raw.truncate(new_size);
+        }
+        self.raw.truncate(new_size);
+        destination_map
+    }
+    // Runs func on all sprites still referenced, removes unreferenced sprites from list.
+    fn prune_sprites<T>(self: &mut Self, mut func: T) where T: FnMut(&Arc<SpriteData>) {
+        let mut removed = Vec::new();
+        for (i, sprite) in self.sprites.iter().enumerate() {
+            if let Some(sprite) = sprite.upgrade() {
+                func(&sprite);
+            } else {
+                removed.push(i);
+            }
+        }
+        for index in removed.iter().rev() {
+            self.sprites.swap_remove(*index);
+        }
+    }
+    /// Prunes no longer used textures from the array and update sprite texture ids and generations.
+    fn prune(self: &mut Self, display: &Display, generation: usize) {
+        if let Some(mapping) = self.create_prune_map() {
+            // Remove unused textures from raw data.
+            let destination_map = self.prune_raw_textures(&mapping);
             self.dirty = true;
             self.update(display);
-
             // Update sprite texture ids and generation.
-            for sprite in self.sprites.iter() {
-                if let Some(sprite) = sprite.upgrade() {
-                    let texture_id = sprite.texture_id.load(Ordering::Relaxed);
-                    if let Some(new_texture_id) = destination_map.get(&texture_id) {
-                        sprite.texture_id.store(*new_texture_id, Ordering::Relaxed);
-                    }
-                    sprite.generation.store(generation, Ordering::Relaxed);
+            self.prune_sprites(|sprite| {
+                let texture_id = sprite.texture_id.load(Ordering::Relaxed);
+                if let Some(new_texture_id) = destination_map.get(&texture_id) {
+                    sprite.texture_id.store(*new_texture_id, Ordering::Relaxed);
                 }
-            }
+                sprite.generation.store(generation, Ordering::Relaxed);
+            });
         } else {
             // Texure ids have not changed, simply update generation.
-            for sprite in self.sprites.iter() {
-                if let Some(sprite) = sprite.upgrade() {
-                    sprite.generation.store(generation, Ordering::Relaxed);
-                }
-            }
+            self.prune_sprites(|sprite| {
+                sprite.generation.store(generation, Ordering::Relaxed);
+            })
         }
     }
 }
