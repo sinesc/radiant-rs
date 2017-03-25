@@ -12,7 +12,7 @@ use regex::Regex;
 /// follow a specific pattern. (Future versions will add more configurable means to load sprites.)
 #[derive(Clone)]
 pub struct Sprite {
-    anchor  : Point2<u16>,
+    anchor  : Point2<f32>,
     data    : Arc<SpriteData>,
 }
 
@@ -24,8 +24,7 @@ pub struct SpriteData {
     bucket_id       : u8,
     pub texture_id  : AtomicUsize,
     pub generation  : AtomicUsize,
-    u_max           : f32,
-    v_max           : f32,
+    uv_max          : Point2<f32>,
 }
 
 /// Sprite parameter layout type. Sprites are arranged either horizontally or
@@ -69,7 +68,7 @@ impl<'a> Sprite {
     pub fn draw<T>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color) -> &Self where Point2: From<T> {
         let bucket_id = self.data.bucket_id;
         let texture_id = self.texture_id(frame_id);
-        let uv = Rect::new(0.0, 0.0, self.data.u_max, self.data.v_max);
+        let uv = Rect::new(0.0, 0.0, self.data.uv_max.0, self.data.uv_max.1);
         let dim = Point2(self.data.width as f32, self.data.height as f32);
         let scale = Vec2(1.0, 1.0);
         let generation = self.data.generation.load(Ordering::Relaxed);
@@ -81,7 +80,7 @@ impl<'a> Sprite {
     pub fn draw_transformed<T, U>(self: &Self, layer: &Layer, frame_id: u32, position: T, color: Color, rotation: f32, scale: U) -> &Self where Point2: From<T>, Vec2: From<U> {
         let bucket_id = self.data.bucket_id;
         let texture_id = self.texture_id(frame_id);
-        let uv = Rect::new(0.0, 0.0, self.data.u_max, self.data.v_max);
+        let uv = Rect::new(0.0, 0.0, self.data.uv_max.0, self.data.uv_max.1);
         let dim = Point2(self.data.width as f32, self.data.height as f32);
         let generation = self.data.generation.load(Ordering::Relaxed);
         layer::add_rect(layer, Some(generation), bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
@@ -92,7 +91,7 @@ impl<'a> Sprite {
     /// sprite would be drawn at the coordinates given to [`Sprite::draw()`](#method.draw). Likewise, (0.0, 0.0)
     /// would mean that the sprite's top left corner would be drawn at the given coordinates.
     pub fn set_anchor(self: &mut Self, anchor: Point2) -> &Self {
-        self.anchor = Point2((anchor.0 * self.data.width as f32) as u16, (anchor.1 * self.data.height as f32) as u16);
+        self.anchor = Point2(anchor.0 * self.data.width as f32, anchor.1 * self.data.height as f32);
         self
     }
 
@@ -148,15 +147,14 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
         components  : components as u8,
         bucket_id   : bucket_id as u8,
         texture_id  : AtomicUsize::new(texture_id as usize),
-        u_max       : (frame_width as f32 / texture_size as f32),
-        v_max       : (frame_height as f32 / texture_size as f32),
+        uv_max      : Point2(frame_width as f32 / texture_size as f32, frame_height as f32 / texture_size as f32),
         generation  : AtomicUsize::new(context.generation()),
     });
 
     context.store_sprite(bucket_id, Arc::downgrade(&sprite_data));
 
     Sprite {
-        anchor: Point2(frame_width as u16 / 2, frame_height as u16 / 2),
+        anchor: Point2(frame_width as f32 / 2.0, frame_height as f32 / 2.0),
         data: sprite_data,
     }
 }
