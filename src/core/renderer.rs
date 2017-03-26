@@ -4,7 +4,7 @@ use core::{
     self, texture, layer, rendercontext, blendmode, program, uniform,
     Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
-    GliumUniform, blendmodes,
+    GliumUniform, blendmodes, TextureFormat
 };
 use core::builder::*;
 use maths::{Rect, Mat4};
@@ -38,7 +38,7 @@ impl Renderer {
         let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY)?;
         let context = rendercontext::new(context_data);
         let target = vec![ RenderTarget::Display(display.clone()) ];
-        let identity_texture = Texture::new(&context, 1, 1);
+        let identity_texture = Texture::builder(&context).format(TextureFormat::U8U8U8U8).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::white());
 
         Ok(Renderer {
