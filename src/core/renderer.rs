@@ -38,7 +38,7 @@ impl Renderer {
         let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY)?;
         let context = rendercontext::new(context_data);
         let target = vec![ RenderTarget::Display(display.clone()) ];
-        let identity_texture = Texture::builder(&context).format(TextureFormat::U8U8U8U8).dimensions((1, 1)).build().unwrap();
+        let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::white());
 
         Ok(Renderer {
@@ -191,7 +191,8 @@ impl Renderer {
             .add("_rd_color", GliumUniform::Vec4(color.into()))
             .add("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)))
             .add("_rd_offset", GliumUniform::Vec2(target.rect.0.into()))
-            .add("_rd_dimensions", GliumUniform::Vec2(target.rect.1.into()));
+            .add("_rd_dimensions", GliumUniform::Vec2(target.rect.1.into()))
+            .add("_rd_has_tex", GliumUniform::Bool(target.texture.is_some()));
 
         // set up draw parameters for given blend options
         let draw_parameters = glium::draw_parameters::DrawParameters {
