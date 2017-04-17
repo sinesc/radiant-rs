@@ -12,6 +12,7 @@ use maths::Point2;
 /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
 /// ```
 #[must_use]
+#[derive(Clone)]
 pub struct DisplayBuilder {
     info: DisplayInfo,
 }

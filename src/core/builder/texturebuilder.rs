@@ -3,6 +3,7 @@ use maths::*;
 
 /// A Texture builder.
 #[must_use]
+#[derive(Clone)]
 pub struct TextureBuilder<'a> {
     info    : TextureInfo,
     context : &'a RenderContext,

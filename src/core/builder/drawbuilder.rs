@@ -2,7 +2,10 @@ use std::marker::PhantomData;
 use core::{Color, Renderer, DrawRectInfo, DrawRectInfoViewSource, Texture, BlendMode, Program, renderer};
 use maths::{Rect, Mat4};
 
+#[derive(Clone)]
 pub struct DrawBuilderFill;
+
+#[derive(Clone)]
 pub struct DrawBuilderRect;
 
 /// A rectangle builder.
@@ -10,6 +13,7 @@ pub struct DrawBuilderRect;
 /// Obtained from [`Renderer::rect()`](../struct.Renderer.html#method.rect)
 /// or [`Renderer::fill()`](../struct.Renderer.html#method.fill)
 #[must_use]
+#[derive(Clone)]
 pub struct DrawBuilder<'a, T: 'a> {
     renderer    : &'a Renderer,
     phantomdata : PhantomData<&'a T>,

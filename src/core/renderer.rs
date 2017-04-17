@@ -327,6 +327,7 @@ pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
 }
 
 /// A struct used to describe a rectangle for Renderer::rect
+#[derive(Clone)]
 pub struct DrawRectInfo<'a> {
     pub rect        : Rect,
     pub color       : Option<Color>,
@@ -338,6 +339,7 @@ pub struct DrawRectInfo<'a> {
 }
 
 /// The view matrix used when drawing a rectangle.
+#[derive(Clone)]
 pub enum DrawRectInfoViewSource {
     Display,
     Target,

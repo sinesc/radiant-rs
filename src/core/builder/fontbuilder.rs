@@ -14,6 +14,7 @@ use core::{Result, Font, FontInfo, RenderContext, font};
 /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
 /// ```
 #[must_use]
+#[derive(Clone)]
 pub struct FontBuilder<'a> {
     info    : FontInfo,
     context : &'a RenderContext,

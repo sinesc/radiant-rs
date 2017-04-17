@@ -2,6 +2,7 @@ use core::{FontInfo, font};
 
 /// A FontQueryBuilder builder, returned from Font::query().
 #[must_use]
+#[derive(Clone)]
 pub struct FontQueryBuilder {
     info: FontInfo,
 }
