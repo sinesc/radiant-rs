@@ -24,7 +24,7 @@ pub fn main() {
     let mut model = *spark_layer.model_matrix().clone().scale(4.0);
 
     // This is a userdefined postprocessor to add a bloom effect
-    let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, blendmodes::COPY);
+    let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, 4.0);
 
     utils::renderloop(|frame| {
         display.clear_frame(Color::black());

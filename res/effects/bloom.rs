@@ -6,7 +6,6 @@ pub struct Bloom {
     blur_program    : Mutex<Program>,
     combine_program : Mutex<Program>,
     iterations      : u32,
-    iter_blend      : BlendMode,
     spread          : u8,
 }
 
@@ -21,12 +20,9 @@ impl Postprocessor for Bloom {
     /// Process received data.
     fn process(self: &Self, renderer: &Renderer, _: &Self::T) {
         use std::ops::DerefMut;
-        use std::cmp::min;
-
-        let spread = min(self.targets[0].len(), self.spread as usize);
 
         // Copy to progressively smaller textures
-        for i in 1..spread {
+        for i in 1..self.spread as usize {
             renderer.render_to(&self.targets[0][i], || {
                 renderer.copy_from(&self.targets[0][i-1], TextureFilter::Linear);
             });
@@ -39,17 +35,17 @@ impl Postprocessor for Bloom {
 
             // Apply horizontal blur
             blur.set_uniform("horizontal", &true);
-            for i in 0..spread {
+            for i in 0..self.spread as usize {
                 renderer.render_to(&self.targets[1][i], || {
-                    renderer.fill().blendmode(self.iter_blend).program(&blur).texture(&self.targets[0][i]).draw();
+                    renderer.fill().blendmode(blendmodes::ALPHA).program(&blur).texture(&self.targets[0][i]).draw();
                 });
             }
 
             // Apply vertical blur
             blur.set_uniform("horizontal", &false);
-            for i in 0..spread {
+            for i in 0..self.spread as usize {
                 renderer.render_to(&self.targets[0][i], || {
-                    renderer.fill().blendmode(self.iter_blend).program(&blur).texture(&self.targets[1][i]).draw();
+                    renderer.fill().blendmode(blendmodes::ALPHA).program(&blur).texture(&self.targets[1][i]).draw();
                 });
             }
         }
@@ -66,45 +62,44 @@ impl Postprocessor for Bloom {
 }
 
 impl Bloom {
-    pub fn new(context: &RenderContext, iterations: u32, spread: u8, iter_blend: BlendMode) -> Self {
-        use std::ops::DerefMut;
+    pub fn new(context: &RenderContext, iterations: u32, spread: u8, brightness: f32) -> Self {
+        use std::cmp::min;
 
         let blur_program = Program::from_string(&context, include_str!("blur.fs")).unwrap();
-        let combine_program = Program::from_string(&context, include_str!("combine.fs")).unwrap();
+        let mut combine_program = Program::from_string(&context, include_str!("combine.fs")).unwrap();
         let display = context.display();
         let Point2(width, height) = display.dimensions();
+        let builder = Texture::builder(context).format(TextureFormat::F16F16F16F16);
 
-        let result = Bloom {
+        let targets = [ [
+            builder.clone().dimensions((width / 2, height / 2)).build().unwrap(),
+            builder.clone().dimensions((width / 4, height / 4)).build().unwrap(),
+            builder.clone().dimensions((width / 8, height / 8)).build().unwrap(),
+            builder.clone().dimensions((width / 16, height / 16)).build().unwrap(),
+            builder.clone().dimensions((width / 32, height / 32)).build().unwrap(),
+        ], [
+            builder.clone().dimensions((width / 2, height / 2)).build().unwrap(),
+            builder.clone().dimensions((width / 4, height / 4)).build().unwrap(),
+            builder.clone().dimensions((width / 8, height / 8)).build().unwrap(),
+            builder.clone().dimensions((width / 16, height / 16)).build().unwrap(),
+            builder.clone().dimensions((width / 32, height / 32)).build().unwrap(),
+        ] ];
+
+        let spread = min(targets[0].len() as u8, spread);
+
+        combine_program.set_uniform("brightness", &(brightness / spread as f32));
+        combine_program.set_uniform("sample0", &targets[0][0]);
+        combine_program.set_uniform("sample1", &targets[0][1]);
+        combine_program.set_uniform("sample2", &targets[0][2]);
+        combine_program.set_uniform("sample3", &targets[0][3]);
+        combine_program.set_uniform("sample4", &targets[0][4]);
+
+        Bloom {
             blur_program    : Mutex::new(blur_program),
             combine_program : Mutex::new(combine_program),
             iterations      : iterations,
-            iter_blend      : iter_blend,
+            targets         : targets,
             spread          : spread,
-            targets: [ [
-                Texture::new(&context, width / 2, height / 2),
-                Texture::new(&context, width / 4, height / 4),
-                Texture::new(&context, width / 8, height / 8),
-                Texture::new(&context, width / 16, height / 16),
-                Texture::new(&context, width / 32, height / 32),
-            ], [
-                Texture::new(&context, width / 2, height / 2),
-                Texture::new(&context, width / 4, height / 4),
-                Texture::new(&context, width / 8, height / 8),
-                Texture::new(&context, width / 16, height / 16),
-                Texture::new(&context, width / 32, height / 32),
-            ] ]
-        };
-
-        {
-            let mut combine = result.combine_program.lock().unwrap();
-            let combine = combine.deref_mut();
-            combine.set_uniform("sample0", &result.targets[0][0]);
-            combine.set_uniform("sample1", &result.targets[0][1]);
-            combine.set_uniform("sample2", &result.targets[0][2]);
-            combine.set_uniform("sample3", &result.targets[0][3]);
-            combine.set_uniform("sample4", &result.targets[0][4]);
         }
-
-        result
     }
 }

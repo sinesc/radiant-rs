@@ -27,7 +27,6 @@ pub fn main() {
 
         // Drawing within Renderer::postprocess() applies the given postprocessor to the result
         // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN.
-        // Notice the similarity to rendering to textures.
         renderer.postprocess(&ripple_effect, &blendmodes::LIGHTEN, || {
             renderer.clear(Color::transparent());
             renderer.draw_layer(&layer, 0);

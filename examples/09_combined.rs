@@ -21,8 +21,8 @@ pub fn main() {
     let ripple_effect = postprocessors::Basic::new(&renderer.context(), program);
 
     // A custom example bloom effect postprocessor. Here, the arguments define the bloom
-    // quality (3 iterations), bloom spread (1) and the blendmode used internally during the iterations.
-    let bloom_effect = bloom::Bloom::new(&renderer.context(), 3, 1, blendmodes::COPY);
+    // quality, bloom spread and brightness.
+    let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, 10.0);
 
     let surface = Texture::new(&renderer.context(), 640, 480);
     let thumbnail = Texture::new(&renderer.context(), 640, 480);

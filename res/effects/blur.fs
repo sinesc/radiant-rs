@@ -1,4 +1,4 @@
-#version 150
+#version 330
 
 in vec2 v_tex_coords;
 uniform bool horizontal;
@@ -28,5 +28,5 @@ void main() {
         color += weight[2] * sheet(sample2);
     }
 
-    f_color = color;
+    f_color = clamp(color, 0.0, 1.0);
 }
