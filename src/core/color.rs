@@ -154,6 +154,11 @@ impl Color {
         self
     }
 
+    // Returns new instance with alpha applied to all color channels.
+    pub fn to_pm(self: &Self) -> Color {
+        Color(self.0 * self.3, self.1 * self.3, self.2 * self.3, self.3)
+    }
+
     /// Returns opaque white color.
     pub fn white() -> Color {
         Color(1.0, 1.0, 1.0, 1.0)
