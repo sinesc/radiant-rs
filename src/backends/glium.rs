@@ -415,35 +415,37 @@ impl Context {
         }
     }
 
-    fn select_vertex_buffer(self: &mut Self, buffer_hint: usize, num_vertices: usize) -> usize {
+    fn select_vertex_buffer(self: &mut Self, buffer_hint: usize, num_vertices: usize) -> (usize, bool) {
 
         const MAX_BUFFERS: usize = 10;
 
         if let Some(id) = self.vertex_buffers.iter().position(|ref item| item.hint == buffer_hint && item.buffer.len() >= num_vertices) {
-            id
+            (id, false)
         } else if self.vertex_buffers.len() < MAX_BUFFERS {
             self.vertex_buffers.push(VertexBufferCacheItem { hint: buffer_hint, age: 0, buffer: glium::VertexBuffer::empty_dynamic(&self.display, num_vertices).unwrap() });
-            self.vertex_buffers.len() - 1
+            (self.vertex_buffers.len() - 1, true)
         } else {
             if let Some((id, _)) = self.vertex_buffers.iter().enumerate().max_by(|&(_, a), &(_, b)| a.age.cmp(&b.age)) {
-                id
+                (id, true)
             } else {
-                1
+                (1, true)
             }
         }
     }
 
-    fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[Vertex], buffer_hint: usize, program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
+    fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[Vertex], dirty: bool, buffer_hint: usize, program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
 
         let num_vertices = vertices.len();
         let num_sprites = num_vertices / 4;
 
         // set up vertex buffer
 
-        let vb_index = self.select_vertex_buffer(buffer_hint, num_vertices);
+        let (vb_index, vb_dirty) = self.select_vertex_buffer(buffer_hint, num_vertices);
         {
-            let vb_slice = self.vertex_buffers[vb_index].buffer.slice(0 .. num_vertices).unwrap();
-            vb_slice.write(&vertices[0 .. num_vertices]);
+            if dirty || vb_dirty {
+                let vb_slice = self.vertex_buffers[vb_index].buffer.slice(0 .. num_vertices).unwrap();
+                vb_slice.write(&vertices[0 .. num_vertices]);
+            }
         }
 
         // set up index buffer
@@ -616,7 +618,7 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
     let vertices = core::vertices(layer);
     let vertices = vertices.deref();
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, core::layer_id(layer), core::program::sprite(program), &glium_uniforms, &layer.blendmode());
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, core::layer_undirty(layer), core::layer_id(layer), core::program::sprite(program), &glium_uniforms, &layer.blendmode());
 }
 
 pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
@@ -638,7 +640,7 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
     let vertices = &context.single_rect;
     let vertices = &vertices[..];
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, 0, core::program::texture(program), &glium_uniforms, &blend);
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, true, 0, core::program::texture(program), &glium_uniforms, &blend);
 }
 
 // --------------

@@ -206,6 +206,10 @@ pub fn layer_id(layer: &Layer) -> usize {
     layer.contents.layer_id
 }
 
+pub fn layer_undirty(layer: &Layer) -> bool {
+    layer.contents.dirty.swap(false, Ordering::Relaxed)
+}
+
 /// Draws a rectangle on given layer.
 pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<f32>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
 
