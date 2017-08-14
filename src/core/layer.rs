@@ -4,6 +4,8 @@ use maths::{Mat4, Point2, Rect};
 use core::{blendmodes, BlendMode, rendercontext, Color, Program, Vertex};
 use maths::Vec2;
 
+static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+
 /// A drawing surface for text and sprites that implements send+sync and is wait-free for drawing operations.
 ///
 /// In radiant_rs, sprite drawing happens on layers. Layers provide transformation capabilities in
@@ -42,6 +44,7 @@ struct LayerContents {
     vertex_data     : avec::AVec<Vertex>,
     dirty           : AtomicBool,
     generation      : AtomicUsize,
+    layer_id        : usize,
 }
 
 impl Layer {
@@ -159,6 +162,7 @@ impl Layer {
                 vertex_data     : avec::AVec::new(rendercontext::INITIAL_CAPACITY * 4),
                 dirty           : AtomicBool::new(true),
                 generation      : AtomicUsize::new(0),
+                layer_id        : 1 + LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
             }),
             program         : program,
         }
@@ -196,6 +200,10 @@ pub fn program(layer: &Layer) -> Option<&Program> {
 
 pub fn vertices(layer: &Layer) -> avec::AVecReadGuard<Vertex> {
     layer.contents.vertex_data.get()
+}
+
+pub fn layer_id(layer: &Layer) -> usize {
+    layer.contents.layer_id
 }
 
 /// Draws a rectangle on given layer.

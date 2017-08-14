@@ -370,10 +370,16 @@ impl Texture2dArray {
 // Context
 // --------------
 
+pub struct VertexBufferCacheItem {
+    hint: usize,
+    age: usize,
+    buffer: glium::VertexBuffer<Vertex>,
+}
+
 pub struct Context {
     display         : glium::Display,
     index_buffer    : glium::IndexBuffer<u32>,
-    vertex_buffers  : Vec<glium::VertexBuffer<Vertex>>,
+    vertex_buffers  : Vec<VertexBufferCacheItem>,
 }
 
 impl Context {
@@ -409,26 +415,34 @@ impl Context {
         }
     }
 
-    fn select_vertex_buffer(self: &mut Self, num_vertices: usize) -> usize {
-        // !todo use one buffers/layer to avoid sync
-        if self.vertex_buffers.len() == 0 {
-            self.vertex_buffers.push(glium::VertexBuffer::empty_dynamic(&self.display, num_vertices).unwrap())
-        } else  if self.vertex_buffers[0].len() < num_vertices {
-            self.vertex_buffers[0] = glium::VertexBuffer::empty_dynamic(&self.display, num_vertices).unwrap();
+    fn select_vertex_buffer(self: &mut Self, buffer_hint: usize, num_vertices: usize) -> usize {
+
+        const MAX_BUFFERS: usize = 10;
+
+        if let Some(id) = self.vertex_buffers.iter().position(|ref item| item.hint == buffer_hint && item.buffer.len() >= num_vertices) {
+            id
+        } else if self.vertex_buffers.len() < MAX_BUFFERS {
+            self.vertex_buffers.push(VertexBufferCacheItem { hint: buffer_hint, age: 0, buffer: glium::VertexBuffer::empty_dynamic(&self.display, num_vertices).unwrap() });
+            self.vertex_buffers.len() - 1
+        } else {
+            if let Some((id, _)) = self.vertex_buffers.iter().enumerate().max_by(|&(_, a), &(_, b)| a.age.cmp(&b.age)) {
+                id
+            } else {
+                1
+            }
         }
-        0
     }
 
-    fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[Vertex], program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
+    fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[Vertex], buffer_hint: usize, program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
 
         let num_vertices = vertices.len();
         let num_sprites = num_vertices / 4;
 
         // set up vertex buffer
 
-        let vb_index = self.select_vertex_buffer(num_vertices);
+        let vb_index = self.select_vertex_buffer(buffer_hint, num_vertices);
         {
-            let vb_slice = self.vertex_buffers[vb_index].slice(0 .. num_vertices).unwrap();
+            let vb_slice = self.vertex_buffers[vb_index].buffer.slice(0 .. num_vertices).unwrap();
             vb_slice.write(&vertices[0 .. num_vertices]);
         }
 
@@ -448,10 +462,10 @@ impl Context {
 
         match *target {
             core::RenderTarget::Display(ref display) => {
-                display.frame.borrow_mut().as_mut().unwrap().0.draw(&self.vertex_buffers[vb_index], &ib_slice, &program.0, uniforms, &draw_parameters).unwrap()
+                display.frame.borrow_mut().as_mut().unwrap().0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap()
             }
             core::RenderTarget::Texture(ref texture) => {
-                texture.handle.0.as_surface().draw(&self.vertex_buffers[vb_index], &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
+                texture.handle.0.as_surface().draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
             }
             core::RenderTarget::None => { }
         }
@@ -602,7 +616,7 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
     let vertices = core::vertices(layer);
     let vertices = vertices.deref();
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, core::program::sprite(program), &glium_uniforms, &layer.blendmode());
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, core::layer_id(layer), core::program::sprite(program), &glium_uniforms, &layer.blendmode());
 }
 
 pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
@@ -624,7 +638,7 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
     let vertices = &context.single_rect;
     let vertices = &vertices[..];
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, core::program::texture(program), &glium_uniforms, &blend);
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, 0, core::program::texture(program), &glium_uniforms, &blend);
 }
 
 // --------------
