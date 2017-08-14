@@ -8,7 +8,7 @@ repository = "https://github.com/sinesc/radiant-rs.git"
 license = "MIT"
 
 [dependencies]
-glium = "0.15.0"
+glium = "0.16.0"
 image = "0.10.3"
 regex = "0.1.73"
 lazy_static = "0.2.1"

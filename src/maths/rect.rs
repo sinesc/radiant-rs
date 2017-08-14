@@ -29,6 +29,12 @@ impl From<Point2<f32>> for (f32, f32) {
     }
 }
 
+impl From<Point2<u32>> for (u32, u32) {
+    fn from(source: Point2<u32>) -> Self {
+        (source.0, source.1)
+    }
+}
+
 /// A rectangle.
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Rect<T: Copy + Clone + Debug = f32>(pub Point2<T>, pub Point2<T>);

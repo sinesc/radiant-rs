@@ -1,7 +1,7 @@
 use prelude::*;
-use core::{self, rendercontext, RenderContext, display, Display, AsUniform, UniformList, Color};
+use core::{self, rendercontext, RenderContext, Display, AsUniform, UniformList, Color};
 use maths::{Mat4};
-use glium;
+use backends::glium as backend;
 
 const SPRITE_INC: &'static str = include_str!("../shader/sprite.inc.fs");
 const TEXTURE_INC: &'static str = include_str!("../shader/texture.inc.fs");
@@ -14,9 +14,9 @@ const TEXTURE_VS: &'static str = include_str!("../shader/texture.vs");
 /// of the source program but using its own copy of the uniforms.
 #[derive(Clone)]
 pub struct Program {
-    uniforms: UniformList,
-    sprite_program: Arc<glium::Program>,
-    texture_program: Arc<glium::Program>,
+    pub uniforms: UniformList,
+    sprite_program: Arc<backend::Program>,
+    texture_program: Arc<backend::Program>,
 }
 
 impl Program {
@@ -47,7 +47,7 @@ impl Program {
 pub fn create(display: &Display, source: &str) -> core::Result<Program> {
     let sprite_fs = insert_template(source, SPRITE_INC);
     let texture_fs = insert_template(source, TEXTURE_INC);
-    let display_handle = &display::handle(display);
+    let display_handle = &display.handle();
     let dimensions = display.dimensions();
     let mut uniforms = UniformList::new();
     uniforms.insert("u_view", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());
@@ -55,35 +55,19 @@ pub fn create(display: &Display, source: &str) -> core::Result<Program> {
     uniforms.insert("_rd_color", Color::white().as_uniform());
     Ok(Program {
         uniforms: uniforms,
-        sprite_program: Arc::new(create_program(display_handle, SPRITE_VS, &sprite_fs)?),
-        texture_program: Arc::new(create_program(display_handle, TEXTURE_VS, &texture_fs)?),
+        sprite_program: Arc::new(backend::Program::new(display_handle, SPRITE_VS, &sprite_fs)?),
+        texture_program: Arc::new(backend::Program::new(display_handle, TEXTURE_VS, &texture_fs)?),
     })
 }
 
 /// Private accessor to the sprite fragement shader program.
-pub fn sprite(program: &Program) -> &glium::Program {
+pub fn sprite(program: &Program) -> &backend::Program {
     &program.sprite_program
 }
 
 /// Private accessor to the texture fragement shader program.
-pub fn texture(program: &Program) -> &glium::Program {
+pub fn texture(program: &Program) -> &backend::Program {
     &program.texture_program
-}
-
-/// Returns immutable uniforms
-pub fn uniforms(program: &Program) -> &UniformList {
-    &program.uniforms
-}
-
-/// Creates a shader program from given vertex- and fragment-shader sources.
-fn create_program(display: &glium::Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<glium::Program> {
-    use glium::program::ProgramCreationError;
-    use core::Error;
-    glium::Program::from_source(display, vertex_shader, fragment_shader, None).map_err(|err| match err {
-        ProgramCreationError::CompilationError(message) => { Error::ShaderError(format!("Shader compilation failed with: {}", message)) }
-        ProgramCreationError::LinkingError(message)     => { Error::ShaderError(format!("Shader linking failed with: {}", message)) }
-        _                                               => { Error::ShaderError("No shader support found".to_string()) }
-    })
 }
 
 /// Inserts program boilterplate code into the shader source.

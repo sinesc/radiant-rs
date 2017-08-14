@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use core::{Color, Renderer, DrawRectInfo, DrawRectInfoViewSource, Texture, BlendMode, Program, renderer};
+use core::{Color, Renderer, DrawRectInfo, DrawRectInfoViewSource, Texture, BlendMode, Program};
 use maths::{Rect, Mat4};
 
 #[derive(Clone)]
@@ -84,7 +84,7 @@ impl<'a, T> DrawBuilder<'a, T> {
     }
     /// Draws the rectangle.
     pub fn draw(self: Self) {
-        renderer::draw_rect(self.renderer, self.info);
+        self.renderer.draw_rect(self.info);
     }
 }
 

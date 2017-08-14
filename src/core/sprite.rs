@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RenderContextTexture};
+use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RawFrame};
 use maths::{Point2, Vec2, Rect};
 use Color;
 use image::{self, GenericImage};
@@ -128,7 +128,7 @@ struct SpriteDescriptor {
     frame_width     : u32,
     frame_height    : u32,
     components      : u32,
-    raw_frames      : Vec<RenderContextTexture>,
+    raw_frames      : Vec<RawFrame>,
 }
 
 /// Creates a sprite from given descriptor.
@@ -179,7 +179,7 @@ fn build_raw_frames(image: &mut image::DynamicImage, sprite_parameters: &SpriteP
 
 /// Constructs a single RawFrame for a frame of a spritesheet
 /// If neccessary, pads the image up to the next power of two
-fn build_raw_frame(image: &mut image::DynamicImage, sprite_parameters: &SpriteParameters, frame_id: u32, component: u32, pad_size: u32) -> RenderContextTexture {
+fn build_raw_frame(image: &mut image::DynamicImage, sprite_parameters: &SpriteParameters, frame_id: u32, component: u32, pad_size: u32) -> RawFrame {
 
     let SpriteParameters { dimensions: (frame_width, frame_height), .. } = *sprite_parameters;
     let (x, y) = get_frame_coordinates(sprite_parameters, frame_id, component);
@@ -190,7 +190,7 @@ fn build_raw_frame(image: &mut image::DynamicImage, sprite_parameters: &SpritePa
         // pad image if it doesn't match an available texture array size
         let mut dest = image::DynamicImage::new_rgba8(pad_size, pad_size);
         dest.copy_from(&subimage, 0, 0);
-        RenderContextTexture {
+        RawFrame {
             data: convert_color(dest.to_rgba()).into_raw(),
             width: pad_size,
             height: pad_size,
@@ -199,7 +199,7 @@ fn build_raw_frame(image: &mut image::DynamicImage, sprite_parameters: &SpritePa
     } else {
 
         // perfect fit
-        RenderContextTexture {
+        RawFrame {
             data: convert_color(subimage.to_rgba()).into_raw(),
             width: frame_width,
             height: frame_height,

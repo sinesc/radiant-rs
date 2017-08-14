@@ -1,13 +1,13 @@
 use prelude::*;
-use glium;
 use core::{
-    self, texture, layer, rendercontext, blendmode, program, uniform,
+    self, layer, rendercontext, program,
     Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
-    GliumUniform, blendmodes, TextureFormat
+    blendmodes, TextureFormat
 };
 use core::builder::*;
 use maths::{Rect, Mat4};
+use backends::glium as backend;
 
 /// Default fragment shader program
 const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
@@ -66,7 +66,6 @@ impl Renderer {
     /// All sprites support at least component 0. Sprites that do not support
     /// the given component will not be drawn.
     pub fn draw_layer(self: &Self, layer: &Layer, component: u32) -> &Self {
-        use glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
 
         // open context
         let mut context = rendercontext::lock(&self.context);
@@ -75,42 +74,11 @@ impl Renderer {
         // update sprite texture arrays, font texture and vertex buffer as required
         context.update_tex_array();
         context.update_font_cache();
-        let (vertex_buffer, num_vertices) = layer::upload(&layer, context);
-        context.update_index_buffer(num_vertices / 4);
-
-        // draw the layer, unless it is empty
-        if num_vertices <= 0 {
-            return self;
-        }
 
         // use default or custom program
         let program = layer::program(layer).unwrap_or(&self.program);
 
-        // set up uniforms
-        let uniforms = program::uniforms(program);
-        let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
-        glium_uniforms
-            .add("u_view", GliumUniform::Mat4(layer.view_matrix().deref().into()))
-            .add("u_model", GliumUniform::Mat4(layer.model_matrix().deref().into()))
-            .add("_rd_color", GliumUniform::Vec4(layer.color().deref().into()))
-            .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
-            .add("_rd_comp", GliumUniform::UnsignedInt(component))
-            .add("_rd_tex1", GliumUniform::Texture2dArray(context.tex_arrays[1].data.deref()))
-            .add("_rd_tex2", GliumUniform::Texture2dArray(context.tex_arrays[2].data.deref()))
-            .add("_rd_tex3", GliumUniform::Texture2dArray(context.tex_arrays[3].data.deref()))
-            .add("_rd_tex4", GliumUniform::Texture2dArray(context.tex_arrays[4].data.deref()))
-            .add("_rd_tex5", GliumUniform::Texture2dArray(context.tex_arrays[5].data.deref()));
-
-        // set up draw parameters for given blend options
-        let draw_parameters = glium::draw_parameters::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-            blend           : blendmode::inner(layer.blendmode().deref()),
-            .. Default::default()
-        };
-
-        // draw up to container.size
-        let ib_slice = context.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
-        self.target.borrow().last().unwrap().draw(vertex_buffer.as_ref().unwrap(), &ib_slice, &program::sprite(program), &glium_uniforms, &draw_parameters);
+        backend::draw_layer(self.target.borrow().last().unwrap(), program, context, layer, component);
         self
     }
 
@@ -151,13 +119,11 @@ impl Renderer {
     }
 
     /// Draws the rectangle described info to the current target.
-    fn draw_rect(self: &Self, target: DrawRectInfo) -> &Self {
+    pub(crate) fn draw_rect(self: &Self, target: DrawRectInfo) -> &Self {
 
         // open context
         let mut context = rendercontext::lock(&self.context);
         let mut context = context.deref_mut();
-
-        context.update_index_buffer(1);
 
         // use default or custom program and texture
         let program = target.program.unwrap_or(&self.program);
@@ -182,28 +148,7 @@ impl Renderer {
             }
         };
 
-        // set up uniforms
-        let uniforms = program::uniforms(program);
-        let mut glium_uniforms = uniform::to_glium_uniforms(&uniforms);
-        glium_uniforms
-            .add("u_view", GliumUniform::Mat4(view_matrix.into()))
-            .add("u_model", GliumUniform::Mat4(model_matrix.into()))
-            .add("_rd_color", GliumUniform::Vec4(color.into()))
-            .add("_rd_tex", GliumUniform::Texture2d(texture::handle(texture)))
-            .add("_rd_offset", GliumUniform::Vec2(target.rect.0.into()))
-            .add("_rd_dimensions", GliumUniform::Vec2(target.rect.1.into()))
-            .add("_rd_has_tex", GliumUniform::Bool(target.texture.is_some()));
-
-        // set up draw parameters for given blend options
-        let draw_parameters = glium::draw_parameters::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
-            blend           : blendmode::inner(&blendmode),
-            .. Default::default()
-        };
-
-        // draw up to container.size
-        let ib_slice = context.index_buffer.slice(0..6).unwrap();
-        self.target.borrow().last().unwrap().draw(&context.vertex_buffer_single, &ib_slice, &program::texture(program), &glium_uniforms, &draw_parameters);
+        backend::draw_rect(self.target.borrow().last().unwrap(), program, context, blendmode, target, view_matrix, model_matrix, color, texture);
         self
     }
 
@@ -309,11 +254,6 @@ impl Renderer {
     fn pop_target(self: &Self) {
         self.target.borrow_mut().pop();
     }
-}
-
-/// Internal: Draws using Renderer::draw_rect
-pub fn draw_rect(renderer: &Renderer, info: DrawRectInfo) {
-    renderer.draw_rect(info);
 }
 
 /// Returns the appropriate bucket_id and padded texture size for the given texture size

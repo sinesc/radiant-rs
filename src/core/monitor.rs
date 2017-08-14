@@ -1,11 +1,18 @@
-use glium;
+use backends::glium as backend;
 
 /// An individual monitor, returned from [`Display::monitors()`](struct.Display.html#method.monitors).
+#[derive(Clone)]
 pub struct Monitor {
-    id: glium::glutin::MonitorId,
+    id: backend::Monitor,
 }
 
 impl Monitor {
+    pub(crate) fn new(monitor: backend::Monitor) -> Self {
+        Self {
+            id: monitor
+        }
+    }
+
     /// Returns the name of the device.
     pub fn name(self: &Self) -> String {
         self.id.get_name().unwrap_or("".to_string())
@@ -27,14 +34,8 @@ impl Monitor {
     pub fn dimensions(self: &Self) -> (u32, u32) {
         self.id.get_dimensions()
     }
-}
 
-pub fn get_id(monitor: Monitor) -> glium::glutin::MonitorId {
-    monitor.id
-}
-
-pub fn from_id(id: glium::glutin::MonitorId) -> Monitor {
-    Monitor {
-        id: id
+    pub(crate) fn inner(self: &Self) -> &backend::Monitor {
+        &self.id
     }
 }

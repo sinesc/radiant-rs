@@ -1,9 +1,8 @@
 use prelude::*;
-use core::{display, rendercontext, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
+use core::{rendercontext, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
 use core::builder::*;
 use maths::Point2;
-use glium;
-use glium::Surface;
+use backends::glium as backend;
 
 /// A texture to draw or draw to.
 ///
@@ -12,11 +11,11 @@ use glium::Surface;
 /// [`Renderer::rect()`](struct.Renderer.html#method.rect).
 #[derive(Clone)]
 pub struct Texture {
-    handle      : Rc<glium::texture::Texture2d>,
-    minify      : TextureFilter,
-    magnify     : TextureFilter,
-    wrap        : TextureWrap,
-    dimensions  : Point2<u32>,
+    pub(crate) handle   : Rc<backend::Texture2d>,
+    minify              : TextureFilter,
+    magnify             : TextureFilter,
+    wrap                : TextureWrap,
+    dimensions          : Point2<u32>,
 }
 
 impl Texture {
@@ -70,8 +69,7 @@ impl Texture {
     }
     /// Clears the texture with given color.
     pub fn clear(self: &Self, color: Color) {
-        let Color(r, g, b, a) = color;
-        self.handle.as_surface().clear_color(r, g, b, a);
+        self.handle.clear(color);
     }
     /// Returns the dimensions of the texture.
     pub fn dimensions(self: &Self) -> Point2<u32> {
@@ -79,18 +77,9 @@ impl Texture {
     }
     /// Creates a new texture from given TextureInfo struct.
     fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
-        let context = rendercontext::lock(context);
-
-        let texture = glium::texture::Texture2d::empty_with_format(
-            display::handle(&context.display),
-            convert_format(info.format),
-            glium::texture::MipmapsOption::NoMipmap,
-            info.width,
-            info.height,
-        ).unwrap();
-
-        texture.as_surface().clear_color(0.0, 0.0, 0.0, 0.0);
-
+        let mut context = rendercontext::lock(context);
+        let mut context = context.deref_mut();
+        let texture = backend::Texture2d::new(context, &info);
         Texture {
             handle      : Rc::new(texture),
             minify      : info.minify,
@@ -107,7 +96,7 @@ pub fn from_info(context: &RenderContext, info: TextureInfo) -> Texture {
 }
 
 /// Returns the texture handle.
-pub fn handle(texture: &Texture) -> &glium::texture::Texture2d {
+pub fn handle(texture: &Texture) -> &backend::Texture2d {
     texture.handle.deref()
 }
 
@@ -125,36 +114,6 @@ impl AsRenderTarget for Texture {
 impl AsUniform for Texture {
     fn as_uniform(self: &Self) -> Uniform {
         Uniform::Texture(self.clone())
-    }
-}
-
-/// Converts TextureFormat to the supported gliums texture formats
-fn convert_format(format: TextureFormat) -> glium::texture::UncompressedFloatFormat {
-    use glium::texture::UncompressedFloatFormat as GF;
-    use self::TextureFormat as RF;
-    match format {
-        RF::U8 => GF::U8,
-        RF::U16 => GF::U16,
-        RF::U8U8 => GF::U8U8,
-        RF::U16U16 => GF::U16U16,
-        RF::U10U10U10 => GF::U10U10U10,
-        RF::U12U12U12 => GF::U12U12U12,
-        RF::U16U16U16 => GF::U16U16U16,
-        RF::U2U2U2U2 => GF::U2U2U2U2,
-        RF::U4U4U4U4 => GF::U4U4U4U4,
-        RF::U5U5U5U1 => GF::U5U5U5U1,
-        RF::U8U8U8U8 => GF::U8U8U8U8,
-        RF::U10U10U10U2 => GF::U10U10U10U2,
-        RF::U12U12U12U12 => GF::U12U12U12U12,
-        RF::U16U16U16U16 => GF::U16U16U16U16,
-        RF::I16I16I16I16 => GF::I16I16I16I16,
-        RF::F16 => GF::F16,
-        RF::F16F16 => GF::F16F16,
-        RF::F16F16F16F16 => GF::F16F16F16F16,
-        RF::F32 => GF::F32,
-        RF::F32F32 => GF::F32F32,
-        RF::F32F32F32F32 => GF::F32F32F32F32,
-        RF::F11F11F10 => GF::F11F11F10,
     }
 }
 

@@ -1,4 +1,4 @@
-use core::{Display, DisplayInfo, display};
+use core::{Display, DisplayInfo, display, Monitor};
 use maths::Point2;
 
 /// A display builder.
@@ -57,8 +57,8 @@ impl DisplayBuilder {
         self
     }
     /// Sets the monitor to create the display on.
-    pub fn monitor(mut self: Self, id: i32) -> Self {
-        self.info.monitor = id;
+    pub fn monitor(mut self: Self, monitor: Monitor) -> Self {
+        self.info.monitor = Some(monitor);
         self
     }
     /// Flags the display to use vsync.

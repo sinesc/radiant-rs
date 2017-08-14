@@ -1,5 +1,4 @@
 use prelude::*;
-use glium::vertex::{Attribute, AttributeType};
 use core::{Uniform, AsUniform};
 
 /// A color value consisting of four floating point values for the color channels red, green, blue
@@ -8,7 +7,7 @@ use core::{Uniform, AsUniform};
 /// Various drawing methods accept color instances to be used as multiplicators in the drawing
 /// process, e.g. [`Sprite::draw()`](struct.Sprite.html#method.draw) allows multiplying the sprite-
 /// texture's color channels by given color.
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
 impl Color {
@@ -260,13 +259,6 @@ impl<'a> From<&'a Color> for (f32, f32, f32, f32) {
 impl AsUniform for Color {
     fn as_uniform(self: &Self) -> Uniform {
         Uniform::Vec4([ self.0, self.1, self.2, self.3 ])
-    }
-}
-
-#[doc(hidden)]
-unsafe impl Attribute for Color {
-    fn get_type() -> AttributeType {
-        AttributeType::F32F32F32F32
     }
 }
 

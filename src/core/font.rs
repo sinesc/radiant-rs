@@ -3,9 +3,8 @@ use core::{self, layer, Layer, rendercontext, RenderContext, Color};
 use maths::{Point2, Vec2, Rect};
 use core::builder::*;
 use rusttype;
-use glium;
+use backends::glium as backend;
 use font_loader::system_fonts;
-use std::borrow::Cow;
 
 static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
@@ -124,21 +123,6 @@ pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
     Font::from_info(context, info)
 }
 
-/// Creates a new cache texture for the renderer.
-pub fn create_cache_texture(display: &glium::Display, width: u32, height: u32) -> glium::texture::Texture2d {
-    glium::texture::Texture2d::with_format(
-        display,
-        glium::texture::RawImage2d {
-            data: Cow::Owned(vec![128u8; width as usize * height as usize]),
-            width: width,
-            height: height,
-            format: glium::texture::ClientFormat::U8
-        },
-        glium::texture::UncompressedFloatFormat::U8,
-        glium::texture::MipmapsOption::NoMipmap
-    ).unwrap()
-}
-
 /// Creates a new unique font
 fn create_font(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
     Font {
@@ -249,7 +233,7 @@ fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
 /// A wrapper around rusttype's font cache.
 pub struct FontCache {
     cache   : Mutex<rusttype::gpu_cache::Cache>,
-    queue   : Mutex<Vec<(rusttype::Rect<u32>, Vec<u8>)>>,
+    queue   : Mutex<Vec<(Rect<u32>, Vec<u8>)>>,
     dirty   : AtomicBool,
 }
 
@@ -274,7 +258,7 @@ impl FontCache {
         }
 
         cache.cache_queued(|rect, data| {
-            queue.push((rect, data.to_vec()));
+            queue.push( (Rect(Point2(rect.min.x, rect.min.y), Point2(rect.max.x, rect.max.y)), data.to_vec()) );
             dirties = true;
         }).unwrap();
 
@@ -282,25 +266,13 @@ impl FontCache {
             self.dirty.store(dirties, Ordering::Relaxed);
         }
     }
+
     /// Updates the font cache texture.
-    pub fn update(self: &Self, texture: &glium::texture::Texture2d) {
+    pub fn update(self: &Self, texture: &backend::Texture2d) {
         if self.dirty.load(Ordering::Relaxed) {
             let mut queue = self.queue.lock().unwrap();
             for &(ref rect, ref data) in queue.deref() {
-                texture.main_level().write(
-                    glium::Rect {
-                        left: rect.min.x,
-                        bottom: rect.min.y,
-                        width: rect.width(),
-                        height: rect.height()
-                    },
-                    glium::texture::RawImage2d {
-                        data: Cow::Borrowed(&data),
-                        width: rect.width(),
-                        height: rect.height(),
-                        format: glium::texture::ClientFormat::U8
-                    }
-                );
+                texture.write(rect, data);
             }
             queue.clear();
             self.dirty.store(false, Ordering::Relaxed);

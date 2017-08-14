@@ -1,24 +1,17 @@
-use glium;
-use glium::{DisplayBuild, Surface};
-use glium::glutin::WindowBuilder;
 use prelude::*;
 use core::input::{InputData, InputState, NUM_KEYS, NUM_BUTTONS};
 use core::monitor;
-use core::{AsRenderTarget, RenderTarget, Texture, Rect, Color, texture, TextureFilter};
+use core::{AsRenderTarget, RenderTarget, Color};
 use maths::Point2;
 use core::builder::*;
-use backend::glium as backend;
-use glium::index::IndicesSource;
-use glium::uniforms::Uniforms;
-use glium::vertex::MultiVerticesSource;
-use glium::{Program, DrawParameters, DrawError};
+use backends::glium as backend;
 
 /// A target to render to, e.g. a window or full screen.
 #[derive(Clone)]
 pub struct Display {
-    handle: glium::Display,
-    frame: Rc<RefCell<Option<glium::Frame>>>,
-    input_data: Arc<RwLock<InputData>>,
+    pub(crate) handle: backend::Display,
+    pub(crate) frame: Rc<RefCell<Option<backend::Frame>>>,
+    pub(crate) input_data: Arc<RwLock<InputData>>,
 }
 
 impl Display {
@@ -37,17 +30,17 @@ impl Display {
 
     /// Sets the window title.
     pub fn set_title(self: &Self, title: &str) {
-        self.window().set_title(title);
+        self.handle.set_title(title);
     }
 
     /// Makes the previously hidden window visible.
     pub fn show(self: &Self) {
-        self.window().show();
+        self.handle.show();
     }
 
     /// Hides the window.
     pub fn hide(self: &Self) {
-        self.window().hide();
+        self.handle.hide();
     }
 
     /// Prepares a frame for rendering.
@@ -62,8 +55,7 @@ impl Display {
     pub fn clear_frame(self: &Self, color: Color) {
         self.prepare_frame();
         if let Some(ref mut frame) = self.frame.borrow_mut().as_mut() {
-            let Color(r, g, b, a) = color;
-            frame.clear_color(r, g, b, a);
+            frame.clear(color);
         } else {
             panic!("Failed to prepare a frame for clear.");
         }
@@ -73,7 +65,7 @@ impl Display {
     pub fn swap_frame(self: &Self) {
         let frame = mem::replace(&mut *self.frame.borrow_mut(), None);
         if let Some(frame) = frame {
-            frame.finish().unwrap();
+            frame.swap();
         } else {
             panic!("No frame currently prepared, nothing to swap.");
         }
@@ -86,57 +78,49 @@ impl Display {
     /// Grab mode will be temporarily released when the window loses focus and automatically
     /// restored once it regains focus.
     pub fn grab_cursor(self: &Self) {
-        let window = self.window();
-        window.set_cursor_state(glium::glutin::CursorState::Grab).unwrap();
+        self.handle.set_cursor_state(CursorState::Grab);
         self.input_data.write().unwrap().cursor_grabbed = true;
-        window.set_cursor_position(100, 100).unwrap();
+        self.handle.set_cursor_position(Point2(100, 100));
     }
 
     /// Hides the mouse cursor while it is inside the window.
     pub fn hide_cursor(self: &Self) {
-        self.window().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
+        self.handle.set_cursor_state(CursorState::Hide);
         self.input_data.write().unwrap().cursor_grabbed = false;
     }
 
     /// Releases a previously grabbed or hidden cursor and makes it visible again.
     pub fn free_cursor(self: &Self) {
-        self.window().set_cursor_state(glium::glutin::CursorState::Normal).unwrap();
+        self.handle.set_cursor_state(CursorState::Normal);
         self.input_data.write().unwrap().cursor_grabbed = false;
     }
 
     /// Returns the window dimensions.
     pub fn dimensions(self: &Self) -> Point2<u32> {
-        self.handle.get_framebuffer_dimensions().into()
+        self.handle.framebuffer_dimensions()
     }
 
     /// Returns monitor details for given monitor id.
+    /*
     pub fn monitor(index: u32) -> Option<monitor::Monitor> {
-        let mut iter = glium::glutin::get_available_monitors();
+        let mut iter = backend::get_available_monitors();
         let result = iter.nth(index as usize);
         if result.is_some() {
-            Some(monitor::from_id(result.unwrap()))
+            Some(monitor::Monitor::new(result.unwrap()))
         } else {
             None
         }
     }
+    */
 
     /// Returns a vector of available monitors.
     pub fn monitors() -> Vec<monitor::Monitor> {
-        let iter = glium::glutin::get_available_monitors();
+        let iter = backend::MonitorIterator::new();
         let mut result = Vec::<monitor::Monitor>::new();
         for monitor in iter {
-            result.push(monitor::from_id(monitor));
+            result.push(monitor::Monitor::new(monitor));
         }
         result
-    }
-
-    /// Takes a glium::Display and returns a radiant::Display.
-    pub fn from_glium(display: glium::Display) -> Display {
-        Display {
-            handle: display,
-            frame: Rc::new(RefCell::new(None)),
-            input_data: Arc::new(RwLock::new(InputData::new())),
-        }
     }
 
     /// Polls for events like keyboard or mouse input and changes to the window. See
@@ -169,7 +153,7 @@ impl Display {
             }
         }
 
-        for event in backend::poll_events(&self.handle) {
+        for event in self.handle.poll_events() {
             match event {
                 backend::Event::KeyboardInput(key_id, down) => {
                     let currently_down = match input_data.key[key_id] {
@@ -191,8 +175,7 @@ impl Display {
                         let delta = (x - center.0, y - center.1);
                         input_data.mouse = (old_mouse.0 + delta.0, old_mouse.1 + delta.1);
                         input_data.mouse_delta = delta;
-                        let window = self.window();
-                        window.set_cursor_position(center.0, center.1).unwrap();
+                        self.handle.set_cursor_position(Point2(center.0, center.1));
                     } else {
                         input_data.mouse = (x, y);
                     }
@@ -211,9 +194,8 @@ impl Display {
                 backend::Event::Focused => {
                     // restore grab after focus loss
                     if input_data.cursor_grabbed {
-                        let window = self.window();
-                        window.set_cursor_state(glium::glutin::CursorState::Normal).unwrap();
-                        window.set_cursor_state(glium::glutin::CursorState::Grab).unwrap();
+                        self.handle.set_cursor_state(CursorState::Normal);
+                        self.handle.set_cursor_state(CursorState::Grab);
                     }
                 }
                 backend::Event::Closed => {
@@ -222,7 +204,7 @@ impl Display {
             }
         }
 
-        input_data.dimensions = self.window().get_inner_size_pixels().unwrap_or((0, 0));
+        input_data.dimensions = self.handle.window_dimensions().into();
 
         self
     }
@@ -237,35 +219,15 @@ impl Display {
 
     /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
     fn new(descriptor: DisplayInfo) -> Display {
-
-        let mut builder = WindowBuilder::new()
-            .with_dimensions(descriptor.width, descriptor.height)
-            .with_title(descriptor.title)
-            .with_transparency(descriptor.transparent)
-            .with_decorations(descriptor.decorations)
-            .with_visibility(descriptor.visible);
-
-        if descriptor.monitor >= 0 {
-            let monitor = Self::monitor(descriptor.monitor as u32);
-            if monitor.is_some() {
-                builder = builder.with_fullscreen(monitor::get_id(monitor.unwrap()));
-            }
-            // !todo error
-        }
-        if descriptor.vsync {
-            builder = builder.with_vsync();
-        }
-
         Display {
-            handle: builder.build_glium().unwrap(),
+            handle: backend::Display::new(descriptor),
             frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(InputData::new())),
         }
     }
 
-    /// returns a reference to the underlying glutin window
-    fn window(self: &Self) -> glium::backend::glutin_backend::WinRef {
-        self.handle.get_window().unwrap()
+    pub(crate) fn handle(self: &Self) -> &backend::Display {
+        &self.handle
     }
 }
 
@@ -274,64 +236,24 @@ pub fn create(descriptor: DisplayInfo) -> Display {
     Display::new(descriptor)
 }
 
-/// Returns the glium display handle
-pub fn handle(display: &Display) -> &glium::Display {
-    &display.handle
-}
-
 /// Returns an RwLocked reference to the input data.
 pub fn input_data(display: &Display) -> &Arc<RwLock<InputData>> {
     &display.input_data
 }
 
-/// Draws to the display.
-pub fn draw<'b, 'v, V, I, U>(display: &Display, vb: V, ib: I, program: &Program, uniforms: &U, draw_parameters: &DrawParameters) -> Result<(), DrawError>
-    where I: Into<IndicesSource<'b>>, U: Uniforms, V: MultiVerticesSource<'v>
-{
-    display.frame.borrow_mut().as_mut().unwrap().draw(vb, ib, program, uniforms, draw_parameters)
-}
-
-/// Copies given texture to given display.
-pub fn copy_from_texture(display: &Display, source: &Texture, filter: TextureFilter) {
-    texture::handle(source).as_surface().fill(display.frame.borrow().as_ref().unwrap(), backend::magnify_filter(filter));
-}
-
-/// Copies given display to given texture.
-pub fn copy_to_texture(display: &Display, target: &Texture, filter: TextureFilter) {
-    display.frame.borrow().as_ref().unwrap().fill(&texture::handle(target).as_surface(), backend::magnify_filter(filter));
-}
-
-/// Copies the source rectangle to the target rectangle on the given display.
-pub fn copy_rect(display: &Display, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
-    let height = display.dimensions().1;
-    let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, height, target_rect, height);
-    display.frame.borrow().as_ref().unwrap().blit_color(&glium_src_rect, display.frame.borrow().as_ref().unwrap(), &glium_target_rect, backend::magnify_filter(filter));
-}
-
-/// Copies the source rectangle from the given texture to the target rectangle on the given display.
-pub fn copy_rect_from_texture(display: &Display, source: &Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
-    let target_height = display.dimensions().1;
-    let source_height = texture::handle(source).as_surface().get_dimensions().1;
-    let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, source_height, target_rect, target_height);
-    texture::handle(source).as_surface().blit_color(&glium_src_rect, display.frame.borrow().as_ref().unwrap(), &glium_target_rect, backend::magnify_filter(filter));
-}
-
-/// Copies the source rectangle from the given display to the target rectangle on the given texture.
-pub fn copy_rect_to_texture(display: &Display, target: &Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
-    let source_height = display.dimensions().1;
-    let target_height = texture::handle(target).as_surface().get_dimensions().1;
-    let (glium_src_rect, glium_target_rect) = backend::blit_coords(source_rect, source_height, target_rect, target_height);
-    display.frame.borrow().as_ref().unwrap().blit_color(&glium_src_rect, &texture::handle(target).as_surface(), &glium_target_rect, backend::magnify_filter(filter));
-}
-
 /// Clears the display with given color without swapping buffers.
 pub fn clear(display: &Display, color: Color) {
     if let Some(ref mut frame) = display.frame.borrow_mut().as_mut() {
-        let Color(r, g, b, a) = color;
-        frame.clear_color(r, g, b, a);
+        frame.clear(color);
     } else {
         panic!("Failed to clear frame: None prepared.");
     }
+}
+
+pub enum CursorState {
+    Normal,
+    Hide,
+    Grab,
 }
 
 impl AsRenderTarget for Display {
@@ -348,7 +270,7 @@ pub struct DisplayInfo {
     pub title       : String,
     pub transparent : bool,
     pub decorations : bool,
-    pub monitor     : i32,
+    pub monitor     : Option<monitor::Monitor>,
     pub vsync       : bool,
     pub visible     : bool,
 }
@@ -361,7 +283,7 @@ impl Default for DisplayInfo {
             title       : "".to_string(),
             transparent : false,
             decorations : true,
-            monitor     : -1,
+            monitor     : None,
             vsync       : false,
             visible     : true,
         }

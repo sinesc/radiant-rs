@@ -1,8 +1,7 @@
-use glium;
 use prelude::*;
-use avec::AVec;
+use avec;
 use maths::{Mat4, Point2, Rect};
-use core::{blendmodes, BlendMode, rendercontext, RenderContextData, Color, display, Program};
+use core::{blendmodes, BlendMode, rendercontext, Color, Program, Vertex};
 use maths::Vec2;
 
 /// A drawing surface for text and sprites that implements send+sync and is wait-free for drawing operations.
@@ -27,12 +26,22 @@ pub struct Layer {
     program         : Option<Program>,
 }
 
+unsafe impl Send for Layer { }
+unsafe impl Sync for Layer { }
+
 impl Clone for Layer {
     /// Creates a new layer that references the contents of this layer but has its own
     /// color, blendmode and set of matrices.
     fn clone(self: &Self) -> Self {
         self.create_clone(None)
     }
+}
+
+/// Layer contents, shared among layer clones.
+struct LayerContents {
+    vertex_data     : avec::AVec<Vertex>,
+    dirty           : AtomicBool,
+    generation      : AtomicUsize,
 }
 
 impl Layer {
@@ -105,7 +114,7 @@ impl Layer {
 
     /// Sets the blendmode.
     pub fn set_blendmode(self: &Self, blendmode: BlendMode) -> &Self {
-        self.blendmode().set(blendmode);
+        *self.blendmode() = blendmode;
         self
     }
 
@@ -147,8 +156,7 @@ impl Layer {
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::white()),
             contents        : Arc::new(LayerContents {
-                vertex_data     : AVec::new(rendercontext::INITIAL_CAPACITY * 4),
-                vertex_buffer   : Mutex::new(None),
+                vertex_data     : avec::AVec::new(rendercontext::INITIAL_CAPACITY * 4),
                 dirty           : AtomicBool::new(true),
                 generation      : AtomicUsize::new(0),
             }),
@@ -186,6 +194,10 @@ pub fn program(layer: &Layer) -> Option<&Program> {
     layer.program.as_ref()
 }
 
+pub fn vertices(layer: &Layer) -> avec::AVecReadGuard<Vertex> {
+    layer.contents.vertex_data.get()
+}
+
 /// Draws a rectangle on given layer.
 pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<f32>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
 
@@ -212,7 +224,7 @@ pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture
         position    : [pos.0, pos.1],
         offset      : [offset_x0, offset_y0],
         rotation    : rotation,
-        color       : color,
+        color       : color.into(),
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : uv.top_left().into(),
@@ -223,7 +235,7 @@ pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture
         position    : [pos.0, pos.1],
         offset      : [offset_x1, offset_y0],
         rotation    : rotation,
-        color       : color,
+        color       : color.into(),
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : uv.top_right().into(),
@@ -234,7 +246,7 @@ pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture
         position    : [pos.0, pos.1],
         offset      : [offset_x0, offset_y1],
         rotation    : rotation,
-        color       : color,
+        color       : color.into(),
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : uv.bottom_left().into(),
@@ -245,74 +257,10 @@ pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture
         position    : [pos.0, pos.1],
         offset      : [offset_x1, offset_y1],
         rotation    : rotation,
-        color       : color,
+        color       : color.into(),
         bucket_id   : bucket_id,
         texture_id  : texture_id,
         texture_uv  : uv.bottom_right().into(),
         components  : components,
     });
-}
-
-/// Uploads vertex data to the vertex buffer and returns number of vertices uploaded and the mutex-guarded vertex-buffer.
-pub fn upload<'a>(layer: &'a Layer, context: &RenderContextData) -> (MutexGuard<'a, Option<glium::VertexBuffer<Vertex>>>, usize) {
-
-    // prepare vertexbuffer if not already done
-
-    let mut vertex_buffer_guard = layer.contents.vertex_buffer.lock().unwrap();
-
-    let num_vertices = {
-        let mut vertex_buffer = vertex_buffer_guard.deref_mut();
-
-        // prepare vertexbuffer if not already done
-
-        if vertex_buffer.is_none() {
-            *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.contents.vertex_data.capacity()).unwrap());
-        }
-
-        // copy layer data to vertexbuffer
-
-        if layer.contents.dirty.swap(false, Ordering::Relaxed) {
-            let vertex_data = layer.contents.vertex_data.get();
-            let num_vertices = vertex_data.len();
-            if num_vertices > 0 {
-                // resize as neccessary
-                if num_vertices > vertex_buffer.as_ref().unwrap().len() {
-                    *vertex_buffer = Some(glium::VertexBuffer::empty_dynamic(display::handle(&context.display), layer.contents.vertex_data.capacity()).unwrap());
-                }
-                // copy data to buffer
-                let vb_slice = vertex_buffer.as_ref().unwrap().slice(0 .. num_vertices).unwrap();
-                vb_slice.write(&vertex_data[0 .. num_vertices]);
-            }
-            num_vertices
-        } else {
-            layer.contents.vertex_data.len()
-        }
-    };
-
-    (vertex_buffer_guard, num_vertices)
-}
-
-unsafe impl Send for Layer { }
-unsafe impl Sync for Layer { }
-
-/// A glium vertex.
-#[derive(Copy, Clone, Default)]
-pub struct Vertex {
-    position    : [f32; 2],
-    offset      : [f32; 2],
-    rotation    : f32,
-    color       : Color,
-    bucket_id   : u32,
-    texture_id  : u32,
-    texture_uv  : [f32; 2],
-    components  : u32,
-}
-implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
-
-/// Layer contents, shared among layer clones.
-struct LayerContents {
-    vertex_data     : AVec<Vertex>,
-    vertex_buffer   : Mutex<Option<glium::VertexBuffer<Vertex>>>,
-    dirty           : AtomicBool,
-    generation      : AtomicUsize,
 }

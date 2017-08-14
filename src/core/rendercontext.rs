@@ -1,7 +1,7 @@
-use glium;
-use core::{self, display, Display, font, SpriteData};
+use core::{self, Display, font, SpriteData, Vertex};
 use prelude::*;
-use std::borrow::Cow;
+use std::default::Default;
+use backends::glium as backend;
 
 /// Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
 pub const NUM_BUCKETS: usize = 6;
@@ -42,22 +42,10 @@ pub fn lock<'a>(context: &'a RenderContext) -> MutexGuard<'a, RenderContextData>
 
 /// Individual Texture.
 #[derive(Clone)]
-pub struct RenderContextTexture {
+pub struct RawFrame {
     pub data    : Vec<u8>,
     pub width   : u32,
     pub height  : u32,
-}
-
-impl<'a> glium::texture::Texture2dDataSource<'a> for RenderContextTexture {
-    type Data = u8;
-    fn into_raw(self: Self) -> glium::texture::RawImage2d<'a, Self::Data> {
-        glium::texture::RawImage2d {
-            data: Cow::Owned(self.data),
-            width: self.width,
-            height: self.height,
-            format: glium::texture::ClientFormat::U8U8U8U8,
-        }
-    }
 }
 
 /// A weak reference back to a sprite.
@@ -83,24 +71,24 @@ impl SpriteBackRef {
 }
 
 /// Texture data for a single texture array.
-pub struct RenderContextTextureArray {
+pub struct RawFrameArray {
     pub dirty   : bool,
-    pub data    : Rc<glium::texture::Texture2dArray>,
-    pub raw     : Vec<RenderContextTexture>,
+    pub data    : Rc<backend::Texture2dArray>,
+    pub raw     : Vec<RawFrame>,
     sprites     : Vec<SpriteBackRef>,
 }
 
-impl RenderContextTextureArray {
+impl RawFrameArray {
     fn new(display: &Display) -> Self {
-        RenderContextTextureArray {
+        RawFrameArray {
             dirty   : false,
-            data    : Rc::new(Self::create(display, &Vec::new())), // !todo why rc?
+            data    : Rc::new(backend::Texture2dArray::new(display.handle(), &Vec::new())), // !todo why rc?
             raw     : Vec::new(),
             sprites : Vec::new(),
         }
     }
     /// Store given frames to texture arrays.
-    pub fn store_frames<'a>(self: &mut Self, raw_frames: Vec<RenderContextTexture>) -> u32 {
+    pub fn store_frames<'a>(self: &mut Self, raw_frames: Vec<RawFrame>) -> u32 {
         let texture_id = self.raw.len() as u32;
         for frame in raw_frames {
             self.raw.push(frame);
@@ -112,20 +100,11 @@ impl RenderContextTextureArray {
     pub fn store_sprite(self: &mut Self, sprite_data: Weak<SpriteData>) {
         self.sprites.push(SpriteBackRef::new(sprite_data));
     }
-    /// Generates glium texture array from given vector of textures
-    fn create(display: &Display, raw: &Vec<RenderContextTexture>) -> glium::texture::Texture2dArray {
-        use glium::texture;
-        if raw.len() > 0 {
-            texture::Texture2dArray::with_format(display::handle(display), raw.clone(), texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
-        } else {
-            texture::Texture2dArray::empty_with_format(display::handle(display), texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
-        }
-    }
     /// Updates texture array in video memory.
     fn update(self: &mut Self, display: &Display) {
         if self.dirty {
             self.dirty = false;
-            self.data = Rc::new(Self::create(display, &self.raw));
+            self.data = Rc::new(backend::Texture2dArray::new(display.handle(), &self.raw));
         }
     }
     /// Returns a list of tuples containing current sprite texture_id and required negative offset.
@@ -195,12 +174,12 @@ impl RenderContextTextureArray {
 
 /// Internal data of a RenderContext
 pub struct RenderContextData {
-    pub index_buffer        : glium::IndexBuffer<u32>,
-    pub tex_arrays          : Vec<RenderContextTextureArray>,
+    pub backend_context     : backend::Context,
+    pub tex_arrays          : Vec<RawFrameArray>,
     pub display             : Display,
     pub font_cache          : font::FontCache,
-    pub font_texture        : Rc<glium::texture::Texture2d>,
-    pub vertex_buffer_single: glium::VertexBuffer<Vertex>,
+    pub font_texture        : Rc<backend::Texture2d>,
+    pub single_rect         : [core::Vertex; 4],
     generation              : usize,
 }
 
@@ -210,19 +189,18 @@ impl RenderContextData {
     pub fn new(display: &Display, initial_capacity: usize) -> core::Result<Self> {
 
         let mut tex_arrays = Vec::new();
-        let glium_handle = &display::handle(&display);
 
         for _ in 0..NUM_BUCKETS {
-            tex_arrays.push(RenderContextTextureArray::new(display));
+            tex_arrays.push(RawFrameArray::new(display));
         }
 
         Ok(RenderContextData {
-            index_buffer        : Self::create_index_buffer(glium_handle, initial_capacity),
+            backend_context     : backend::Context::new(&display.handle(), initial_capacity),
             tex_arrays          : tex_arrays,
             display             : display.clone(),
             font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
-            font_texture        : Rc::new(font::create_cache_texture(glium_handle, 512, 512)),
-            vertex_buffer_single: Self::create_vertex_buffer_single(glium_handle),
+            font_texture        : Rc::new(backend::Texture2d::font_cache(&display.handle(), 512, 512)),
+            single_rect         : Self::create_single_rect(),
             generation          : Self::create_generation(),
         })
     }
@@ -244,15 +222,8 @@ impl RenderContextData {
         }
     }
 
-    /// Update index buffer to given size
-    pub fn update_index_buffer(self: &mut Self, max_sprites: usize) {
-        if max_sprites * 6 > self.index_buffer.len() {
-            self.index_buffer = Self::create_index_buffer(&display::handle(&self.display), max_sprites);
-        }
-    }
-
     /// Store given frames to texture arrays
-    pub fn store_frames(self: &mut Self, bucket_id: u32, raw_frames: Vec<RenderContextTexture>) -> u32 {
+    pub fn store_frames(self: &mut Self, bucket_id: u32, raw_frames: Vec<RawFrame>) -> u32 {
         self.tex_arrays[bucket_id as usize].store_frames(raw_frames)
     }
 
@@ -260,12 +231,7 @@ impl RenderContextData {
     pub fn store_sprite(self: &mut Self, bucket_id: u32, sprite_data: Weak<SpriteData>) {
         self.tex_arrays[bucket_id as usize].store_sprite(sprite_data);
     }
-/*
-    /// Marks texture array elements as no longer used
-    pub fn invalidate_frames(self: &mut Self, bucket_id: u8, start: u32, count: u32) {
-        self.tex_arrays[bucket_id as usize].valid.unset_range(start as usize, count as usize);
-    }
-*/
+
     /// Prunes no longer used textures for all texture arrays.
     fn prune(self: &mut Self) {
         self.generation = Self::create_generation();
@@ -274,34 +240,14 @@ impl RenderContextData {
         }
     }
 
-    /// creates vertex pool for given number of sprites
-    fn create_index_buffer(display: &glium::Display, max_sprites: usize) -> glium::index::IndexBuffer<u32> {
-
-        let mut ib_data = Vec::with_capacity(max_sprites as usize * 6);
-
-        for i in 0..max_sprites {
-            let num = i as u32;
-            ib_data.push(num * 4);
-            ib_data.push(num * 4 + 1);
-            ib_data.push(num * 4 + 2);
-            ib_data.push(num * 4 + 1);
-            ib_data.push(num * 4 + 3);
-            ib_data.push(num * 4 + 2);
-        }
-
-        glium::index::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &ib_data).unwrap()
-    }
-
     /// creates a single rectangle vertex buffer
-    fn create_vertex_buffer_single(display: &glium::Display) -> glium::VertexBuffer<Vertex> {
-        glium::VertexBuffer::new(display,
-            &[
-                Vertex { position: [ 0.0,  0.0 ], texture_uv: [ 0.0, 1.0 ] },
-                Vertex { position: [ 1.0,  0.0 ], texture_uv: [ 1.0, 1.0 ] },
-                Vertex { position: [ 0.0,  1.0 ], texture_uv: [ 0.0, 0.0 ] },
-                Vertex { position: [ 1.0,  1.0 ], texture_uv: [ 1.0, 0.0 ] },
-            ]
-        ).unwrap()
+    fn create_single_rect() -> [core::Vertex; 4] {
+        [
+            Vertex { position: [ 0.0,  0.0 ], texture_uv: [ 0.0, 1.0 ], ..Vertex::default() },
+            Vertex { position: [ 1.0,  0.0 ], texture_uv: [ 1.0, 1.0 ], ..Vertex::default() },
+            Vertex { position: [ 0.0,  1.0 ], texture_uv: [ 0.0, 0.0 ], ..Vertex::default() },
+            Vertex { position: [ 1.0,  1.0 ], texture_uv: [ 1.0, 0.0 ], ..Vertex::default() },
+        ]
     }
 
     // Creates a new generation and returns it
@@ -310,11 +256,3 @@ impl RenderContextData {
         GENERATION.fetch_add(1, Ordering::Relaxed) + 1
     }
 }
-
-#[derive(Copy, Clone)]
-pub struct Vertex {
-    position: [f32; 2],
-    texture_uv: [f32; 2],
-}
-
-implement_vertex!(Vertex, position, texture_uv);

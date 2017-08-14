@@ -125,7 +125,7 @@ void main() {
 
 #[macro_use] extern crate enum_primitive;
 #[macro_use] extern crate lazy_static;
-#[macro_use] extern crate glium;
+extern crate glium;
 extern crate image;
 extern crate regex;
 extern crate num_traits;
@@ -136,7 +136,7 @@ extern crate avec;
 extern crate palette;
 
 mod prelude;
-mod backend;
+mod backends;
 mod core;
 mod maths;
 mod misc;
