@@ -131,11 +131,6 @@ impl Frame {
         core::texture::handle(source).0.as_surface().fill(&self.0, magnify_filter(filter));
     }
 
-    /// Copies given display to given texture.
-    pub fn copy_to_texture(self: &Self, target: &core::Texture, filter: core::TextureFilter) {
-        self.0.fill(&core::texture::handle(target).0.as_surface(), magnify_filter(filter));
-    }
-
     /// Copies the source rectangle to the target rectangle on the given display.
     pub fn copy_rect(self: &Self, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
         let height = self.0.get_dimensions().1;
@@ -146,17 +141,9 @@ impl Frame {
     /// Copies the source rectangle from the given texture to the target rectangle on the given display.
     pub fn copy_rect_from_texture(self: &Self, source: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
         let target_height = self.0.get_dimensions().1;
-        let source_height = core::texture::handle(source).0.as_surface().get_dimensions().1;
+        let source_height = core::texture::handle(source).0.height();
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
         core::texture::handle(source).0.as_surface().blit_color(&glium_src_rect, &self.0, &glium_target_rect, magnify_filter(filter));
-    }
-
-    /// Copies the source rectangle from the given display to the target rectangle on the given texture.
-    pub fn copy_rect_to_texture(self: &Self, target: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
-        let source_height = self.0.get_dimensions().1;
-        let target_height = core::texture::handle(target).0.as_surface().get_dimensions().1;
-        let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
-        self.0.blit_color(&glium_src_rect, &core::texture::handle(target).0.as_surface(), &glium_target_rect, magnify_filter(filter));
     }
 }
 
@@ -284,15 +271,23 @@ impl Texture2d {
             }
         );
     }
-
     pub fn copy_from(self: &Self, src_texture: &Texture2d, filter: core::TextureFilter) {
         src_texture.0.as_surface().fill(&self.0.as_surface(), magnify_filter(filter))
     }
     pub fn copy_rect_from(self: &Self, src_texture: &Texture2d, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
-        let target_height = self.0.dimensions().1;
-        let source_height = src_texture.0.dimensions().1;
+        let target_height = self.0.height();
+        let source_height = src_texture.0.height();
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
         src_texture.0.as_surface().blit_color(&glium_src_rect, &self.0.as_surface(), &glium_target_rect, magnify_filter(filter));
+    }
+    pub fn copy_from_frame(self: &Self, src_frame: &Frame, filter: core::TextureFilter) {
+        src_frame.0.fill(&self.0.as_surface(), magnify_filter(filter));
+    }
+    pub fn copy_rect_from_frame(self: &Self, src_frame: &Frame, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
+        let source_height = src_frame.0.get_dimensions().1;
+        let target_height = self.0.height();
+        let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
+        src_frame.0.blit_color(&glium_src_rect, &self.0.as_surface(), &glium_target_rect, magnify_filter(filter));
     }
 
     /// Converts TextureFormat to the supported gliums texture formats
@@ -331,7 +326,7 @@ impl Texture2d {
 // --------------
 
 #[derive(Clone)]
-pub struct RawFrame(core::RawFrame);
+struct RawFrame(core::RawFrame);
 
 impl<'a> glium::texture::Texture2dDataSource<'a> for RawFrame {
     type Data = u8;
@@ -370,7 +365,7 @@ impl Texture2dArray {
 // Context
 // --------------
 
-pub struct VertexBufferCacheItem {
+struct VertexBufferCacheItem {
     hint: usize,
     age: usize,
     buffer: glium::VertexBuffer<Vertex>,
@@ -597,7 +592,7 @@ impl<'b> Uniforms for GliumUniformList<'b> {
 // --------------
 
 #[derive(Copy, Clone)]
-pub struct Vertex(core::Vertex);
+struct Vertex(core::Vertex);
 
 implement_wrapped_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
 

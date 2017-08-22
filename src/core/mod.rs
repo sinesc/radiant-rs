@@ -104,7 +104,7 @@ impl RenderTarget {
             RenderTarget::Texture(ref target_texture) => {
                 match *source {
                     RenderTarget::Display(ref src_display) => {
-                        src_display.frame.borrow().as_ref().unwrap().copy_rect_to_texture(target_texture, source_rect, target_rect, filter);
+                        target_texture.handle.copy_rect_from_frame(src_display.frame.borrow().as_ref().unwrap(), source_rect, target_rect, filter);
                     },
                     RenderTarget::Texture(ref src_texture) => {
                         target_texture.handle.copy_rect_from(&src_texture.handle, source_rect, target_rect, filter);
@@ -130,7 +130,7 @@ impl RenderTarget {
             RenderTarget::Texture(ref target_texture) => {
                 match *source {
                     RenderTarget::Display(ref src_display) => {
-                        src_display.frame.borrow().as_ref().unwrap().copy_to_texture(target_texture, filter);
+                        target_texture.handle.copy_from_frame(src_display.frame.borrow().as_ref().unwrap(), filter);
                     },
                     RenderTarget::Texture(ref src_texture) => {
                         target_texture.handle.copy_from(&src_texture.handle, filter);

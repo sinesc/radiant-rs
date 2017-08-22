@@ -100,19 +100,6 @@ impl Display {
         self.handle.framebuffer_dimensions()
     }
 
-    /// Returns monitor details for given monitor id.
-    /*
-    pub fn monitor(index: u32) -> Option<monitor::Monitor> {
-        let mut iter = backend::get_available_monitors();
-        let result = iter.nth(index as usize);
-        if result.is_some() {
-            Some(monitor::Monitor::new(result.unwrap()))
-        } else {
-            None
-        }
-    }
-    */
-
     /// Returns a vector of available monitors.
     pub fn monitors() -> Vec<monitor::Monitor> {
         let iter = backend::MonitorIterator::new();
