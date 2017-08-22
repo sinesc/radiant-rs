@@ -13,7 +13,7 @@ pub fn main() {
     let spark_layer = Layer::new((640., 480.));
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
-    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/sparkles_64x64x1.png").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/sparkles2_64x64x1.png").unwrap();
     let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
     let big_font = font.with_size(24.0);
 
@@ -45,21 +45,12 @@ pub fn main() {
         sprite.draw(&spark_layer, 0, (340., 200.), *Color::blue().scale(1.5));
 
         // Draw the spark layer three times with different matrices and alpha levels
-        if (frame.elapsed_f32 / 1.5) as u32 % 2 == 0 {
-            // Postprocesses version
-            renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
-                renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
-                renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
-                renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
-            });
-            font.write(&text_layer, "Custom postprocessor: enabled", (240., 450.), Color::white());
-        } else {
-            // Unprocessed version
-            renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
-            renderer.draw_layer(&spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
-            renderer.draw_layer(&spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
-            font.write(&text_layer, "Custom postprocessor: disabled", (240., 450.), Color::white());
-        }
+        renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
+            renderer.fill().color(Color(0.0, 0.0, 0.0, 0.02)).draw();
+            renderer.draw_layer(spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
+            renderer.draw_layer(spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
+            renderer.draw_layer(spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
+        });
 
         // Draw text
         big_font.write(&text_layer, "blobs.rs", (355., 330.), Color::red());
