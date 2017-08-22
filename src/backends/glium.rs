@@ -422,7 +422,15 @@ impl Context {
         if let Some(id) = self.vertex_buffers.iter().position(|ref item| item.hint == buffer_hint && item.buffer.len() >= num_vertices) {
             (id, false)
         } else if self.vertex_buffers.len() < MAX_BUFFERS {
-            self.vertex_buffers.push(VertexBufferCacheItem { hint: buffer_hint, age: 0, buffer: glium::VertexBuffer::empty_dynamic(&self.display, num_vertices).unwrap() });
+            self.vertex_buffers.push(VertexBufferCacheItem {
+                hint: buffer_hint,
+                age: 0,
+                buffer: if buffer_hint == 0 {
+                    glium::VertexBuffer::empty(&self.display, num_vertices).unwrap()
+                } else {
+                    glium::VertexBuffer::empty_dynamic(&self.display, num_vertices).unwrap()
+                }
+            });
             (self.vertex_buffers.len() - 1, true)
         } else {
             if let Some((id, _)) = self.vertex_buffers.iter().enumerate().max_by(|&(_, a), &(_, b)| a.age.cmp(&b.age)) {
@@ -640,7 +648,7 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
     let vertices = &context.single_rect;
     let vertices = &vertices[..];
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, true, 0, core::program::texture(program), &glium_uniforms, &blend);
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, false, 0, core::program::texture(program), &glium_uniforms, &blend);
 }
 
 // --------------
