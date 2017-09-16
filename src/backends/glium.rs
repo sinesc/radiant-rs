@@ -414,7 +414,12 @@ impl Context {
 
         const MAX_BUFFERS: usize = 10;
 
+        for buffer in self.vertex_buffers.iter_mut() {
+            buffer.age += 1;
+        }
+
         if let Some(id) = self.vertex_buffers.iter().position(|ref item| item.hint == buffer_hint && item.buffer.len() >= num_vertices) {
+            self.vertex_buffers[id].age = 0;
             (id, false)
         } else if self.vertex_buffers.len() < MAX_BUFFERS {
             self.vertex_buffers.push(VertexBufferCacheItem {
@@ -429,6 +434,7 @@ impl Context {
             (self.vertex_buffers.len() - 1, true)
         } else {
             if let Some((id, _)) = self.vertex_buffers.iter().enumerate().max_by(|&(_, a), &(_, b)| a.age.cmp(&b.age)) {
+                self.vertex_buffers[id].age = 0;
                 (id, true)
             } else {
                 (1, true)
