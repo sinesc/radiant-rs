@@ -27,7 +27,7 @@ pub fn main() {
     let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, 4.0);
 
     utils::renderloop(|frame| {
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
         spark_layer.clear();
         text_layer.clear();
 
@@ -40,9 +40,9 @@ pub fn main() {
         view3.rotate_at((320., 200.), frame.delta_f32 * 2.0);
 
         // Draw the sprite three times, tinted red, green and blue
-        sprite.draw(&spark_layer, 0, (320., 180.), *Color::red().scale(1.5));
-        sprite.draw(&spark_layer, 0, (300., 200.), *Color::green().scale(1.5));
-        sprite.draw(&spark_layer, 0, (340., 200.), *Color::blue().scale(1.5));
+        sprite.draw(&spark_layer, 0, (320., 180.), *Color::RED.scale(1.5));
+        sprite.draw(&spark_layer, 0, (300., 200.), *Color::GREEN.scale(1.5));
+        sprite.draw(&spark_layer, 0, (340., 200.), *Color::BLUE.scale(1.5));
 
         // Draw the spark layer three times with different matrices and alpha levels
         renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
@@ -53,8 +53,8 @@ pub fn main() {
         });
 
         // Draw text
-        big_font.write(&text_layer, "blobs.rs", (355., 330.), Color::red());
-        font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.), Color::white());
+        big_font.write(&text_layer, "blobs.rs", (355., 330.), Color::RED);
+        font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.), Color::WHITE);
         renderer.draw_layer(&text_layer, 0);
 
         display.swap_frame();

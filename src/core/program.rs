@@ -52,7 +52,7 @@ pub fn create(display: &Display, source: &str) -> core::Result<Program> {
     let mut uniforms = UniformList::new();
     uniforms.insert("u_view", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());
     uniforms.insert("u_model", Mat4::<f32>::identity().as_uniform());
-    uniforms.insert("_rd_color", Color::white().as_uniform());
+    uniforms.insert("_rd_color", Color::WHITE.as_uniform());
     Ok(Program {
         uniforms: uniforms,
         sprite_program: Arc::new(backend::Program::new(display_handle, SPRITE_VS, &sprite_fs)?),

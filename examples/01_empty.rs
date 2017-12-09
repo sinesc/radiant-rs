@@ -10,7 +10,7 @@ pub fn main() {
     utils::renderloop(|_| {
 
         // Clear current backbuffer frame (black)
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
 
         // Here would be a good place to draw stuff
 

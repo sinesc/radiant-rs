@@ -11,10 +11,10 @@ pub fn main() {
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
-    sprite.draw(&layer, 0, (160., 120.), Color::white());
-    sprite.draw(&layer, 0, (130., 100.), Color::red());
-    sprite.draw(&layer, 0, (190., 100.), Color::green());
-    sprite.draw(&layer, 0, (160., 155.), Color::blue());
+    sprite.draw(&layer, 0, (160., 120.), Color::WHITE);
+    sprite.draw(&layer, 0, (130., 100.), Color::RED);
+    sprite.draw(&layer, 0, (190., 100.), Color::GREEN);
+    sprite.draw(&layer, 0, (160., 155.), Color::BLUE);
 
     // The basic postprocessor previously introduced.
     let program = Program::from_string(&renderer.context(), include_str!("../res/effects/ripple.fs")).unwrap();
@@ -29,7 +29,7 @@ pub fn main() {
     let darken = Color(0., 0., 0., 0.06);
 
     utils::renderloop(|frame| {
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
         layer.model_matrix().rotate(frame.delta_f32 * 1.1);
 
@@ -42,7 +42,7 @@ pub fn main() {
             renderer.postprocess(&bloom_effect, &blendmodes::LIGHTEN, || {
                 renderer.postprocess(&ripple_effect, &blendmodes::LIGHTEN, || {
                     renderer.render_to(&thumbnail, || {
-                        renderer.clear(Color::transparent());
+                        renderer.clear(Color::TRANSPARENT);
                         renderer.draw_layer(&layer, 0);
                     });
                     renderer.fill().blendmode(blendmodes::ALPHA).color(darken).draw();

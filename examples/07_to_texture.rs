@@ -8,17 +8,17 @@ pub fn main() {
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
-    sprite.draw(&layer, 0, (160., 120.), Color::white());
-    sprite.draw(&layer, 0, (130., 100.), Color::red());
-    sprite.draw(&layer, 0, (190., 100.), Color::green());
-    sprite.draw(&layer, 0, (160., 155.), Color::blue());
+    sprite.draw(&layer, 0, (160., 120.), Color::WHITE);
+    sprite.draw(&layer, 0, (130., 100.), Color::RED);
+    sprite.draw(&layer, 0, (190., 100.), Color::GREEN);
+    sprite.draw(&layer, 0, (160., 155.), Color::BLUE);
 
     // A texture. Each frame we'll draw the sprites to "surface", then blended with
     // a low opacity black to make old contents slowly disappear.
     let surface = Texture::new(&renderer.context(), 640, 480);
 
     utils::renderloop(|frame| {
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
 
         // Rotate the sprite matrices
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);

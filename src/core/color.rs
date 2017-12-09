@@ -12,11 +12,68 @@ pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
 impl Color {
 
-    //const RED: Color = Color(1.0, 0, 0, 1.0);
-
+    pub const TRANSPARENT: Color = Color(0.0, 0.0, 0.0, 0.0);
+    pub const WHITE: Color = Color(1.0, 1.0, 1.0, 1.0);
+    pub const BLACK: Color = Color(0.0, 0.0, 0.0, 1.0);
+    pub const RED: Color = Color(1.0, 0.0, 0.0, 1.0);
+    pub const GREEN: Color = Color(0.0, 1.0, 0.0, 1.0);
+    pub const BLUE: Color = Color(0.0, 0.0, 1.0, 1.0);
+    pub const YELLOW: Color = Color(1.0, 1.0, 0.0, 1.0);
+    pub const CYAN: Color = Color(0.0, 1.0, 1.0, 1.0);
+    pub const MAGENTA: Color = Color(1.0, 0.0, 1.0, 1.0);
+    
     /// Creates a new instance with a channels set to zero.
+    #[deprecated]
     pub fn transparent() -> Color {
-        Color(0.0, 0.0, 0.0, 0.0)
+        Self::TRANSPARENT
+    }
+
+    /// Returns opaque white color.
+    #[deprecated]
+    pub fn white() -> Color {
+        Self::WHITE
+    }
+
+    /// Returns opaque black color.
+    #[deprecated]
+    pub fn black() -> Color {
+        Self::BLACK
+    }
+
+    /// Returns opaque red color.
+    #[deprecated]
+    pub fn red() -> Color {
+        Self::RED
+    }
+
+    /// Returns opaque green color.
+    #[deprecated]
+    pub fn green() -> Color {
+        Self::GREEN
+    }
+
+    /// Returns opaque blue color.
+    #[deprecated]
+    pub fn blue() -> Color {
+        Self::BLUE
+    }
+
+    /// Returns opaque yellow color.
+    #[deprecated]
+    pub fn yellow() -> Color {
+        Self::YELLOW
+    }
+
+    /// Returns opaque cyan color.
+    #[deprecated]
+    pub fn cyan() -> Color {
+        Self::CYAN
+    }
+
+    /// Returns opaque magenta color.
+    #[deprecated]
+    pub fn magenta() -> Color {
+        Self::MAGENTA
     }
 
     /// Creates a new instance with color channels set to one and the alpha channel set to given value.
@@ -156,46 +213,6 @@ impl Color {
     // Returns new instance with alpha applied to all color channels.
     pub fn to_pm(self: &Self) -> Color {
         Color(self.0 * self.3, self.1 * self.3, self.2 * self.3, self.3)
-    }
-
-    /// Returns opaque white color.
-    pub fn white() -> Color {
-        Color(1.0, 1.0, 1.0, 1.0)
-    }
-
-    /// Returns opaque black color.
-    pub fn black() -> Color {
-        Color(0.0, 0.0, 0.0, 1.0)
-    }
-
-    /// Returns opaque red color.
-    pub fn red() -> Color {
-        Color(1.0, 0.0, 0.0, 1.0)
-    }
-
-    /// Returns opaque green color.
-    pub fn green() -> Color {
-        Color(0.0, 1.0, 0.0, 1.0)
-    }
-
-    /// Returns opaque blue color.
-    pub fn blue() -> Color {
-        Color(0.0, 0.0, 1.0, 1.0)
-    }
-
-    /// Returns opaque yellow color.
-    pub fn yellow() -> Color {
-        Color(1.0, 1.0, 0.0, 1.0)
-    }
-
-    /// Returns opaque cyan color.
-    pub fn cyan() -> Color {
-        Color(0.0, 1.0, 1.0, 1.0)
-    }
-
-    /// Returns opaque magenta color.
-    pub fn magenta() -> Color {
-        Color(1.0, 0.0, 1.0, 1.0)
     }
 
     /// Hue to rgb helper function uses by hsl.

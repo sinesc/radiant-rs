@@ -18,7 +18,7 @@ impl Default for BlendMode {
         BlendMode {
             color: BlendingFunction::AlwaysReplace,
             alpha: BlendingFunction::AlwaysReplace,
-            constant_value: Color::white(),
+            constant_value: Color::WHITE,
         }
     }
 }

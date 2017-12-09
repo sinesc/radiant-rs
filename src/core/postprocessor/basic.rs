@@ -57,7 +57,7 @@ impl Basic {
             program     : program,
         };
 
-        result.source.clear(Color::transparent());
+        result.source.clear(Color::TRANSPARENT);
         result
     }
 }

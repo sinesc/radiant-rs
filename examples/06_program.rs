@@ -20,15 +20,15 @@ pub fn main() {
     layer_custom.view_matrix().translate((80., 0.));
 
     utils::renderloop(|frame| {
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
         layer.clear();
 
         // Draw to "both" layers.
         let frame_id = (frame.elapsed_f32 * 30.0) as u32;
-        sprite.draw(&layer, frame_id, (160., 120.), Color::white());
-        sprite.draw(&layer, frame_id, (130., 100.), Color::red());
-        sprite.draw(&layer, frame_id, (190., 100.), Color::green());
-        sprite.draw(&layer, frame_id, (160., 155.), Color::blue());
+        sprite.draw(&layer, frame_id, (160., 120.), Color::WHITE);
+        sprite.draw(&layer, frame_id, (130., 100.), Color::RED);
+        sprite.draw(&layer, frame_id, (190., 100.), Color::GREEN);
+        sprite.draw(&layer, frame_id, (160., 155.), Color::BLUE);
 
         // Draw both layers.
         renderer.draw_layer(&layer, 0);

@@ -40,14 +40,14 @@ pub fn main() {
                 if tile_id >= first_gid {
                     let name = tile_to_name[&(tile_id - first_gid)];
                     let pos = iso_transform * math::Vec2(x as f32, y as f32);
-                    tileset.draw(&layers.last().unwrap(), name_to_frame_id[name], (pos.0.round(), pos.1.round()), Color::white());
+                    tileset.draw(&layers.last().unwrap(), name_to_frame_id[name], (pos.0.round(), pos.1.round()), Color::WHITE);
                 }
             }
         }
     }
 
     utils::renderloop(|frame| {
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
 
         // fade layers individually in
         let presentation = frame.elapsed_f32.floor() as usize % (layers.len() + 4);

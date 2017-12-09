@@ -8,10 +8,10 @@ pub fn main() {
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
-    sprite.draw(&layer, 0, (160., 120.), Color::white());
-    sprite.draw(&layer, 0, (130., 100.), Color::red());
-    sprite.draw(&layer, 0, (190., 100.), Color::green());
-    sprite.draw(&layer, 0, (160., 155.), Color::blue());
+    sprite.draw(&layer, 0, (160., 120.), Color::WHITE);
+    sprite.draw(&layer, 0, (130., 100.), Color::RED);
+    sprite.draw(&layer, 0, (190., 100.), Color::GREEN);
+    sprite.draw(&layer, 0, (160., 155.), Color::BLUE);
 
     // Load a shader progam.
     let program = Program::from_string(&renderer.context(), include_str!("../res/effects/ripple.fs")).unwrap();
@@ -21,14 +21,14 @@ pub fn main() {
     let ripple_effect = postprocessors::Basic::new(&renderer.context(), program);
 
     utils::renderloop(|frame| {
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
         layer.model_matrix().rotate(frame.delta_f32 * 1.1);
 
         // Drawing within Renderer::postprocess() applies the given postprocessor to the result
         // This particular postprocessor takes a blendmode as argument, which is provided here with blendmodes::LIGHTEN.
         renderer.postprocess(&ripple_effect, &blendmodes::LIGHTEN, || {
-            renderer.clear(Color::transparent());
+            renderer.clear(Color::TRANSPARENT);
             renderer.draw_layer(&layer, 0);
         });
 

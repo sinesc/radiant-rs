@@ -57,7 +57,7 @@ impl Postprocessor for Bloom {
         let mut combine = self.combine_program.lock().unwrap();
         let combine = combine.deref_mut();
         renderer.fill().blendmode(*blendmode).program(&combine).draw();
-        self.targets[0][0].clear(Color::transparent());
+        self.targets[0][0].clear(Color::TRANSPARENT);
     }
 }
 

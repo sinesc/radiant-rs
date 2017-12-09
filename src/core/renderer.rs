@@ -39,7 +39,7 @@ impl Renderer {
         let context = rendercontext::new(context_data);
         let target = vec![ RenderTarget::Display(display.clone()) ];
         let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
-        identity_texture.clear(Color::white());
+        identity_texture.clear(Color::WHITE);
 
         Ok(Renderer {
             empty_texture   : identity_texture,
@@ -69,7 +69,7 @@ impl Renderer {
 
         // open context
         let mut context = rendercontext::lock(&self.context);
-        let mut context = context.deref_mut();
+        let context = context.deref_mut();
 
         // update sprite texture arrays, font texture and vertex buffer as required
         context.update_tex_array();
@@ -123,12 +123,12 @@ impl Renderer {
 
         // open context
         let mut context = rendercontext::lock(&self.context);
-        let mut context = context.deref_mut();
+        let context = context.deref_mut();
 
         // use default or custom program and texture
         let program = target.program.unwrap_or(&self.program);
         let texture = target.texture.unwrap_or(&self.empty_texture);
-        let color = target.color.unwrap_or(Color::white());
+        let color = target.color.unwrap_or(Color::WHITE);
         let blendmode = target.blendmode.unwrap_or(blendmodes::ALPHA);
         let model_matrix = target.model_matrix.unwrap_or(Mat4::identity());
         let view_matrix = match target.view_matrix {

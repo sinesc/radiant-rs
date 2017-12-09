@@ -78,7 +78,7 @@ impl Texture {
     /// Creates a new texture from given TextureInfo struct.
     fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
         let mut context = rendercontext::lock(context);
-        let mut context = context.deref_mut();
+        let context = context.deref_mut();
         let texture = backend::Texture2d::new(context, &info);
         Texture {
             handle      : Rc::new(texture),

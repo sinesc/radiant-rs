@@ -157,7 +157,7 @@ impl Layer {
             view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1)),
             model_matrix    : Mutex::new(Mat4::identity()),
             blend           : Mutex::new(blendmodes::ALPHA),
-            color           : Mutex::new(Color::white()),
+            color           : Mutex::new(Color::WHITE),
             contents        : Arc::new(LayerContents {
                 vertex_data     : avec::AVec::new(rendercontext::INITIAL_CAPACITY * 4),
                 dirty           : AtomicBool::new(true),

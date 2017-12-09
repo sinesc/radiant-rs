@@ -18,12 +18,12 @@ pub fn main() {
         layer.set_color(Color::from_hsl((frame.elapsed_f32/5.0).fract(), 0.5, 0.5, 1.0));
 
         // Write some text
-        large.write(&layer, "Nine squared", (210., 100.), Color::white());
-        small.write(&layer, include_str!("../res/limerick.txt"), (210., 160.), Color::white());
-        tiny_it.write(&layer, "https://en.wikipedia.org/wiki/Leigh_Mercer", (10., 460.), Color::white());
+        large.write(&layer, "Nine squared", (210., 100.), Color::WHITE);
+        small.write(&layer, include_str!("../res/limerick.txt"), (210., 160.), Color::WHITE);
+        tiny_it.write(&layer, "https://en.wikipedia.org/wiki/Leigh_Mercer", (10., 460.), Color::WHITE);
 
         // The usual clear, draw, swap, repeat.
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
         renderer.draw_layer(&layer, 0);
         display.swap_frame();
         !display.poll_events().was_closed()

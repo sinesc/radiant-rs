@@ -9,10 +9,10 @@ pub fn main() {
     layer.set_blendmode(blendmodes::LIGHTEN);
 
     // Draw the usual sprites to the layer just once. We won't ever clear it, so we don't have to continuously redraw them.
-    sprite.draw(&layer, 0, (160., 120.), Color::white());
-    sprite.draw(&layer, 0, (130., 100.), Color::white());
-    sprite.draw(&layer, 0, (190., 100.), Color::white());
-    sprite.draw(&layer, 0, (160., 155.), Color::white());
+    sprite.draw(&layer, 0, (160., 120.), Color::WHITE);
+    sprite.draw(&layer, 0, (130., 100.), Color::WHITE);
+    sprite.draw(&layer, 0, (190., 100.), Color::WHITE);
+    sprite.draw(&layer, 0, (160., 155.), Color::WHITE);
 
     // Layers have a view and a model matrix. Make a backup of them here.
     // Transformations to the view matrix apply globally to the layer.
@@ -21,13 +21,13 @@ pub fn main() {
     let original_model_matrix = layer.model_matrix().clone();
 
     utils::renderloop(|frame| {
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
         let presentation_id = (frame.elapsed_f32 / 1.5) as u32 % 4;
 
         // Draw the layer in red, rotating only its view matrix.
         // The red sprites will all rotate around the center of the window.
         if presentation_id == 1 || presentation_id == 0 {
-            layer.set_color(Color::red());
+            layer.set_color(Color::RED);
             layer.view_matrix().rotate_at((160., 120.), frame.elapsed_f32);
             renderer.draw_layer(&layer, 0);
             layer.set_view_matrix(original_view_matrix);
@@ -36,7 +36,7 @@ pub fn main() {
         // Draw the same layer in green again, rotating only its model matrix.
         // The green sprites will all rotate around their own, individual centers.
         if presentation_id == 2 || presentation_id == 0 {
-            layer.set_color(Color::green());
+            layer.set_color(Color::GREEN);
             layer.model_matrix().rotate_at((0., 0.), frame.elapsed_f32);
             renderer.draw_layer(&layer, 0);
             layer.set_model_matrix(original_model_matrix);
@@ -44,7 +44,7 @@ pub fn main() {
 
         // Draw the same layer in blue yet again, rotating both matrices.
         if presentation_id == 3 || presentation_id == 0 {
-            layer.set_color(Color::blue());
+            layer.set_color(Color::BLUE);
             layer.view_matrix().rotate_at((160., 120.), frame.elapsed_f32);
             layer.model_matrix().rotate_at((0., 0.), frame.elapsed_f32);
             renderer.draw_layer(&layer, 0);

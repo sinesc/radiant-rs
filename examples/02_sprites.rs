@@ -23,13 +23,13 @@ pub fn main() {
 
         // Draw three sprites to the layer, multiplied by colors red, green and blue as well as the original sprite (multiplied by white, which is the identity)
         let frame_id = (frame.elapsed_f32 * 30.0) as u32;
-        sprite.draw(&layer, frame_id, (160., 120.), Color::white());
-        sprite.draw(&layer, frame_id, (130., 100.), Color::red());
-        sprite.draw(&layer, frame_id, (190., 100.), Color::green());
-        sprite.draw(&layer, frame_id, (160., 155.), Color::blue());
+        sprite.draw(&layer, frame_id, (160., 120.), Color::WHITE);
+        sprite.draw(&layer, frame_id, (130., 100.), Color::RED);
+        sprite.draw(&layer, frame_id, (190., 100.), Color::GREEN);
+        sprite.draw(&layer, frame_id, (160., 155.), Color::BLUE);
 
         // draw the layer to the frame after clearing it with solid black.
-        display.clear_frame(Color::black());
+        display.clear_frame(Color::BLACK);
         renderer.draw_layer(&layer, 0);
 
         display.swap_frame();
