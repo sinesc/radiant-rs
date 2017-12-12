@@ -371,6 +371,20 @@ struct VertexBufferCacheItem {
     buffer: glium::VertexBuffer<Vertex>,
 }
 
+impl VertexBufferCacheItem {
+    pub fn new(display: &glium::Display, num_vertices: usize, buffer_hint: usize) -> VertexBufferCacheItem {
+        VertexBufferCacheItem {
+            hint: buffer_hint,
+            age: 0,
+            buffer: if buffer_hint == 0 {
+                glium::VertexBuffer::empty(display, num_vertices).unwrap()
+            } else {
+                glium::VertexBuffer::empty_dynamic(display, num_vertices).unwrap()
+            }
+        }
+    }
+}
+
 pub struct Context {
     display         : glium::Display,
     index_buffer    : glium::IndexBuffer<u32>,
@@ -422,19 +436,11 @@ impl Context {
             self.vertex_buffers[id].age = 0;
             (id, false)
         } else if self.vertex_buffers.len() < MAX_BUFFERS {
-            self.vertex_buffers.push(VertexBufferCacheItem {
-                hint: buffer_hint,
-                age: 0,
-                buffer: if buffer_hint == 0 {
-                    glium::VertexBuffer::empty(&self.display, num_vertices).unwrap()
-                } else {
-                    glium::VertexBuffer::empty_dynamic(&self.display, num_vertices).unwrap()
-                }
-            });
+            self.vertex_buffers.push(VertexBufferCacheItem::new(&self.display, num_vertices, buffer_hint));
             (self.vertex_buffers.len() - 1, true)
         } else {
             if let Some((id, _)) = self.vertex_buffers.iter().enumerate().max_by(|&(_, a), &(_, b)| a.age.cmp(&b.age)) {
-                self.vertex_buffers[id].age = 0;
+                self.vertex_buffers[id] = VertexBufferCacheItem::new(&self.display, num_vertices, buffer_hint);
                 (id, true)
             } else {
                 (1, true)
@@ -446,6 +452,10 @@ impl Context {
 
         let num_vertices = vertices.len();
         let num_sprites = num_vertices / 4;
+
+        if num_vertices < 1 {
+            return;
+        }
 
         // set up vertex buffer
 
