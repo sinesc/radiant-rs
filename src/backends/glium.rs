@@ -601,23 +601,6 @@ macro_rules! implement_wrapped_vertex {
 
 implement_wrapped_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
 
-/*
-impl glium::Vertex for Vertex {
-    fn build_bindings() -> glium::vertex::VertexFormat {
-        Cow::Owned(vec![
-            (Cow::Borrowed("position"), 0, <[f32; 2] as glium::vertex::Attribute>::get_type(), false),
-            (Cow::Borrowed("offset"), 8, <[f32; 2] as glium::vertex::Attribute>::get_type(), false),
-            (Cow::Borrowed("rotation"), 16, <f32 as glium::vertex::Attribute>::get_type(), false),
-            (Cow::Borrowed("color"), 20, <(f32, f32, f32, f32) as glium::vertex::Attribute>::get_type(), false),
-            (Cow::Borrowed("bucket_id"), 36, <u32 as glium::vertex::Attribute>::get_type(), false),
-            (Cow::Borrowed("texture_id"), 40, <u32 as glium::vertex::Attribute>::get_type(), false),
-            (Cow::Borrowed("texture_uv"), 44, <[f32; 2] as glium::vertex::Attribute>::get_type(), false),
-            (Cow::Borrowed("components"), 52, <u32 as glium::vertex::Attribute>::get_type(), false),
-        ])
-    }
-}
-*/
-
 // --------------
 // Drawing
 // --------------
