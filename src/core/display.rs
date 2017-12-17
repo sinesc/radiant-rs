@@ -101,8 +101,8 @@ impl Display {
     }
 
     /// Returns a vector of available monitors.
-    pub fn monitors() -> Vec<monitor::Monitor> {
-        let iter = backend::MonitorIterator::new();
+    pub fn monitors(self: &Self) -> Vec<monitor::Monitor> {
+        let iter = backend::MonitorIterator::new(&self.handle);
         let mut result = Vec::<monitor::Monitor>::new();
         for monitor in iter {
             result.push(monitor::Monitor::new(monitor));
@@ -140,7 +140,7 @@ impl Display {
             }
         }
 
-        for event in self.handle.poll_events() {
+        self.handle.poll_events(|event| {
             match event {
                 backend::Event::KeyboardInput(key_id, down) => {
                     let currently_down = match input_data.key[key_id] {
@@ -189,7 +189,7 @@ impl Display {
                     input_data.should_close = true;
                 }
             }
-        }
+        });
 
         input_data.dimensions = self.handle.window_dimensions().into();
 

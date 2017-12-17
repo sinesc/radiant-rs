@@ -1,79 +1,36 @@
 use prelude::*;
 use std::borrow::Cow;
 use glium;
-use glium::{DisplayBuild, Surface};
 use glium::uniforms::{Uniforms, AsUniformValue};
+use glium::{glutin, Surface};
 use core;
 use maths::*;
-
-macro_rules! implement_wrapped_vertex {
-    ($struct_name:ident, $($field_name:ident),+) => (
-        impl glium::vertex::Vertex for $struct_name {
-            #[inline]
-            fn build_bindings() -> glium::vertex::VertexFormat {
-                use std::borrow::Cow;
-
-                // TODO: use a &'static [] if possible
-
-                Cow::Owned(vec![
-                    $(
-                        (
-                            Cow::Borrowed(stringify!($field_name)),
-                            {
-                                let dummy: &$struct_name = unsafe { ::std::mem::transmute(0usize) };
-                                let dummy_field = &(dummy.0).$field_name;
-                                let dummy_field: usize = unsafe { ::std::mem::transmute(dummy_field) };
-                                dummy_field
-                            },
-                            {
-                                fn attr_type_of_val<T: glium::vertex::Attribute>(_: &T)
-                                    -> glium::vertex::AttributeType
-                                {
-                                    <T as glium::vertex::Attribute>::get_type()
-                                }
-                                let dummy: &$struct_name = unsafe { ::std::mem::transmute(0usize) };
-                                attr_type_of_val(&(dummy.0).$field_name)
-                            },
-                        )
-                    ),+
-                ])
-            }
-        }
-    );
-
-    ($struct_name:ident, $($field_name:ident),+,) => (
-        implement_wrapped_vertex!($struct_name, $($field_name),+);
-    );
-}
 
 // --------------
 // Display
 // --------------
 
 #[derive(Clone)]
-pub struct Display(glium::Display);
+pub struct Display(glium::Display, Rc<RefCell<glutin::EventsLoop>>);
 
 impl Display {
     pub fn new(descriptor: core::DisplayInfo) -> Display {
-        let mut builder = glium::glutin::WindowBuilder::new()
+
+        let window = glium::glutin::WindowBuilder::new()
             .with_dimensions(descriptor.width, descriptor.height)
             .with_title(descriptor.title)
             .with_transparency(descriptor.transparent)
             .with_decorations(descriptor.decorations)
-            .with_visibility(descriptor.visible);
+            .with_visibility(descriptor.visible)
+            .with_fullscreen(if let Some(monitor) = descriptor.monitor { Some(monitor.inner().0.clone()) } else { None });
 
-        match descriptor.monitor {
-            Some(monitor) => {
-                builder = builder.with_fullscreen(monitor.inner().inner().unwrap());
-            }
-            None => {}
-        }
+        let context = glium::glutin::ContextBuilder::new()
+            .with_vsync(descriptor.vsync);
 
-        if descriptor.vsync {
-            builder = builder.with_vsync();
-        }
+        let events_loop = glutin::EventsLoop::new();
+        let display = glium::Display::new(window, context, &events_loop).unwrap();
 
-        Display(builder.build_glium().unwrap())
+        Display(display, Rc::new(RefCell::new(events_loop)))
     }
     pub fn draw(self: &Self) -> Frame {
         Frame(self.0.draw())
@@ -82,32 +39,34 @@ impl Display {
         self.0.get_framebuffer_dimensions().into()
     }
     pub fn window_dimensions(self: &Self) -> Point2<u32> {
-        self.0.get_window().unwrap().get_inner_size_pixels().unwrap_or((0, 0)).into()
+        self.0.gl_window().get_inner_size().unwrap_or((0, 0)).into()
     }
     pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
-        self.0.get_window().unwrap().set_cursor_position(position.0, position.1).unwrap();
+        self.0.gl_window().set_cursor_position(position.0, position.1).unwrap();
     }
     pub fn set_cursor_state(self: &Self, state: core::display::CursorState) {
         use core::display::CursorState as CS;
-        self.0.get_window().unwrap().set_cursor_state(match state {
+        self.0.gl_window().set_cursor_state(match state {
             CS::Normal => glium::glutin::CursorState::Normal,
             CS::Hide => glium::glutin::CursorState::Hide,
             CS::Grab => glium::glutin::CursorState::Grab,
         }).unwrap();
     }
-    pub fn poll_events(self: &Self) -> EventIterator {
-        EventIterator {
-            it: self.0.poll_events(),
-        }
+    pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(Event) -> () {
+        self.1.borrow_mut().poll_events(|glutin_event| {
+            if let Some(event) = Event::from_glutin(glutin_event) {
+                callback(event);
+            }
+        });
     }
     pub fn show(self: &Self) {
-        self.0.get_window().unwrap().show();
+        self.0.gl_window().show();
     }
     pub fn hide(self: &Self) {
-        self.0.get_window().unwrap().hide()
+        self.0.gl_window().hide()
     }
     pub fn set_title(self: &Self, title: &str) {
-        self.0.get_window().unwrap().set_title(title);
+        self.0.gl_window().set_title(title);
     }
 }
 
@@ -171,14 +130,8 @@ impl Program {
 // Monitor
 // --------------
 
-// #[derive(Clone)] // see inner
+#[derive(Clone)]
 pub struct Monitor(glium::glutin::MonitorId);
-
-impl Clone for Monitor {
-    fn clone(&self) -> Monitor {
-        Monitor(self.inner().unwrap())
-    }
-}
 
 impl Monitor {
     pub fn get_dimensions(self: &Self) -> (u32, u32) {
@@ -187,24 +140,13 @@ impl Monitor {
     pub fn get_name(self: &Self) -> Option<String> {
         self.0.get_name()
     }
-    pub fn inner(self: &Self) -> Option<glium::glutin::MonitorId> { // !todo non-pub
-
-        // MonitorId is not currently cloneable as of winit-0.6.4, but a pull request was recently merged, so this hack can probably be removed for winit > 0.6.4
-        let iter = glium::glutin::get_available_monitors();
-        for monitor in iter {
-            if monitor.get_native_identifier() == self.0.get_native_identifier() {
-                return Some(monitor);
-            }
-        }
-        None
-    }
 }
 
 pub struct MonitorIterator(glium::glutin::AvailableMonitorsIter);
 
 impl MonitorIterator {
-    pub fn new() -> Self {
-        MonitorIterator(glium::glutin::get_available_monitors())
+    pub fn new(display: &Display) -> Self {
+        MonitorIterator(display.1.borrow().get_available_monitors())
     }
 }
 
@@ -610,7 +552,71 @@ impl<'b> Uniforms for GliumUniformList<'b> {
 #[derive(Copy, Clone)]
 struct Vertex(core::Vertex);
 
+macro_rules! implement_wrapped_vertex {
+    ($struct_name:ident, $($field_name:ident),+) => (
+        impl glium::vertex::Vertex for $struct_name {
+            #[inline]
+            fn build_bindings() -> glium::vertex::VertexFormat {
+                use std::borrow::Cow;
+
+                // TODO: use a &'static [] if possible
+
+                Cow::Owned(vec![
+                    $(
+                        (
+                            Cow::Borrowed(stringify!($field_name)),
+                            {
+                                // calculate the offset of the struct fields
+                                let dummy: $struct_name = unsafe { ::std::mem::uninitialized() };
+                                let offset: usize = {
+                                    let dummy_ref = &(dummy.0);
+                                    let field_ref = &(dummy.0).$field_name;
+                                    (field_ref as *const _ as usize) - (dummy_ref as *const _ as usize)
+                                };
+                                // NOTE: `glium::vertex::Vertex` requires `$struct_name` to have `Copy` trait
+                                // `Copy` excludes `Drop`, so we don't have to `std::mem::forget(dummy)`
+                                offset
+                            },
+                            {
+                                fn attr_type_of_val<T: glium::vertex::Attribute>(_: &T)
+                                    -> glium::vertex::AttributeType
+                                {
+                                    <T as glium::vertex::Attribute>::get_type()
+                                }
+                                let dummy: &$struct_name = unsafe { ::std::mem::transmute(0usize) };
+                                attr_type_of_val(&(dummy.0).$field_name)
+                            },
+                            false
+                        )
+                    ),+
+                ])
+            }
+        }
+    );
+
+    ($struct_name:ident, $($field_name:ident),+,) => (
+        implement_wrapped_vertex!($struct_name, $($field_name),+);
+    );
+}
+
 implement_wrapped_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
+
+/*
+impl glium::Vertex for Vertex {
+    fn build_bindings() -> glium::vertex::VertexFormat {
+        Cow::Owned(vec![
+            (Cow::Borrowed("position"), 0, <[f32; 2] as glium::vertex::Attribute>::get_type(), false),
+            (Cow::Borrowed("offset"), 8, <[f32; 2] as glium::vertex::Attribute>::get_type(), false),
+            (Cow::Borrowed("rotation"), 16, <f32 as glium::vertex::Attribute>::get_type(), false),
+            (Cow::Borrowed("color"), 20, <(f32, f32, f32, f32) as glium::vertex::Attribute>::get_type(), false),
+            (Cow::Borrowed("bucket_id"), 36, <u32 as glium::vertex::Attribute>::get_type(), false),
+            (Cow::Borrowed("texture_id"), 40, <u32 as glium::vertex::Attribute>::get_type(), false),
+            (Cow::Borrowed("texture_uv"), 44, <[f32; 2] as glium::vertex::Attribute>::get_type(), false),
+            (Cow::Borrowed("components"), 52, <u32 as glium::vertex::Attribute>::get_type(), false),
+        ])
+    }
+}
+*/
 
 // --------------
 // Drawing
@@ -752,6 +758,60 @@ pub enum Event {
 }
 
 impl Event {
+    fn from_glutin(event: glium::glutin::Event) -> Option<Event> {
+        use glium::glutin::ElementState;
+        use glium::glutin::Event as GlutinEvent;
+        use glium::glutin::DeviceEvent;
+        use glium::glutin::WindowEvent;
+        use glium::glutin::KeyboardInput;
+
+        match event {
+            GlutinEvent::WindowEvent { event: window_event, .. } => {
+                match window_event {
+                    WindowEvent::Focused(true) => {
+                        Some(Event::Focused)
+                    }
+                    WindowEvent::Closed => {
+                        Some(Event::Closed)
+                    }
+                    WindowEvent::KeyboardInput { input: KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }, .. } => {
+                        let key_id = Self::map_key_code(virtual_code) as usize;
+                        if key_id < core::NUM_KEYS {
+                            Some(Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None
+                }
+            },
+            GlutinEvent::DeviceEvent { event: device_event, .. } => {
+                match device_event {
+                    // !todo why is it both a window and device event?
+                    DeviceEvent::Key(KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }) => {
+                        let key_id = Self::map_key_code(virtual_code) as usize;
+                        if key_id < core::NUM_KEYS {
+                            Some(Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
+                        } else {
+                            None
+                        }
+                    }
+                    DeviceEvent::MouseMotion { delta: (x, y) } => {
+                        Some(Event::MouseMoved(x as i32, y as i32))
+                    }
+                    DeviceEvent::Button { button: button_id, state: element_state } => {
+                        if (button_id as usize) < core::NUM_BUTTONS {
+                            Some(Event::MouseInput(button_id as usize, element_state == ElementState::Pressed))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None
+                }
+            }
+            _ => None
+        }
+    }    
     fn map_key_code(key: glium::glutin::VirtualKeyCode) -> core::InputId {
         use glium::glutin::VirtualKeyCode as VK;
         use core::InputId as IID;
@@ -906,59 +966,6 @@ impl Event {
             VK::Compose       => IID::Compose,
             VK::NavigateForward => IID::NavigateForward,
             VK::NavigateBackward => IID::NavigateBackward,
-        }
-    }
-}
-
-pub struct EventIterator<'a> {
-    it: glium::backend::glutin_backend::PollEventsIter<'a>,
-}
-
-impl<'a> Iterator for EventIterator<'a> {
-    type Item = Event;
-
-    fn next(self: &mut Self) -> Option<Event> {
-        use glium::glutin::{ElementState, MouseButton};
-        use glium::glutin::Event as GlutinEvent;
-
-        let event = self.it.next();
-
-        if let Some(event) = event {
-            match event {
-                GlutinEvent::KeyboardInput(element_state, _, Some(virtual_code)) => {
-                    let key_id = Event::map_key_code(virtual_code) as usize;
-                    if key_id < core::NUM_KEYS {
-                        Some(Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
-                    } else {
-                        None
-                    }
-                },
-                GlutinEvent::MouseMoved(x, y) => {
-                    Some(Event::MouseMoved(x, y))
-                },
-                GlutinEvent::MouseInput(element_state, button) => {
-                    let button_id = match button {
-                        MouseButton::Left => 0,
-                        MouseButton::Middle => 1,
-                        MouseButton::Right => 2,
-                        MouseButton::Other(x) => (x - 1) as usize,
-                    };
-                    if button_id < core::NUM_BUTTONS {
-                        Some(Event::MouseInput(button_id, element_state == ElementState::Pressed))
-                    } else {
-                        None
-                    }
-                },
-                GlutinEvent::Focused(true) => {
-                    Some(Event::Focused)
-                }
-                GlutinEvent::Closed => {
-                    Some(Event::Closed)
-                }
-                _ => None
-            }
-        } else {
-            None
         }
     }
 }
