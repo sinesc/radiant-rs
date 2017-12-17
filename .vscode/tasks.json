@@ -6,7 +6,7 @@
     },
     "tasks": [
         {
-            "taskName": "cargo build",
+            "label": "cargo build",
             "type": "shell",
             "command": "cargo",
             "args": [
@@ -16,7 +16,18 @@
             "problemMatcher": "$rustc"
         },
         {
-            "taskName": "cargo run",
+            "label": "cargo build (release)",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--release"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo run",
             "type": "shell",
             "command": "cargo",
             "args": [
@@ -26,7 +37,18 @@
             "problemMatcher": "$rustc"
         },
         {
-            "taskName": "cargo run example",
+            "label": "cargo run (release)",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--release"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo run example",
             "type": "shell",
             "command": "cargo",
             "args": [
@@ -38,7 +60,7 @@
             "problemMatcher": "$rustc"
         },
         {
-            "taskName": "cargo run example (release)",
+            "label": "cargo run example (release)",
             "type": "shell",
             "command": "cargo",
             "args": [
@@ -51,7 +73,7 @@
             "problemMatcher": "$rustc"
         },
         {
-            "taskName": "cargo test",
+            "label": "cargo test",
             "type": "shell",
             "command": "cargo",
             "args": [
@@ -61,12 +83,22 @@
             "problemMatcher": "$rustc"
         },
         {
-            "taskName": "cargo clean",
+            "label": "cargo clean",
             "type": "shell",
             "command": "cargo",
             "args": [
                 "clean"
-            ]
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "cargo update",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "update"
+            ],
+            "problemMatcher": []
         }
     ]
 }
