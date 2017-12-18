@@ -3,7 +3,7 @@ use core::{self, layer, Layer, rendercontext, RenderContext, Color};
 use maths::{Point2, Vec2, Rect};
 use core::builder::*;
 use rusttype;
-use backends::glium as backend;
+use backends::backend;
 use font_loader::system_fonts;
 
 static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;

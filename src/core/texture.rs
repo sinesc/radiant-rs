@@ -2,7 +2,7 @@ use prelude::*;
 use core::{rendercontext, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
 use core::builder::*;
 use maths::Point2;
-use backends::glium as backend;
+use backends::backend;
 
 /// A texture to draw or draw to.
 ///

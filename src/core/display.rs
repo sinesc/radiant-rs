@@ -4,7 +4,8 @@ use core::monitor;
 use core::{AsRenderTarget, RenderTarget, Color};
 use maths::Point2;
 use core::builder::*;
-use backends::glium as backend;
+use core::Event;
+use backends::backend;
 
 /// A target to render to, e.g. a window or full screen.
 #[derive(Clone)]
@@ -142,7 +143,7 @@ impl Display {
 
         self.handle.poll_events(|event| {
             match event {
-                backend::Event::KeyboardInput(key_id, down) => {
+                Event::KeyboardInput(key_id, down) => {
                     let currently_down = match input_data.key[key_id] {
                         InputState::Down | InputState::Pressed | InputState::Repeat => true,
                         _ => false
@@ -155,7 +156,7 @@ impl Display {
                         input_data.key[key_id] = InputState::Repeat;
                     }
                 },
-                backend::Event::MouseMoved(x, y) => {
+                Event::MouseMoved(x, y) => {
                     if input_data.cursor_grabbed {
                         let center = ((input_data.dimensions.0 / 2) as i32, (input_data.dimensions.1 / 2) as i32);
                         let old_mouse = input_data.mouse;
@@ -167,7 +168,7 @@ impl Display {
                         input_data.mouse = (x, y);
                     }
                 },
-                backend::Event::MouseInput(button_id, down) => {
+                Event::MouseInput(button_id, down) => {
                     let currently_down = match input_data.button[button_id] {
                         InputState::Down | InputState::Pressed => true,
                         _ => false
@@ -178,14 +179,14 @@ impl Display {
                         input_data.button[button_id] = InputState::Released
                     }
                 },
-                backend::Event::Focused => {
+                Event::Focused => {
                     // restore grab after focus loss
                     if input_data.cursor_grabbed {
                         self.handle.set_cursor_state(CursorState::Normal);
                         self.handle.set_cursor_state(CursorState::Grab);
                     }
                 }
-                backend::Event::Closed => {
+                Event::Closed => {
                     input_data.should_close = true;
                 }
             }

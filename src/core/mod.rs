@@ -33,6 +33,15 @@ use image;
 use prelude::*;
 use maths::{Rect, Point2};
 
+// An input event.
+pub enum Event {
+    KeyboardInput(usize, bool),
+    MouseInput(usize, bool),
+    MouseMoved(i32, i32),
+    Focused,
+    Closed,
+}
+
 /// A vertex.
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {

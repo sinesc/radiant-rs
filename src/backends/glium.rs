@@ -1,8 +1,8 @@
+extern crate glium;
 use prelude::*;
 use std::borrow::Cow;
-use glium;
-use glium::uniforms::{Uniforms, AsUniformValue};
-use glium::{glutin, Surface};
+use self::glium::uniforms::{Uniforms, AsUniformValue};
+use self::glium::{glutin, Surface};
 use core;
 use maths::*;
 
@@ -52,9 +52,9 @@ impl Display {
             CS::Grab => glium::glutin::CursorState::Grab,
         }).unwrap();
     }
-    pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(Event) -> () {
+    pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
         self.1.borrow_mut().poll_events(|glutin_event| {
-            if let Some(event) = Event::from_glutin(glutin_event) {
+            if let Some(event) = Self::map_event(glutin_event) {
                 callback(event);
             }
         });
@@ -68,10 +68,220 @@ impl Display {
     pub fn set_title(self: &Self, title: &str) {
         self.0.gl_window().set_title(title);
     }
+    fn map_event(event: glium::glutin::Event) -> Option<core::Event> {
+        use self::glutin::ElementState;
+        use self::glutin::Event as GlutinEvent;
+        use self::glutin::DeviceEvent;
+        use self::glutin::WindowEvent;
+        use self::glutin::KeyboardInput;
+
+        match event {
+            GlutinEvent::WindowEvent { event: window_event, .. } => {
+                match window_event {
+                    WindowEvent::Focused(true) => {
+                        Some(core::Event::Focused)
+                    }
+                    WindowEvent::Closed => {
+                        Some(core::Event::Closed)
+                    }
+                    WindowEvent::KeyboardInput { input: KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }, .. } => {
+                        let key_id = Self::map_key_code(virtual_code) as usize;
+                        if key_id < core::NUM_KEYS {
+                            Some(core::Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None
+                }
+            },
+            GlutinEvent::DeviceEvent { event: device_event, .. } => {
+                match device_event {
+                    // !todo why is it both a window and device event?
+                    DeviceEvent::Key(KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }) => {
+                        let key_id = Self::map_key_code(virtual_code) as usize;
+                        if key_id < core::NUM_KEYS {
+                            Some(core::Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
+                        } else {
+                            None
+                        }
+                    }
+                    DeviceEvent::MouseMotion { delta: (x, y) } => {
+                        Some(core::Event::MouseMoved(x as i32, y as i32))
+                    }
+                    DeviceEvent::Button { button: button_id, state: element_state } => {
+                        if (button_id as usize) < core::NUM_BUTTONS {
+                            Some(core::Event::MouseInput(button_id as usize, element_state == ElementState::Pressed))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None
+                }
+            }
+            _ => None
+        }
+    }    
+    fn map_key_code(key: glium::glutin::VirtualKeyCode) -> core::InputId {
+        use self::glutin::VirtualKeyCode as VK;
+        use core::InputId as IID;
+        match key {
+            VK::Key1          => IID::Key1,
+            VK::Key2          => IID::Key2,
+            VK::Key3          => IID::Key3,
+            VK::Key4          => IID::Key4,
+            VK::Key5          => IID::Key5,
+            VK::Key6          => IID::Key6,
+            VK::Key7          => IID::Key7,
+            VK::Key8          => IID::Key8,
+            VK::Key9          => IID::Key9,
+            VK::Key0          => IID::Key0,
+            VK::A             => IID::A,
+            VK::B             => IID::B,
+            VK::C             => IID::C,
+            VK::D             => IID::D,
+            VK::E             => IID::E,
+            VK::F             => IID::F,
+            VK::G             => IID::G,
+            VK::H             => IID::H,
+            VK::I             => IID::I,
+            VK::J             => IID::J,
+            VK::K             => IID::K,
+            VK::L             => IID::L,
+            VK::M             => IID::M,
+            VK::N             => IID::N,
+            VK::O             => IID::O,
+            VK::P             => IID::P,
+            VK::Q             => IID::Q,
+            VK::R             => IID::R,
+            VK::S             => IID::S,
+            VK::T             => IID::T,
+            VK::U             => IID::U,
+            VK::V             => IID::V,
+            VK::W             => IID::W,
+            VK::X             => IID::X,
+            VK::Y             => IID::Y,
+            VK::Z             => IID::Z,
+            VK::Escape        => IID::Escape,
+            VK::F1            => IID::F1,
+            VK::F2            => IID::F2,
+            VK::F3            => IID::F3,
+            VK::F4            => IID::F4,
+            VK::F5            => IID::F5,
+            VK::F6            => IID::F6,
+            VK::F7            => IID::F7,
+            VK::F8            => IID::F8,
+            VK::F9            => IID::F9,
+            VK::F10           => IID::F10,
+            VK::F11           => IID::F11,
+            VK::F12           => IID::F12,
+            VK::F13           => IID::F13,
+            VK::F14           => IID::F14,
+            VK::F15           => IID::F15,
+            VK::Snapshot      => IID::Snapshot,
+            VK::Scroll        => IID::Scroll,
+            VK::Pause         => IID::Pause,
+            VK::Insert        => IID::Insert,
+            VK::Home          => IID::Home,
+            VK::Delete        => IID::Delete,
+            VK::End           => IID::End,
+            VK::PageDown      => IID::PageDown,
+            VK::PageUp        => IID::PageUp,
+            VK::Left          => IID::CursorLeft,
+            VK::Up            => IID::CursorUp,
+            VK::Right         => IID::CursorRight,
+            VK::Down          => IID::CursorDown,
+            VK::Back          => IID::Backspace,
+            VK::Return        => IID::Return,
+            VK::Space         => IID::Space,
+            VK::Numlock       => IID::Numlock,
+            VK::Numpad0       => IID::Numpad0,
+            VK::Numpad1       => IID::Numpad1,
+            VK::Numpad2       => IID::Numpad2,
+            VK::Numpad3       => IID::Numpad3,
+            VK::Numpad4       => IID::Numpad4,
+            VK::Numpad5       => IID::Numpad5,
+            VK::Numpad6       => IID::Numpad6,
+            VK::Numpad7       => IID::Numpad7,
+            VK::Numpad8       => IID::Numpad8,
+            VK::Numpad9       => IID::Numpad9,
+            VK::AbntC1        => IID::AbntC1,
+            VK::AbntC2        => IID::AbntC2,
+            VK::Add           => IID::Add,
+            VK::Apostrophe    => IID::Apostrophe,
+            VK::Apps          => IID::Apps,
+            VK::At            => IID::At,
+            VK::Ax            => IID::Ax,
+            VK::Backslash     => IID::Backslash,
+            VK::Calculator    => IID::Calculator,
+            VK::Capital       => IID::Capital,
+            VK::Colon         => IID::Colon,
+            VK::Comma         => IID::Comma,
+            VK::Convert       => IID::Convert,
+            VK::Decimal       => IID::Decimal,
+            VK::Divide        => IID::Divide,
+            VK::Equals        => IID::Equals,
+            VK::Grave         => IID::Grave,
+            VK::Kana          => IID::Kana,
+            VK::Kanji         => IID::Kanji,
+            VK::LAlt          => IID::LAlt,
+            VK::LBracket      => IID::LBracket,
+            VK::LControl      => IID::LControl,
+            VK::LMenu         => IID::LMenu,
+            VK::LShift        => IID::LShift,
+            VK::LWin          => IID::LWin,
+            VK::Mail          => IID::Mail,
+            VK::MediaSelect   => IID::MediaSelect,
+            VK::MediaStop     => IID::MediaStop,
+            VK::Minus         => IID::Minus,
+            VK::Multiply      => IID::Multiply,
+            VK::Mute          => IID::Mute,
+            VK::MyComputer    => IID::MyComputer,
+            VK::NextTrack     => IID::NextTrack,
+            VK::NoConvert     => IID::NoConvert,
+            VK::NumpadComma   => IID::NumpadComma,
+            VK::NumpadEnter   => IID::NumpadEnter,
+            VK::NumpadEquals  => IID::NumpadEquals,
+            VK::OEM102        => IID::OEM102,
+            VK::Period        => IID::Period,
+            VK::PlayPause     => IID::PlayPause,
+            VK::Power         => IID::Power,
+            VK::PrevTrack     => IID::PrevTrack,
+            VK::RAlt          => IID::RAlt,
+            VK::RBracket      => IID::RBracket,
+            VK::RControl      => IID::RControl,
+            VK::RMenu         => IID::RMenu,
+            VK::RShift        => IID::RShift,
+            VK::RWin          => IID::RWin,
+            VK::Semicolon     => IID::Semicolon,
+            VK::Slash         => IID::Slash,
+            VK::Sleep         => IID::Sleep,
+            VK::Stop          => IID::Stop,
+            VK::Subtract      => IID::Subtract,
+            VK::Sysrq         => IID::Sysrq,
+            VK::Tab           => IID::Tab,
+            VK::Underline     => IID::Underline,
+            VK::Unlabeled     => IID::Unlabeled,
+            VK::VolumeDown    => IID::VolumeDown,
+            VK::VolumeUp      => IID::VolumeUp,
+            VK::Wake          => IID::Wake,
+            VK::WebBack       => IID::WebBack,
+            VK::WebFavorites  => IID::WebFavorites,
+            VK::WebForward    => IID::WebForward,
+            VK::WebHome       => IID::WebHome,
+            VK::WebRefresh    => IID::WebRefresh,
+            VK::WebSearch     => IID::WebSearch,
+            VK::WebStop       => IID::WebStop,
+            VK::Yen           => IID::Yen,
+            VK::Compose       => IID::Compose,
+            VK::NavigateForward => IID::NavigateForward,
+            VK::NavigateBackward => IID::NavigateBackward,
+        }
+    }    
 }
 
 // --------------
-// Display
+// Frame
 // --------------
 
 pub struct Frame(glium::Frame);
@@ -115,7 +325,7 @@ pub struct Program(glium::Program);
 impl Program {
     /// Creates a shader program from given vertex- and fragment-shader sources.
     pub fn new(display: &Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
-        use glium::program::ProgramCreationError;
+        use self::glium::program::ProgramCreationError;
         use core::Error;
         match glium::Program::from_source(&display.0, vertex_shader, fragment_shader, None) {
             Err(ProgramCreationError::CompilationError(message)) => { Err(Error::ShaderError(format!("Shader compilation failed with: {}", message))) }
@@ -134,8 +344,8 @@ impl Program {
 pub struct Monitor(glium::glutin::MonitorId);
 
 impl Monitor {
-    pub fn get_dimensions(self: &Self) -> (u32, u32) {
-        self.0.get_dimensions()
+    pub fn get_dimensions(self: &Self) -> Point2<u32> {
+        self.0.get_dimensions().into()
     }
     pub fn get_name(self: &Self) -> Option<String> {
         self.0.get_name()
@@ -234,7 +444,7 @@ impl Texture2d {
 
     /// Converts TextureFormat to the supported gliums texture formats
     fn convert_format(format: core::TextureFormat) -> glium::texture::UncompressedFloatFormat {
-        use glium::texture::UncompressedFloatFormat as GF;
+        use self::glium::texture::UncompressedFloatFormat as GF;
         use core::TextureFormat as RF;
         match format {
             RF::U8              => GF::U8,
@@ -288,7 +498,7 @@ impl Texture2dArray {
     /// Generates glium texture array from given vector of textures
     pub fn new(display: &Display, raw: &Vec<core::RawFrame>) -> Self {
 
-        use glium::texture;
+        use self::glium::texture;
         use std::mem::transmute;
 
         let raw_wrapped: Vec<RawFrame> = unsafe { transmute(raw.clone()) };
@@ -474,7 +684,7 @@ impl<'a> GliumUniformList<'a> {
         self
     }
     fn add_uniform(self: &mut Self, name: &'a str, uniform: &'a core::Uniform) {
-        use glium::uniforms::{MinifySamplerFilter, MagnifySamplerFilter, SamplerWrapFunction};
+        use self::glium::uniforms::{MinifySamplerFilter, MagnifySamplerFilter, SamplerWrapFunction};
         use core::Uniform as CU;
         use core::TextureWrap as TW;
         self.0.push((name, match *uniform {
@@ -515,7 +725,7 @@ impl<'a> GliumUniformList<'a> {
 
 impl<'b> Uniforms for GliumUniformList<'b> {
     fn visit_values<'a, F>(self: &'a Self, mut output: F) where F: FnMut(&str, glium::uniforms::UniformValue<'a>) {
-        use glium::uniforms::UniformValue;
+        use self::glium::uniforms::UniformValue;
         for &(name, ref uniform) in &self.0 {
             output(name, match *uniform {
                 GliumUniform::Bool(val) => { UniformValue::Bool(val) },
@@ -607,7 +817,7 @@ implement_wrapped_vertex!(Vertex, position, offset, rotation, color, bucket_id, 
 
 pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, layer: &core::Layer, component: u32) {
 
-    use glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
+    use self::glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
     use std::mem::transmute;
 
     let mut glium_uniforms = GliumUniformList::from_uniform_list(&program.uniforms);
@@ -667,7 +877,7 @@ fn glium_blendmode(blendmode: &core::BlendMode) -> glium::Blend {
 #[inline(always)]
 fn blendfunc(function: core::BlendingFunction) -> glium::BlendingFunction {
     use core::BlendingFunction as CF;
-    use glium::BlendingFunction as GF;
+    use self::glium::BlendingFunction as GF;
     match function {
         CF::AlwaysReplace                               => GF::AlwaysReplace,
         CF::Min                                         => GF::Min,
@@ -681,7 +891,7 @@ fn blendfunc(function: core::BlendingFunction) -> glium::BlendingFunction {
 #[inline(always)]
 fn blendfactor(factor: core::LinearBlendingFactor) -> glium::LinearBlendingFactor {
     use core::LinearBlendingFactor as CB;
-    use glium::LinearBlendingFactor as GB;
+    use self::glium::LinearBlendingFactor as GB;
     match factor {
         CB::Zero                      => GB::Zero,
         CB::One                       => GB::One,
@@ -725,230 +935,5 @@ fn magnify_filter(filter: core::TextureFilter) -> glium::uniforms::MagnifySample
         glium::uniforms::MagnifySamplerFilter::Linear
     } else {
         glium::uniforms::MagnifySamplerFilter::Nearest
-    }
-}
-
-// --------------
-// Input Events
-// --------------
-
-pub enum Event {
-    KeyboardInput(usize, bool),
-    MouseInput(usize, bool),
-    MouseMoved(i32, i32),
-    Focused,
-    Closed,
-}
-
-impl Event {
-    fn from_glutin(event: glium::glutin::Event) -> Option<Event> {
-        use glium::glutin::ElementState;
-        use glium::glutin::Event as GlutinEvent;
-        use glium::glutin::DeviceEvent;
-        use glium::glutin::WindowEvent;
-        use glium::glutin::KeyboardInput;
-
-        match event {
-            GlutinEvent::WindowEvent { event: window_event, .. } => {
-                match window_event {
-                    WindowEvent::Focused(true) => {
-                        Some(Event::Focused)
-                    }
-                    WindowEvent::Closed => {
-                        Some(Event::Closed)
-                    }
-                    WindowEvent::KeyboardInput { input: KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }, .. } => {
-                        let key_id = Self::map_key_code(virtual_code) as usize;
-                        if key_id < core::NUM_KEYS {
-                            Some(Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None
-                }
-            },
-            GlutinEvent::DeviceEvent { event: device_event, .. } => {
-                match device_event {
-                    // !todo why is it both a window and device event?
-                    DeviceEvent::Key(KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }) => {
-                        let key_id = Self::map_key_code(virtual_code) as usize;
-                        if key_id < core::NUM_KEYS {
-                            Some(Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
-                        } else {
-                            None
-                        }
-                    }
-                    DeviceEvent::MouseMotion { delta: (x, y) } => {
-                        Some(Event::MouseMoved(x as i32, y as i32))
-                    }
-                    DeviceEvent::Button { button: button_id, state: element_state } => {
-                        if (button_id as usize) < core::NUM_BUTTONS {
-                            Some(Event::MouseInput(button_id as usize, element_state == ElementState::Pressed))
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None
-                }
-            }
-            _ => None
-        }
-    }    
-    fn map_key_code(key: glium::glutin::VirtualKeyCode) -> core::InputId {
-        use glium::glutin::VirtualKeyCode as VK;
-        use core::InputId as IID;
-        match key {
-            VK::Key1          => IID::Key1,
-            VK::Key2          => IID::Key2,
-            VK::Key3          => IID::Key3,
-            VK::Key4          => IID::Key4,
-            VK::Key5          => IID::Key5,
-            VK::Key6          => IID::Key6,
-            VK::Key7          => IID::Key7,
-            VK::Key8          => IID::Key8,
-            VK::Key9          => IID::Key9,
-            VK::Key0          => IID::Key0,
-            VK::A             => IID::A,
-            VK::B             => IID::B,
-            VK::C             => IID::C,
-            VK::D             => IID::D,
-            VK::E             => IID::E,
-            VK::F             => IID::F,
-            VK::G             => IID::G,
-            VK::H             => IID::H,
-            VK::I             => IID::I,
-            VK::J             => IID::J,
-            VK::K             => IID::K,
-            VK::L             => IID::L,
-            VK::M             => IID::M,
-            VK::N             => IID::N,
-            VK::O             => IID::O,
-            VK::P             => IID::P,
-            VK::Q             => IID::Q,
-            VK::R             => IID::R,
-            VK::S             => IID::S,
-            VK::T             => IID::T,
-            VK::U             => IID::U,
-            VK::V             => IID::V,
-            VK::W             => IID::W,
-            VK::X             => IID::X,
-            VK::Y             => IID::Y,
-            VK::Z             => IID::Z,
-            VK::Escape        => IID::Escape,
-            VK::F1            => IID::F1,
-            VK::F2            => IID::F2,
-            VK::F3            => IID::F3,
-            VK::F4            => IID::F4,
-            VK::F5            => IID::F5,
-            VK::F6            => IID::F6,
-            VK::F7            => IID::F7,
-            VK::F8            => IID::F8,
-            VK::F9            => IID::F9,
-            VK::F10           => IID::F10,
-            VK::F11           => IID::F11,
-            VK::F12           => IID::F12,
-            VK::F13           => IID::F13,
-            VK::F14           => IID::F14,
-            VK::F15           => IID::F15,
-            VK::Snapshot      => IID::Snapshot,
-            VK::Scroll        => IID::Scroll,
-            VK::Pause         => IID::Pause,
-            VK::Insert        => IID::Insert,
-            VK::Home          => IID::Home,
-            VK::Delete        => IID::Delete,
-            VK::End           => IID::End,
-            VK::PageDown      => IID::PageDown,
-            VK::PageUp        => IID::PageUp,
-            VK::Left          => IID::CursorLeft,
-            VK::Up            => IID::CursorUp,
-            VK::Right         => IID::CursorRight,
-            VK::Down          => IID::CursorDown,
-            VK::Back          => IID::Backspace,
-            VK::Return        => IID::Return,
-            VK::Space         => IID::Space,
-            VK::Numlock       => IID::Numlock,
-            VK::Numpad0       => IID::Numpad0,
-            VK::Numpad1       => IID::Numpad1,
-            VK::Numpad2       => IID::Numpad2,
-            VK::Numpad3       => IID::Numpad3,
-            VK::Numpad4       => IID::Numpad4,
-            VK::Numpad5       => IID::Numpad5,
-            VK::Numpad6       => IID::Numpad6,
-            VK::Numpad7       => IID::Numpad7,
-            VK::Numpad8       => IID::Numpad8,
-            VK::Numpad9       => IID::Numpad9,
-            VK::AbntC1        => IID::AbntC1,
-            VK::AbntC2        => IID::AbntC2,
-            VK::Add           => IID::Add,
-            VK::Apostrophe    => IID::Apostrophe,
-            VK::Apps          => IID::Apps,
-            VK::At            => IID::At,
-            VK::Ax            => IID::Ax,
-            VK::Backslash     => IID::Backslash,
-            VK::Calculator    => IID::Calculator,
-            VK::Capital       => IID::Capital,
-            VK::Colon         => IID::Colon,
-            VK::Comma         => IID::Comma,
-            VK::Convert       => IID::Convert,
-            VK::Decimal       => IID::Decimal,
-            VK::Divide        => IID::Divide,
-            VK::Equals        => IID::Equals,
-            VK::Grave         => IID::Grave,
-            VK::Kana          => IID::Kana,
-            VK::Kanji         => IID::Kanji,
-            VK::LAlt          => IID::LAlt,
-            VK::LBracket      => IID::LBracket,
-            VK::LControl      => IID::LControl,
-            VK::LMenu         => IID::LMenu,
-            VK::LShift        => IID::LShift,
-            VK::LWin          => IID::LWin,
-            VK::Mail          => IID::Mail,
-            VK::MediaSelect   => IID::MediaSelect,
-            VK::MediaStop     => IID::MediaStop,
-            VK::Minus         => IID::Minus,
-            VK::Multiply      => IID::Multiply,
-            VK::Mute          => IID::Mute,
-            VK::MyComputer    => IID::MyComputer,
-            VK::NextTrack     => IID::NextTrack,
-            VK::NoConvert     => IID::NoConvert,
-            VK::NumpadComma   => IID::NumpadComma,
-            VK::NumpadEnter   => IID::NumpadEnter,
-            VK::NumpadEquals  => IID::NumpadEquals,
-            VK::OEM102        => IID::OEM102,
-            VK::Period        => IID::Period,
-            VK::PlayPause     => IID::PlayPause,
-            VK::Power         => IID::Power,
-            VK::PrevTrack     => IID::PrevTrack,
-            VK::RAlt          => IID::RAlt,
-            VK::RBracket      => IID::RBracket,
-            VK::RControl      => IID::RControl,
-            VK::RMenu         => IID::RMenu,
-            VK::RShift        => IID::RShift,
-            VK::RWin          => IID::RWin,
-            VK::Semicolon     => IID::Semicolon,
-            VK::Slash         => IID::Slash,
-            VK::Sleep         => IID::Sleep,
-            VK::Stop          => IID::Stop,
-            VK::Subtract      => IID::Subtract,
-            VK::Sysrq         => IID::Sysrq,
-            VK::Tab           => IID::Tab,
-            VK::Underline     => IID::Underline,
-            VK::Unlabeled     => IID::Unlabeled,
-            VK::VolumeDown    => IID::VolumeDown,
-            VK::VolumeUp      => IID::VolumeUp,
-            VK::Wake          => IID::Wake,
-            VK::WebBack       => IID::WebBack,
-            VK::WebFavorites  => IID::WebFavorites,
-            VK::WebForward    => IID::WebForward,
-            VK::WebHome       => IID::WebHome,
-            VK::WebRefresh    => IID::WebRefresh,
-            VK::WebSearch     => IID::WebSearch,
-            VK::WebStop       => IID::WebStop,
-            VK::Yen           => IID::Yen,
-            VK::Compose       => IID::Compose,
-            VK::NavigateForward => IID::NavigateForward,
-            VK::NavigateBackward => IID::NavigateBackward,
-        }
     }
 }

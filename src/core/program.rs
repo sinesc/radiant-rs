@@ -1,7 +1,7 @@
 use prelude::*;
 use core::{self, rendercontext, RenderContext, Display, AsUniform, UniformList, Color};
 use maths::{Mat4};
-use backends::glium as backend;
+use backends::backend;
 
 const SPRITE_INC: &'static str = include_str!("../shader/sprite.inc.fs");
 const TEXTURE_INC: &'static str = include_str!("../shader/texture.inc.fs");

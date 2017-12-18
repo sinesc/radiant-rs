@@ -1,7 +1,7 @@
 use core::{self, Display, font, SpriteData, Vertex};
 use prelude::*;
 use std::default::Default;
-use backends::glium as backend;
+use backends::backend;
 
 /// Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
 pub const NUM_BUCKETS: usize = 6;

@@ -7,7 +7,7 @@ use core::{
 };
 use core::builder::*;
 use maths::{Rect, Mat4};
-use backends::glium as backend;
+use backends::backend;
 
 /// Default fragment shader program
 const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
