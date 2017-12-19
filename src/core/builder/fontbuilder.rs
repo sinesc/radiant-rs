@@ -1,4 +1,4 @@
-use core::{Result, Font, FontInfo, RenderContext, font};
+use core::{Result, Font, FontInfo, RenderContext};
 
 /// A font builder.
 ///
@@ -67,7 +67,7 @@ impl<'a> FontBuilder<'a> {
         if let Some(file) = self.file {
             Font::from_file(self.context, file)
         } else {
-            Ok(font::from_info(self.context, self.info))
+            Ok(Font::from_info(self.context, self.info))
         }
     }
 }

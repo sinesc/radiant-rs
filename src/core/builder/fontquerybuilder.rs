@@ -1,4 +1,4 @@
-use core::{FontInfo, font};
+use core::{FontInfo, Font};
 
 /// A FontQueryBuilder builder, returned from Font::query().
 #[must_use]
@@ -39,7 +39,7 @@ impl FontQueryBuilder {
         /*if let Some(file) = self.file {
             Font::from_file(self.context, file)
         } else {*/
-            font::query_specific(self.info)
+            Font::query_specific(self.info)
         //}
     }
 }

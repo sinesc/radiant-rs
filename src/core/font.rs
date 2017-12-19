@@ -47,7 +47,7 @@ impl Font {
         let mut f = File::open(Path::new(file))?;
         let mut font_data = Vec::new();
         f.read_to_end(&mut font_data)?;
-        Ok(create_font(context, font_data, 12.0))
+        Ok(Self::create(context, font_data, 12.0))
     }
 
     /// Returns the names of all available system fonts.
@@ -77,14 +77,14 @@ impl Font {
     /// Write to given layer.
     pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color) -> &Font where Vec2<f32>: From<T> {
         let position = Vec2::from(position);
-        write(self, layer, text, position.0, position.1, 0.0, color, 0.0, 1.0, 1.0);
+        self.write_paragraph(layer, text, position.0, position.1, 0.0, color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels.
     pub fn write_wrapped<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32) -> &Font where Vec2<f32>: From<T> {
         let position = Vec2::from(position);
-        write(self, layer, text, position.0, position.1, max_width, color, 0.0, 1.0, 1.0);
+        self.write_paragraph(layer, text, position.0, position.1, max_width, color, 0.0, 1.0, 1.0);
         self
     }
 
@@ -92,7 +92,7 @@ impl Font {
     pub fn write_transformed<T, U>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32, rotation: f32, scale: U) -> &Font where Vec2<f32>: From<T>+From<U> {
         let position = Vec2::from(position);
         let scale = Vec2::from(scale);
-        write(self, layer, text, position.0, position.1, max_width, color, rotation, scale.0, scale.1);
+        self.write_paragraph(layer, text, position.0, position.1, max_width, color, rotation, scale.0, scale.1);
         self
     }
 
@@ -102,132 +102,122 @@ impl Font {
     }
 
     /// Returns the names of all available system fonts with the given properties (e.g. monospace).
-    fn query_specific(info: FontInfo) -> Vec<String> {
-        system_fonts::query_specific(&mut build_property(&info))
+    pub(crate) fn query_specific(info: FontInfo) -> Vec<String> {
+        system_fonts::query_specific(&mut Self::build_property(&info))
     }
 
     /// Creates a new font instance from given FontInfo struct.
-    fn from_info(context: &RenderContext, info: FontInfo) -> Font {
-        let (font_data, _) = system_fonts::get(&build_property(&info)).unwrap();
-        create_font(context, font_data, info.size)
+    pub(crate) fn from_info(context: &RenderContext, info: FontInfo) -> Font {
+        let (font_data, _) = system_fonts::get(&Self::build_property(&info)).unwrap();
+        Self::create(context, font_data, info.size)
     }
-}
 
-/// Crate: Returns the names of all available system fonts with the given properties (e.g. monospace).
-pub fn query_specific(info: FontInfo) -> Vec<String> {
-    Font::query_specific(info)
-}
-
-/// Crate: Creates a new font instance from given FontInfo struct.
-pub fn from_info(context: &RenderContext, info: FontInfo) -> Font {
-    Font::from_info(context, info)
-}
-
-/// Creates a new unique font
-fn create_font(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
-    Font {
-        data    : font_data,
-        font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
-        size    : size,
-        context : context.clone(),
-    }
-}
-
-/// Write text to given layer using given font
-fn write(font: &Font, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
-
-    // !todo probably expensive, but rusttype is completely opaque. would be nice to be able to store Font::info outside of a "may or may not own" container
-    let rt_font = rusttype::FontCollection::from_bytes(&font.data[..]).into_font().unwrap();
-
-    let bucket_id = 0;
-    let glyphs = layout_paragraph(&rt_font, rusttype::Scale::uniform(font.size), max_width, &text);
-    let context = rendercontext::lock(&font.context);
-
-    context.font_cache.queue(font.font_id, &glyphs);
-
-    let anchor = Point2(0., 0.);
-    let scale = Vec2(scale_x, scale_y);
-    let cos_rot = rotation.cos();
-    let sin_rot = rotation.sin();
-
-    for glyph in &glyphs {
-        if let Some((uv, pos, dim)) = context.font_cache.rect_for(font.font_id, glyph) {
-            let dist_x = pos.0 * scale_x;
-            let dist_y = pos.1 * scale_y;
-            let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;
-            let offset_y = y + dist_x * sin_rot + dist_y * cos_rot;
-            layer::add_rect(layer, None, bucket_id, 0, 1, uv, Point2(offset_x, offset_y), anchor, dim, color, rotation, scale);
+    /// Creates a new unique font
+    fn create(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
+        Font {
+            data    : font_data,
+            font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
+            size    : size,
+            context : context.clone(),
         }
     }
-}
 
-/// Layout a paragraph of glyphs
-fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width: f32, text: &str) -> Vec<rusttype::PositionedGlyph<'a>> {
+    /// Write text to given layer using given font
+    fn write_paragraph(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
 
-    use unicode_normalization::UnicodeNormalization;
-    let mut result = Vec::new();
-    let v_metrics = font.v_metrics(scale);
-    let advance_height = v_metrics.ascent - v_metrics.descent + v_metrics.line_gap;
-    let mut caret = rusttype::point(0.0, v_metrics.ascent);
-    let mut last_glyph_id = None;
+        // !todo probably expensive, but rusttype is completely opaque. would be nice to be able to store Font::info outside of a "may or may not own" container
+        let rt_font = rusttype::FontCollection::from_bytes(&self.data[..]).into_font().unwrap();
 
-    for c in text.nfc() {
-        if c.is_control() {
-            match c {
-                '\n' => {
+        let bucket_id = 0;
+        let glyphs = Self::layout_paragraph(&rt_font, rusttype::Scale::uniform(self.size), max_width, &text);
+        let context = rendercontext::lock(&self.context);
+
+        context.font_cache.queue(self.font_id, &glyphs);
+
+        let anchor = Point2(0., 0.);
+        let scale = Vec2(scale_x, scale_y);
+        let cos_rot = rotation.cos();
+        let sin_rot = rotation.sin();
+
+        for glyph in &glyphs {
+            if let Some((uv, pos, dim)) = context.font_cache.rect_for(self.font_id, glyph) {
+                let dist_x = pos.0 * scale_x;
+                let dist_y = pos.1 * scale_y;
+                let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;
+                let offset_y = y + dist_x * sin_rot + dist_y * cos_rot;
+                layer::add_rect(layer, None, bucket_id, 0, 1, uv, Point2(offset_x, offset_y), anchor, dim, color, rotation, scale);
+            }
+        }
+    }
+
+    /// Layout a paragraph of glyphs
+    fn layout_paragraph<'a>(font: &'a rusttype::Font, scale: rusttype::Scale, width: f32, text: &str) -> Vec<rusttype::PositionedGlyph<'a>> {
+
+        use unicode_normalization::UnicodeNormalization;
+        let mut result = Vec::new();
+        let v_metrics = font.v_metrics(scale);
+        let advance_height = v_metrics.ascent - v_metrics.descent + v_metrics.line_gap;
+        let mut caret = rusttype::point(0.0, v_metrics.ascent);
+        let mut last_glyph_id = None;
+
+        for c in text.nfc() {
+            if c.is_control() {
+                match c {
+                    '\n' => {
+                        caret = rusttype::point(0.0, caret.y + advance_height);
+                    },
+                    _ => {}
+                }
+                continue;
+            }
+
+            let base_glyph = if let Some(glyph) = font.glyph(c) {
+                glyph
+            } else {
+                continue;
+            };
+
+            if let Some(id) = last_glyph_id.take() {
+                caret.x += font.pair_kerning(scale, id, base_glyph.id());
+            }
+
+            last_glyph_id = Some(base_glyph.id());
+            let mut glyph = base_glyph.scaled(scale).positioned(caret);
+
+            if let Some(bb) = glyph.pixel_bounding_box() {
+                if width > 0.0 && bb.max.x > width as i32 {
                     caret = rusttype::point(0.0, caret.y + advance_height);
-                },
-                _ => {}
+                    glyph = glyph.into_unpositioned().positioned(caret);
+                    last_glyph_id = None;
+                }
             }
-            continue;
+
+            caret.x += glyph.unpositioned().h_metrics().advance_width;
+            result.push(glyph);
         }
+        result
+    }
 
-        let base_glyph = if let Some(glyph) = font.glyph(c) {
-            glyph
-        } else {
-            continue;
-        };
-
-        if let Some(id) = last_glyph_id.take() {
-            caret.x += font.pair_kerning(scale, id, base_glyph.id());
+    /// Builds a FontProperty for the underlying system_fonts library
+    fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
+        let mut property = system_fonts::FontPropertyBuilder::new();
+        if info.family != "" {
+            property = property.family(&info.family);
         }
-
-        last_glyph_id = Some(base_glyph.id());
-        let mut glyph = base_glyph.scaled(scale).positioned(caret);
-
-        if let Some(bb) = glyph.pixel_bounding_box() {
-            if width > 0.0 && bb.max.x > width as i32 {
-                caret = rusttype::point(0.0, caret.y + advance_height);
-                glyph = glyph.into_unpositioned().positioned(caret);
-                last_glyph_id = None;
-            }
+        if info.italic {
+            property = property.italic();
         }
-
-        caret.x += glyph.unpositioned().h_metrics().advance_width;
-        result.push(glyph);
-    }
-    result
-}
-
-/// Builds a FontProperty for the underlying system_fonts library
-fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
-    let mut property = system_fonts::FontPropertyBuilder::new();
-    if info.family != "" {
-        property = property.family(&info.family);
-    }
-    if info.italic {
-        property = property.italic();
-    }
-    if info.oblique {
-        property = property.oblique();
-    }
-    if info.bold {
-        property = property.bold();
-    }
-    if info.monospace {
-        property = property.monospace();
-    }
-    property.build()
+        if info.oblique {
+            property = property.oblique();
+        }
+        if info.bold {
+            property = property.bold();
+        }
+        if info.monospace {
+            property = property.monospace();
+        }
+        property.build()
+    } 
 }
 
 /// A wrapper around rusttype's font cache.
@@ -238,6 +228,7 @@ pub struct FontCache {
 }
 
 impl FontCache {
+
     /// Creates a new fontcache instant.
     pub fn new(width: u32, height: u32, scale_tolerance: f32, position_tolerance: f32) -> FontCache {
         FontCache {
@@ -246,6 +237,7 @@ impl FontCache {
             dirty: AtomicBool::new(false),
         }
     }
+
     /// Queues a glyph for caching.
     pub fn queue(self: &Self, font_id: usize, glyphs: &[rusttype::PositionedGlyph]) {
 
@@ -278,6 +270,7 @@ impl FontCache {
             self.dirty.store(false, Ordering::Relaxed);
         }
     }
+
     /// Returns a rectangle of uv coordinates for the given glyph as well as its offset and dimensions.
     pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point2, Point2)> {
         let cache = self.cache.lock().unwrap();
