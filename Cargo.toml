@@ -1,6 +1,6 @@
 [package]
 name = "radiant-rs"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 description = "Thread-safe Rust sprite rendering engine with a friendly API and custom shader support"
 documentation = "https://sinesc.github.io/doc/radiant_rs/"
@@ -27,6 +27,7 @@ palette = "0.2.1"
 
 [dev-dependencies]
 tiled = "0.4"
+glium = "0.19.0"
 
 [profile.dev]
 opt-level = 2
@@ -75,6 +76,10 @@ path = "examples/08_postprocessor.rs"
 [[example]]
 name = "09_combined"
 path = "examples/09_combined.rs"
+
+[[example]]
+name = "10_glium"
+path = "examples/10_glium.rs"
 
 [[example]]
 name = "98_threads"

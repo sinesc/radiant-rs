@@ -9,6 +9,14 @@ use core;
 use maths::*;
 
 // --------------
+// Public interface provided to Radiant-API-user in radiant_rs::backend 
+// --------------
+
+pub mod public {
+
+}
+
+// --------------
 // Display
 // --------------
 

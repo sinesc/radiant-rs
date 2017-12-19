@@ -7,6 +7,31 @@ use core;
 use maths::*;
 
 // --------------
+// Public interface provided to Radiant-API-user in radiant_rs::backend 
+// --------------
+
+pub mod public {
+    use super::glium;
+    use super::core;
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use std::sync::{Arc, RwLock};
+
+    /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop
+    pub fn create_display(display: &glium::Display, events_loop: Rc<RefCell<glium::glutin::EventsLoop>>) -> core::Display {        
+        core::Display {
+            handle: super::Display(display.clone(), events_loop),
+            frame: Rc::new(RefCell::new(None)),
+            input_data: Arc::new(RwLock::new(core::input::InputData::new())),
+        }
+    }
+    /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
+    pub fn get_frame<F>(display: &core::Display, mut callback: F) where F: FnMut(&mut glium::Frame) {
+        callback(&mut display.frame.borrow_mut().as_mut().unwrap().0)
+    }
+}
+
+// --------------
 // Display
 // --------------
 

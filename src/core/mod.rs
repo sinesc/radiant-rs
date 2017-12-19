@@ -1,6 +1,6 @@
 mod blendmode;
 pub mod display;
-mod input;
+pub mod input;
 mod layer;
 mod renderer;
 mod sprite;

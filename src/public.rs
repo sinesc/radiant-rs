@@ -27,3 +27,9 @@ pub mod support {
     pub use core::{InputIterator, InputUpIterator, InputDownIterator};
     pub use core::{DrawBuilder, DisplayBuilder, FontBuilder, FontQueryBuilder, TextureBuilder};
 }
+
+pub mod backend {
+    //! Backend specific integration methods. Backends can be switched via [cargo features](http://doc.crates.io/manifest.html#the-features-section).
+    //! The documentation shown here depends on the features it was generated with.
+    pub use backends::backend::public::*;
+}

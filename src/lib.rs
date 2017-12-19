@@ -6,8 +6,6 @@ Rust sprite rendering engine with a friendly API, wait-free send+sync drawing ta
 
 To view the reference, scroll down or collapse this block using the [-] to the left.
 
-**This is work-in-progress. Parts of the API are incomplete and will likely still change somewhat.**
-
 # Examples
 
 The examples folder contains multiple small examples. They can be run via `cargo run --example <example name>`, e.g.
@@ -65,7 +63,7 @@ renderer.render_to(&surface, || {
 
 # Drawing from multiple threads
 
-1. Wrap fonts, sprites, and layers or scenes in `Arc`s.
+1. Wrap fonts, sprites, and layers in `Arc`s.
 2. Clone the `Arc`s for each thread that needs their contents. The rendercontext can be cloned directly.
 3. Move the clones into the thread.
 4. Draw onto your layers, load sprites etc. from any thread(s). Layers are non-blocking for drawing operations,
