@@ -25,6 +25,13 @@ The examples folder contains multiple small examples. They can be run via `cargo
 9. Make the frame visible via `Display::swap_frame()`.
 10. Consider clearing the layer and goto 6. Or maybe simply change some layer properties and redraw it starting a step 7.
 
+# Integrating with existing glium projects (or any supported backend)
+
+Radiant can be integrated with supported backends using the APIs provided in the [backend](backend/index.html) module. The 10_glium example shows how
+to do this with Glium.
+
+These APIs are currently experimental and likely subject to change.
+
 # Draw to texture/postprocess
 
 Postprocessors are custom effects that may be as simple as a single shader program or combine multiple shaders and textures into a single
