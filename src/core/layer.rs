@@ -150,6 +150,93 @@ impl Layer {
         Arc::new(self)
     }
 
+    /// Draws a rectangle on given layer.
+    pub(crate) fn add_rect(self: &Self, generation: Option<usize>, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<f32>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
+
+        self.set_dirty(true);
+        if generation.is_some() && !self.set_generation(generation.unwrap()) {
+            panic!("Layer contains garbage data. Note: Layers need to be cleared after performing a RenderContext::prune().");
+        }
+
+        // corner positions relative to x/y
+
+        let offset_x0 = -anchor.0 * scale.0;
+        let offset_x1 = (dim.0 - anchor.0) * scale.0;
+        let offset_y0 = -anchor.1 * scale.1;
+        let offset_y1 = (dim.1 - anchor.1) * scale.1;
+
+        let bucket_id = bucket_id as u32;
+        let components = components as u32;
+
+        // get vertex_data slice and draw into it
+
+        let map = self.contents.vertex_data.map(4);
+
+        map.set(0, Vertex {
+            position    : [pos.0, pos.1],
+            offset      : [offset_x0, offset_y0],
+            rotation    : rotation,
+            color       : color.into(),
+            bucket_id   : bucket_id,
+            texture_id  : texture_id,
+            texture_uv  : uv.top_left().into(),
+            components  : components,
+        });
+
+        map.set(1, Vertex {
+            position    : [pos.0, pos.1],
+            offset      : [offset_x1, offset_y0],
+            rotation    : rotation,
+            color       : color.into(),
+            bucket_id   : bucket_id,
+            texture_id  : texture_id,
+            texture_uv  : uv.top_right().into(),
+            components  : components,
+        });
+
+        map.set(2, Vertex {
+            position    : [pos.0, pos.1],
+            offset      : [offset_x0, offset_y1],
+            rotation    : rotation,
+            color       : color.into(),
+            bucket_id   : bucket_id,
+            texture_id  : texture_id,
+            texture_uv  : uv.bottom_left().into(),
+            components  : components,
+        });
+
+        map.set(3, Vertex {
+            position    : [pos.0, pos.1],
+            offset      : [offset_x1, offset_y1],
+            rotation    : rotation,
+            color       : color.into(),
+            bucket_id   : bucket_id,
+            texture_id  : texture_id,
+            texture_uv  : uv.bottom_right().into(),
+            components  : components,
+        });
+    }
+
+    /// Returns a reference to the program used by this layer.
+    pub fn program(self: &Self) -> Option<&Program> {
+        self.program.as_ref()
+    }
+
+    /// Returns the readguard protected vertex data.
+    pub(crate) fn vertices(self: &Self) -> avec::AVecReadGuard<Vertex> {
+        self.contents.vertex_data.get()
+    }
+
+    /// Returns the layer id.
+    pub(crate) fn id(self: &Self) -> usize {
+        self.contents.layer_id
+    }
+
+    /// Flags the layer as no longer dirty and returns whether it was dirty.
+    pub(crate) fn undirty(self: &Self) -> bool {
+        self.contents.dirty.swap(false, Ordering::Relaxed)
+    }
+
     /// Creates a new layer
     fn create<T>(dimensions: T, program: Option<Program>) -> Self where Vec2<f32>: From<T> {
         let dimensions = Vec2::from(dimensions);
@@ -193,86 +280,3 @@ impl Layer {
     }
 }
 
-/// Returns a reference to the layer's program, if it has any.
-pub fn program(layer: &Layer) -> Option<&Program> {
-    layer.program.as_ref()
-}
-
-pub fn vertices(layer: &Layer) -> avec::AVecReadGuard<Vertex> {
-    layer.contents.vertex_data.get()
-}
-
-pub fn layer_id(layer: &Layer) -> usize {
-    layer.contents.layer_id
-}
-
-pub fn layer_undirty(layer: &Layer) -> bool {
-    layer.contents.dirty.swap(false, Ordering::Relaxed)
-}
-
-/// Draws a rectangle on given layer.
-pub fn add_rect(layer: &Layer, generation: Option<usize>, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<f32>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
-
-    layer.set_dirty(true);
-    if generation.is_some() && !layer.set_generation(generation.unwrap()) {
-        panic!("Layer contains garbage data. Note: Layers need to be cleared after performing a RenderContext::prune().");
-    }
-
-    // corner positions relative to x/y
-
-    let offset_x0 = -anchor.0 * scale.0;
-    let offset_x1 = (dim.0 - anchor.0) * scale.0;
-    let offset_y0 = -anchor.1 * scale.1;
-    let offset_y1 = (dim.1 - anchor.1) * scale.1;
-
-    let bucket_id = bucket_id as u32;
-    let components = components as u32;
-
-    // get vertex_data slice and draw into it
-
-    let map = layer.contents.vertex_data.map(4);
-
-    map.set(0, Vertex {
-        position    : [pos.0, pos.1],
-        offset      : [offset_x0, offset_y0],
-        rotation    : rotation,
-        color       : color.into(),
-        bucket_id   : bucket_id,
-        texture_id  : texture_id,
-        texture_uv  : uv.top_left().into(),
-        components  : components,
-    });
-
-    map.set(1, Vertex {
-        position    : [pos.0, pos.1],
-        offset      : [offset_x1, offset_y0],
-        rotation    : rotation,
-        color       : color.into(),
-        bucket_id   : bucket_id,
-        texture_id  : texture_id,
-        texture_uv  : uv.top_right().into(),
-        components  : components,
-    });
-
-    map.set(2, Vertex {
-        position    : [pos.0, pos.1],
-        offset      : [offset_x0, offset_y1],
-        rotation    : rotation,
-        color       : color.into(),
-        bucket_id   : bucket_id,
-        texture_id  : texture_id,
-        texture_uv  : uv.bottom_left().into(),
-        components  : components,
-    });
-
-    map.set(3, Vertex {
-        position    : [pos.0, pos.1],
-        offset      : [offset_x1, offset_y1],
-        rotation    : rotation,
-        color       : color.into(),
-        bucket_id   : bucket_id,
-        texture_id  : texture_id,
-        texture_uv  : uv.bottom_right().into(),
-        components  : components,
-    });
-}

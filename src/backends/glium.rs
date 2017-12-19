@@ -858,10 +858,10 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
         .add("_rd_tex4", GliumUniform::Texture2dArray(&context.tex_arrays[4].data.deref().0))
         .add("_rd_tex5", GliumUniform::Texture2dArray(&context.tex_arrays[5].data.deref().0));
 
-    let vertices = core::vertices(layer);
+    let vertices = layer.vertices();
     let vertices = vertices.deref();
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, core::layer_undirty(layer), core::layer_id(layer), core::program::sprite(program), &glium_uniforms, &layer.blendmode());
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), core::program::sprite(program), &glium_uniforms, &layer.blendmode());
 }
 
 pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {

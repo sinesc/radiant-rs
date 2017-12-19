@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, renderer, layer, Layer, rendercontext, RenderContext, RawFrame};
+use core::{self, renderer, Layer, rendercontext, RenderContext, RawFrame};
 use maths::{Point2, Vec2, Rect};
 use Color;
 use image::{self, GenericImage};
@@ -72,7 +72,7 @@ impl<'a> Sprite {
         let dim = Point2(self.data.width as f32, self.data.height as f32);
         let scale = Vec2(1.0, 1.0);
         let generation = self.data.generation.load(Ordering::Relaxed);
-        layer::add_rect(layer, Some(generation), bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
+        layer.add_rect(Some(generation), bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, 0.0, scale);
         self
     }
 
@@ -83,7 +83,7 @@ impl<'a> Sprite {
         let uv = Rect::new(0.0, 0.0, self.data.uv_max.0, self.data.uv_max.1);
         let dim = Point2(self.data.width as f32, self.data.height as f32);
         let generation = self.data.generation.load(Ordering::Relaxed);
-        layer::add_rect(layer, Some(generation), bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
+        layer.add_rect(Some(generation), bucket_id, texture_id, self.data.components, uv, Point2::from(position), self.anchor, dim, color, rotation, Vec2::from(scale));
         self
     }
 

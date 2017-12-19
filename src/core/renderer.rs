@@ -1,6 +1,6 @@
 use prelude::*;
 use core::{
-    self, layer, rendercontext, program,
+    self, rendercontext, program,
     Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
     blendmodes, TextureFormat
@@ -76,7 +76,7 @@ impl Renderer {
         context.update_font_cache();
 
         // use default or custom program
-        let program = layer::program(layer).unwrap_or(&self.program);
+        let program = layer.program().unwrap_or(&self.program);
 
         backend::draw_layer(self.target.borrow().last().unwrap(), program, context, layer, component);
         self
