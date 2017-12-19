@@ -1,4 +1,4 @@
-#![doc(html_logo_url = "https://sinesc.github.io/images/radiant-logo.png",
+#![doc(html_logo_url = "https://sinesc.github.io/images/radiant/logo.png",
        html_favicon_url = "https://sinesc.github.io/images/radiant-favicon.png")]
 
 /*!

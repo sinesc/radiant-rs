@@ -3,7 +3,7 @@ Rust sprite rendering engine with a friendly API, wait-free send+sync drawing ta
 
 API still WIP, expect some breakage.
 
-[Getting started and reference here](https://sinesc.github.io/doc/radiant_rs/).
+[Getting started and reference here](https://docs.rs/radiant-rs/).
 
 To compile the examples, use e.g. `cargo run --release --example demo_glare`. See examples folder for other available examples.
 
