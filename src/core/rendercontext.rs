@@ -82,7 +82,7 @@ impl RawFrameArray {
     fn new(display: &Display) -> Self {
         RawFrameArray {
             dirty   : false,
-            data    : Rc::new(backend::Texture2dArray::new(display.handle(), &Vec::new())), // !todo why rc?
+            data    : Rc::new(backend::Texture2dArray::new(&display.handle, &Vec::new())), // !todo why rc?
             raw     : Vec::new(),
             sprites : Vec::new(),
         }
@@ -104,7 +104,7 @@ impl RawFrameArray {
     fn update(self: &mut Self, display: &Display) {
         if self.dirty {
             self.dirty = false;
-            self.data = Rc::new(backend::Texture2dArray::new(display.handle(), &self.raw));
+            self.data = Rc::new(backend::Texture2dArray::new(&display.handle, &self.raw));
         }
     }
     /// Returns a list of tuples containing current sprite texture_id and required negative offset.
@@ -195,11 +195,11 @@ impl RenderContextData {
         }
 
         Ok(RenderContextData {
-            backend_context     : backend::Context::new(&display.handle(), initial_capacity),
+            backend_context     : backend::Context::new(&display.handle, initial_capacity),
             tex_arrays          : tex_arrays,
             display             : display.clone(),
             font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
-            font_texture        : Rc::new(backend::Texture2d::font_cache(&display.handle(), 512, 512)),
+            font_texture        : Rc::new(backend::Texture2d::font_cache(&display.handle, 512, 512)),
             single_rect         : Self::create_single_rect(),
             generation          : Self::create_generation(),
         })

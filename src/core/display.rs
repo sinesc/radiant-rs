@@ -26,7 +26,7 @@ impl Display {
     /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
     /// ```
     pub fn builder() -> DisplayBuilder {
-        create_displaybuilder()
+        DisplayBuilder::new()
     }
 
     /// Sets the window title.
@@ -206,7 +206,7 @@ impl Display {
     }
 
     /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
-    fn new(descriptor: DisplayInfo) -> Display {
+    pub(crate) fn new(descriptor: DisplayInfo) -> Display {
         Display {
             handle: backend::Display::new(descriptor),
             frame: Rc::new(RefCell::new(None)),
@@ -214,27 +214,13 @@ impl Display {
         }
     }
 
-    pub(crate) fn handle(self: &Self) -> &backend::Display {
-        &self.handle
-    }
-}
-
-/// Crate: Creates a new renderer.
-pub fn create(descriptor: DisplayInfo) -> Display {
-    Display::new(descriptor)
-}
-
-/// Returns an RwLocked reference to the input data.
-pub fn input_data(display: &Display) -> &Arc<RwLock<InputData>> {
-    &display.input_data
-}
-
-/// Clears the display with given color without swapping buffers.
-pub fn clear(display: &Display, color: Color) {
-    if let Some(ref mut frame) = display.frame.borrow_mut().as_mut() {
-        frame.clear(color);
-    } else {
-        panic!("Failed to clear frame: None prepared.");
+    /// Clears the display with given color without swapping buffers.
+    pub(crate) fn clear(self: &Self, color: Color) {
+        if let Some(ref mut frame) = self.frame.borrow_mut().as_mut() {
+            frame.clear(color);
+        } else {
+            panic!("Failed to clear frame: None prepared.");
+        }
     }
 }
 

@@ -47,7 +47,7 @@ impl Program {
 pub fn create(display: &Display, source: &str) -> core::Result<Program> {
     let sprite_fs = insert_template(source, SPRITE_INC);
     let texture_fs = insert_template(source, TEXTURE_INC);
-    let display_handle = &display.handle();
+    let display_handle = &display.handle;
     let dimensions = display.dimensions();
     let mut uniforms = UniformList::new();
     uniforms.insert("u_view", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());

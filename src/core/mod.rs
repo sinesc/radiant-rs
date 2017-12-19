@@ -74,7 +74,7 @@ impl RenderTarget {
     fn clear(self: &Self, color: Color) {
         match *self {
             RenderTarget::Display(ref display) => {
-                display::clear(display, color);
+                display.clear(color);
             },
             RenderTarget::Texture(ref texture) => {
                 texture.handle.clear(color);

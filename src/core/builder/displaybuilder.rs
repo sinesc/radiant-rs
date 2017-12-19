@@ -1,4 +1,4 @@
-use core::{Display, DisplayInfo, display, Monitor};
+use core::{Display, DisplayInfo, Monitor};
 use maths::Point2;
 
 /// A display builder.
@@ -15,12 +15,6 @@ use maths::Point2;
 #[derive(Clone)]
 pub struct DisplayBuilder {
     info: DisplayInfo,
-}
-
-pub fn create_displaybuilder() -> DisplayBuilder {
-    DisplayBuilder {
-        info: DisplayInfo { ..DisplayInfo::default() }
-    }
 }
 
 impl DisplayBuilder {
@@ -73,6 +67,12 @@ impl DisplayBuilder {
     }
     /// Returns the constructed display instance.
     pub fn build(self: Self) -> Display {
-        display::create(self.info)
+        Display::new(self.info)
+    }
+
+    pub(crate) fn new() -> Self {
+        DisplayBuilder {
+            info: DisplayInfo { ..DisplayInfo::default() }
+        }
     }
 }

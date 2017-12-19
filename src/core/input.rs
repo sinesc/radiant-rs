@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{display, Display};
+use core::Display;
 
 pub const NUM_KEYS: usize = 256;
 pub const NUM_BUTTONS: usize = 16;
@@ -250,7 +250,7 @@ impl Input {
     /// Creates a new instance.
     pub fn new(display: &Display) -> Self {
         Input {
-            input_data: display::input_data(display).clone(),
+            input_data: display.input_data.clone(),
         }
     }
 

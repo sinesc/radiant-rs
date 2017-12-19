@@ -4,7 +4,6 @@ mod fontquerybuilder;
 mod texturebuilder;
 mod drawbuilder;
 
-pub use self::displaybuilder::create_displaybuilder;
 pub use self::displaybuilder::DisplayBuilder;
 
 pub use self::fontbuilder::create_fontbuilder;

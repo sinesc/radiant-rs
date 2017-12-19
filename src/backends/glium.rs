@@ -405,7 +405,7 @@ pub struct Texture2d(glium::texture::Texture2d);
 impl Texture2d {
     pub fn new(context: &mut core::RenderContextData, info: &core::TextureInfo) -> Texture2d {
         let texture = glium::texture::Texture2d::empty_with_format(
-            &context.display.handle().0,
+            &context.display.handle.0,
             Self::convert_format(info.format),
             glium::texture::MipmapsOption::NoMipmap,
             info.width,
