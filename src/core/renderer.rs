@@ -36,7 +36,7 @@ impl Renderer {
     pub fn new(display: &Display) -> core::Result<Self> {
 
         let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY)?;
-        let context = rendercontext::new(context_data);
+        let context = RenderContext::new(context_data);
         let target = vec![ RenderTarget::Display(display.clone()) ];
         let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::WHITE);
@@ -68,7 +68,7 @@ impl Renderer {
     pub fn draw_layer(self: &Self, layer: &Layer, component: u32) -> &Self {
 
         // open context
-        let mut context = rendercontext::lock(&self.context);
+        let mut context = self.context.lock();
         let context = context.deref_mut();
 
         // update sprite texture arrays, font texture and vertex buffer as required
@@ -122,7 +122,7 @@ impl Renderer {
     pub(crate) fn draw_rect(self: &Self, target: DrawRectInfo) -> &Self {
 
         // open context
-        let mut context = rendercontext::lock(&self.context);
+        let mut context = self.context.lock();
         let context = context.deref_mut();
 
         // use default or custom program and texture

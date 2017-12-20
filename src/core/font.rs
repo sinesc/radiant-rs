@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, Layer, rendercontext, RenderContext, Color};
+use core::{self, Layer, RenderContext, Color};
 use maths::{Point2, Vec2, Rect};
 use core::builder::*;
 use rusttype;
@@ -130,7 +130,7 @@ impl Font {
 
         let bucket_id = 0;
         let glyphs = Self::layout_paragraph(&rt_font, rusttype::Scale::uniform(self.size), max_width, &text);
-        let context = rendercontext::lock(&self.context);
+        let context = self.context.lock();
 
         context.font_cache.queue(self.font_id, &glyphs);
 

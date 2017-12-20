@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, rendercontext, RenderContext, Display, AsUniform, UniformList, Color};
+use core::{self, RenderContext, Display, AsUniform, UniformList, Color};
 use maths::{Mat4};
 use backends::backend;
 
@@ -30,7 +30,7 @@ impl Program {
     }
     /// Creates a program from a fragment shader string.
     pub fn from_string(context: &RenderContext, source: &str) -> core::Result<Self> {
-        let context = rendercontext::lock(context);
+        let context = context.lock();
         Self::new(&context.display, source)
     }
     /// Sets a uniform value by name.

@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, renderer, Layer, rendercontext, RenderContext, RawFrame};
+use core::{self, renderer, Layer, RenderContext, RawFrame};
 use maths::{Point2, Vec2, Rect};
 use Color;
 use image::{self, GenericImage};
@@ -137,7 +137,7 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
     let SpriteDescriptor { bucket_id, texture_size, frame_width, frame_height, components, raw_frames } = descriptor;
     let num_frames = (raw_frames.len() as u32 / components) as u32;
 
-    let mut context = rendercontext::lock(context);
+    let mut context = context.lock();
     let texture_id = context.store_frames(bucket_id, raw_frames);
 
     let sprite_data = Arc::new(SpriteData {

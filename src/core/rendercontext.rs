@@ -23,21 +23,21 @@ unsafe impl Sync for RenderContext { }
 impl RenderContext {
     /// Retrieves the display associated with this rendercontext.
     pub fn display(self: &Self) -> Display {
-        lock(self).display.clone()
+        self.lock().display.clone()
     }
     /// Prunes no longer used textures. Requires all layers to be cleared before
     /// adding new sprites or rendering the layer.
     pub fn prune(self: &Self) {
-        lock(self).prune();
+        self.lock().prune();
     }
-}
-
-pub fn new(data: RenderContextData) -> RenderContext {
-    RenderContext(Arc::new(Mutex::new(data)))
-}
-
-pub fn lock<'a>(context: &'a RenderContext) -> MutexGuard<'a, RenderContextData> {
-    context.0.lock().unwrap()
+    /// Creates a new RenderContext
+    pub(crate) fn new(data: RenderContextData) -> RenderContext {
+        RenderContext(Arc::new(Mutex::new(data)))
+    }
+    /// Mutex-locks the instance and returns the MutexGuard
+    pub(crate) fn lock<'a>(self: &'a Self) -> MutexGuard<'a, RenderContextData> {
+        self.0.lock().unwrap()
+    }
 }
 
 /// Individual Texture.

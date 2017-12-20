@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{rendercontext, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
+use core::{RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
 use core::builder::*;
 use maths::Point2;
 use backends::backend;
@@ -77,7 +77,7 @@ impl Texture {
     }
     /// Creates a new texture from given TextureInfo struct.
     pub(crate) fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
-        let mut context = rendercontext::lock(context);
+        let mut context = context.lock();
         let context = context.deref_mut();
         let texture = backend::Texture2d::new(context, &info);
         Texture {
