@@ -61,7 +61,7 @@ impl<'a> TextureBuilder<'a> {
         /*if let Some(file) = self.file {
             Texture::from_file(self.context, file)
         } else {*/
-            Ok(texture::from_info(self.context, self.info))
+            Ok(Texture::from_info(self.context, self.info))
         //}
     }
 }

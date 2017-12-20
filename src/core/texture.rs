@@ -12,9 +12,9 @@ use backends::backend;
 #[derive(Clone)]
 pub struct Texture {
     pub(crate) handle   : Rc<backend::Texture2d>,
-    minify              : TextureFilter,
-    magnify             : TextureFilter,
-    wrap                : TextureWrap,
+    pub(crate) minify   : TextureFilter,
+    pub(crate) magnify  : TextureFilter,
+    pub(crate) wrap     : TextureWrap,
     dimensions          : Point2<u32>,
 }
 
@@ -76,7 +76,7 @@ impl Texture {
         self.dimensions
     }
     /// Creates a new texture from given TextureInfo struct.
-    fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
+    pub(crate) fn from_info(context: &RenderContext, info: TextureInfo) -> Self {
         let mut context = rendercontext::lock(context);
         let context = context.deref_mut();
         let texture = backend::Texture2d::new(context, &info);
@@ -88,21 +88,6 @@ impl Texture {
             dimensions  : Point2(info.width, info.height),
         }
     }
-}
-
-/// Crate: Creates a new texture from given TextureInfo struct.
-pub fn from_info(context: &RenderContext, info: TextureInfo) -> Texture {
-    Texture::from_info(context, info)
-}
-
-/// Returns the texture handle.
-pub fn handle(texture: &Texture) -> &backend::Texture2d {
-    texture.handle.deref()
-}
-
-/// Returns texture filters.
-pub fn filters(texture: &Texture) -> (TextureFilter, TextureFilter, TextureWrap) {
-    (texture.minify, texture.magnify, texture.wrap)
 }
 
 impl AsRenderTarget for Texture {

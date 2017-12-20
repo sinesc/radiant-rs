@@ -22,7 +22,7 @@ pub mod public {
         core::Display {
             handle: super::Display(display.clone(), events_loop),
             frame: Rc::new(RefCell::new(None)),
-            input_data: Arc::new(RwLock::new(core::input::InputData::new())),
+            input_data: Arc::new(RwLock::new(core::InputData::new())),
         }
     }
     /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
@@ -69,8 +69,8 @@ impl Display {
     pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
         self.0.gl_window().set_cursor_position(position.0, position.1).unwrap();
     }
-    pub fn set_cursor_state(self: &Self, state: core::display::CursorState) {
-        use core::display::CursorState as CS;
+    pub fn set_cursor_state(self: &Self, state: core::CursorState) {
+        use core::CursorState as CS;
         self.0.gl_window().set_cursor_state(match state {
             CS::Normal => glium::glutin::CursorState::Normal,
             CS::Hide => glium::glutin::CursorState::Hide,
@@ -322,7 +322,7 @@ impl Frame {
 
     /// Copies given texture to given display.
     pub fn copy_from_texture(self: &Self, source: &core::Texture, filter: core::TextureFilter) {
-        core::texture::handle(source).0.as_surface().fill(&self.0, magnify_filter(filter));
+        source.handle.0.as_surface().fill(&self.0, magnify_filter(filter));
     }
 
     /// Copies the source rectangle to the target rectangle on the given display.
@@ -335,9 +335,9 @@ impl Frame {
     /// Copies the source rectangle from the given texture to the target rectangle on the given display.
     pub fn copy_rect_from_texture(self: &Self, source: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
         let target_height = self.0.get_dimensions().1;
-        let source_height = core::texture::handle(source).0.height();
+        let source_height = source.handle.0.height();
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
-        core::texture::handle(source).0.as_surface().blit_color(&glium_src_rect, &self.0, &glium_target_rect, magnify_filter(filter));
+        source.handle.0.as_surface().blit_color(&glium_src_rect, &self.0, &glium_target_rect, magnify_filter(filter));
     }
 }
 
@@ -727,21 +727,20 @@ impl<'a> GliumUniformList<'a> {
             CU::DoubleVec3(val) => { GliumUniform::DoubleVec3(val) },
             CU::DoubleVec4(val) => { GliumUniform::DoubleVec4(val) },
             CU::Texture(ref val) => {
-                let (minify, magnify, wrap) = core::texture::filters(val);
-                let glium_minify = if minify == core::TextureFilter::Linear { MinifySamplerFilter::Linear } else { MinifySamplerFilter::Nearest };
-                let glium_magnify = if magnify == core::TextureFilter::Linear { MagnifySamplerFilter::Linear } else { MagnifySamplerFilter::Nearest };
-                let glium_wrap = match wrap {
+                let glium_minify = if val.minify == core::TextureFilter::Linear { MinifySamplerFilter::Linear } else { MinifySamplerFilter::Nearest };
+                let glium_magnify = if val.magnify == core::TextureFilter::Linear { MagnifySamplerFilter::Linear } else { MagnifySamplerFilter::Nearest };
+                let glium_wrap = match val.wrap {
                     TW::Repeat         => SamplerWrapFunction::Repeat,
                     TW::Mirror         => SamplerWrapFunction::Mirror,
                     TW::Clamp          => SamplerWrapFunction::Clamp,
                     TW::MirrorClamp    => SamplerWrapFunction::MirrorClamp,
                 };
                 GliumUniform::Sampled2d(
-                    core::texture::handle(val).0
-                                .sampled()
-                                .minify_filter(glium_minify)
-                                .magnify_filter(glium_magnify)
-                                .wrap_function(glium_wrap)
+                    val.handle.0
+                        .sampled()
+                        .minify_filter(glium_minify)
+                        .magnify_filter(glium_magnify)
+                        .wrap_function(glium_wrap)
                 )
             },
         }));
@@ -875,7 +874,7 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
         .add("u_view", GliumUniform::Mat4(view_matrix.into()))
         .add("u_model", GliumUniform::Mat4(model_matrix.into()))
         .add("_rd_color", GliumUniform::Vec4(color.into()))
-        .add("_rd_tex", GliumUniform::Texture2d(&core::texture::handle(texture).0))
+        .add("_rd_tex", GliumUniform::Texture2d(&texture.handle.0))
         .add("_rd_offset", GliumUniform::Vec2(info.rect.0.into()))
         .add("_rd_dimensions", GliumUniform::Vec2(info.rect.1.into()))
         .add("_rd_has_tex", GliumUniform::Bool(info.texture.is_some()));

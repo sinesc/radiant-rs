@@ -1,6 +1,6 @@
 mod blendmode;
-pub mod display;
-pub mod input;
+mod display;
+mod input;
 mod layer;
 mod renderer;
 mod sprite;
@@ -8,7 +8,7 @@ mod font;
 mod rendercontext;
 mod color;
 mod monitor;
-pub mod texture;
+mod texture;
 pub mod program;
 pub mod uniform;
 mod postprocessor;
