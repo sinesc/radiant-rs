@@ -4,7 +4,7 @@ use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Program, utils, blendm
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Basic postprocessor example").build();
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/sparkles_64x64x1.png").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
@@ -14,7 +14,7 @@ pub fn main() {
     sprite.draw(&layer, 0, (160., 155.), Color::BLUE);
 
     // Load a shader progam.
-    let program = Program::from_string(&renderer.context(), include_str!("../res/effects/ripple.fs")).unwrap();
+    let program = Program::from_string(&renderer.context(), include_str!("res/effects/ripple.fs")).unwrap();
 
     // Use a default Basic postprocessor with the given program. It simply draws the input
     // using the given program, but there is a trait to implement custom postprocessors.

@@ -19,7 +19,7 @@ pub fn main() {
 
         // Write some text
         large.write(&layer, "Nine squared", (210., 100.), Color::WHITE);
-        small.write(&layer, include_str!("../res/limerick.txt"), (210., 160.), Color::WHITE);
+        small.write(&layer, include_str!("res/limerick.txt"), (210., 160.), Color::WHITE);
         tiny_it.write(&layer, "https://en.wikipedia.org/wiki/Leigh_Mercer", (10., 460.), Color::WHITE);
 
         // The usual clear, draw, swap, repeat.

@@ -19,7 +19,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    /// Returns a textu builder for texture construction.
+    /// Returns a texture builder for texture construction.
     ///
     /// # Examples
     ///

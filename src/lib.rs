@@ -1,5 +1,5 @@
-#![doc(html_logo_url = "https://sinesc.github.io/images/radiant/logo.png",
-       html_favicon_url = "https://sinesc.github.io/images/radiant-favicon.png")]
+#![doc(html_logo_url = "https://raw.githubusercontent.com/sinesc/radiant-rs/master/doc/logo.png",
+       html_favicon_url = "https://raw.githubusercontent.com/sinesc/radiant-rs/master/doc/favicon.png")]
 
 /*!
 Rust sprite rendering engine with a friendly API, wait-free send+sync drawing targets and custom shader support.
@@ -87,7 +87,7 @@ Filenames are required to express the sprite format, e.g. `battery_lightmapped_1
 two components. This is a scaled version of how it could look. The Color component is in the top row, a lightmap component in the bottom
 row:
 
-![Spritesheet](https://sinesc.github.io/images/spritesheet.png "Spritesheet")
+![Spritesheet](https://raw.githubusercontent.com/sinesc/radiant-rs/master/doc/spritesheet.png "Spritesheet")
 
 # Custom shaders
 

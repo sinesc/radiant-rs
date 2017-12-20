@@ -1,7 +1,7 @@
 extern crate radiant_rs;
 use radiant_rs::*;
 
-#[path="../res/effects/bloom.rs"]
+#[path="res/effects/bloom.rs"]
 mod bloom;
 
 pub fn main() {
@@ -11,7 +11,7 @@ pub fn main() {
     let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
 
     // Load spritesheet containing components for rgba and a "lightmap". Create custom postprocessor.
-    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/battery_lightmapped_128x128x15x2.png").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/battery_lightmapped_128x128x15x2.png").unwrap();
     let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, 5.0);
 
     // A bunch of layers. The lightmap layers use component 1 (the "lightmap") of the sprite.

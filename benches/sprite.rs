@@ -12,7 +12,7 @@ fn sprite_drawing(b: &mut Bencher) {
 
     let display = Display::builder().hidden().build();
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/ball_v2_32x32x18.jpg").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
     let layer = Layer::new((640., 480.));
 
     display.clear_frame(Color::black());
@@ -39,7 +39,7 @@ fn sprite_transformed_drawing(b: &mut Bencher) {
 
     let display = Display::builder().hidden().build();
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/ball_v2_32x32x18.jpg").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
     let layer = Layer::new((640., 480.));
 
     display.clear_frame(Color::black());

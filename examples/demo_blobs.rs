@@ -1,7 +1,7 @@
 extern crate radiant_rs;
 use radiant_rs::*;
 
-#[path="../res/effects/bloom.rs"]
+#[path="res/effects/bloom.rs"]
 mod bloom;
 
 pub fn main() {
@@ -13,7 +13,7 @@ pub fn main() {
     let spark_layer = Layer::new((640., 480.));
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
 
-    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/sparkles2_64x64x1.png").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
     let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
     let big_font = font.with_size(24.0);
 

@@ -4,7 +4,7 @@ use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Texture, TextureFilter
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Drawing to textures example").build();
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"res/sprites/sparkles_64x64x1.png").unwrap();
+    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
