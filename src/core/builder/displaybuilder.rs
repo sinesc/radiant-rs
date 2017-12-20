@@ -69,7 +69,7 @@ impl DisplayBuilder {
     pub fn build(self: Self) -> Display {
         Display::new(self.info)
     }
-
+    /// Creates a new DisplayBuilder instance.
     pub(crate) fn new() -> Self {
         DisplayBuilder {
             info: DisplayInfo { ..DisplayInfo::default() }

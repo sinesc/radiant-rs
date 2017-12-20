@@ -21,14 +21,6 @@ pub struct FontBuilder<'a> {
     file    : Option<&'a str>,
 }
 
-pub fn create_fontbuilder<'a>(context: &'a RenderContext) -> FontBuilder {
-    FontBuilder {
-        context : context,
-        info    : FontInfo { ..FontInfo::default() },
-        file    : None,
-    }
-}
-
 impl<'a> FontBuilder<'a> {
     /// Sets a family for the Font. The font will be retrieved from the operating system.
     /// Mutually exclusive with file().
@@ -68,6 +60,14 @@ impl<'a> FontBuilder<'a> {
             Font::from_file(self.context, file)
         } else {
             Ok(Font::from_info(self.context, self.info))
+        }
+    }
+    // Creates a new FontBuilder instance.
+    pub(crate) fn new<'b>(context: &'b RenderContext) -> FontBuilder {
+        FontBuilder {
+            context : context,
+            info    : FontInfo { ..FontInfo::default() },
+            file    : None,
         }
     }
 }

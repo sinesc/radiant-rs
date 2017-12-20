@@ -96,7 +96,7 @@ impl Renderer {
     /// # display.swap_frame();
     /// ```
     pub fn rect<T>(self: &Self, target_rect: T) -> DrawBuilder<DrawBuilderRect> where Rect<f32>: From<T> {
-        create_drawbuilderrect(self, Rect::<f32>::from(target_rect))
+        DrawBuilderRect::new(self, Rect::<f32>::from(target_rect))
     }
 
     /// Fills the current target. See [`DrawBuilder`](support/struct.DrawBuilder.html) for available options.
@@ -115,7 +115,7 @@ impl Renderer {
     /// # display.swap_frame();
     /// ```
     pub fn fill(self: &Self) -> DrawBuilder<DrawBuilderFill> {
-        create_drawbuilderfill(self)
+        DrawBuilderFill::new(self)
     }
 
     /// Reroutes draws issued within `draw_func()` to given Texture.

@@ -7,12 +7,6 @@ pub struct FontQueryBuilder {
     info: FontInfo,
 }
 
-pub fn create_fontquerybuilder() -> FontQueryBuilder {
-    FontQueryBuilder {
-        info: FontInfo { ..FontInfo::default() },
-    }
-}
-
 impl FontQueryBuilder {
     /// Sets a family for the Fonts.
     pub fn family(mut self: Self, family: &str) -> Self {
@@ -41,5 +35,11 @@ impl FontQueryBuilder {
         } else {*/
             Font::query_specific(self.info)
         //}
+    }
+    /// Creates a new FontQueryBuilder instance.
+    pub(crate) fn new() -> FontQueryBuilder {
+        FontQueryBuilder {
+            info: FontInfo { ..FontInfo::default() },
+        }
     }
 }

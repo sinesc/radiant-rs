@@ -10,7 +10,7 @@ mod color;
 mod monitor;
 mod texture;
 mod program;
-pub mod uniform;
+mod uniform;
 mod postprocessor;
 mod builder;
 

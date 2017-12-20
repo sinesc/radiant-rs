@@ -36,7 +36,7 @@ impl Texture {
     ///                     .unwrap();
     /// ```
     pub fn builder(context: &RenderContext) -> TextureBuilder {
-        create_texturebuilder(context)
+        TextureBuilder::new(context)
     }
     /// Creates a new texture with given dimensions. The texture will use linear interpolation
     /// for magnification or minification and internally use the `F16F16F16F16` format.

@@ -5,8 +5,46 @@ use maths::{Rect, Mat4};
 #[derive(Clone)]
 pub struct DrawBuilderFill;
 
+impl DrawBuilderFill {
+    // Creates a new DrawBuilderFill instance.
+    pub(crate) fn new(renderer: &Renderer) -> DrawBuilder<DrawBuilderFill> {
+        DrawBuilder {
+            renderer: renderer,
+            phantomdata: PhantomData,
+            info: DrawRectInfo {
+                rect: (0., 0., 1., 1.).into(),
+                color: None,
+                texture: None,
+                blendmode: None,
+                view_matrix: DrawRectInfoViewSource::One,
+                model_matrix: None,
+                program: None,
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct DrawBuilderRect;
+
+impl DrawBuilderRect {
+    // Creates a new DrawBuilderRect instance.
+    pub(crate) fn new(renderer: &Renderer, rect: Rect) -> DrawBuilder<DrawBuilderRect> {
+        DrawBuilder {
+            renderer: renderer,
+            phantomdata: PhantomData,
+            info: DrawRectInfo {
+                rect: rect,
+                color: None,
+                texture: None,
+                blendmode: None,
+                view_matrix: DrawRectInfoViewSource::Target,
+                model_matrix: None,
+                program: None,
+            }
+        }
+    }
+}
 
 /// A rectangle builder.
 ///
@@ -18,38 +56,6 @@ pub struct DrawBuilder<'a, T: 'a> {
     renderer    : &'a Renderer,
     phantomdata : PhantomData<&'a T>,
     info        : DrawRectInfo<'a>,
-}
-
-pub fn create_drawbuilderrect(renderer: &Renderer, rect: Rect) -> DrawBuilder<DrawBuilderRect> {
-    DrawBuilder {
-        renderer: renderer,
-        phantomdata: PhantomData,
-        info: DrawRectInfo {
-            rect: rect,
-            color: None,
-            texture: None,
-            blendmode: None,
-            view_matrix: DrawRectInfoViewSource::Target,
-            model_matrix: None,
-            program: None,
-        }
-    }
-}
-
-pub fn create_drawbuilderfill(renderer: &Renderer) -> DrawBuilder<DrawBuilderFill> {
-    DrawBuilder {
-        renderer: renderer,
-        phantomdata: PhantomData,
-        info: DrawRectInfo {
-            rect: (0., 0., 1., 1.).into(),
-            color: None,
-            texture: None,
-            blendmode: None,
-            view_matrix: DrawRectInfoViewSource::One,
-            model_matrix: None,
-            program: None,
-        }
-    }
 }
 
 /// The following implementations are available when drawing with [`Renderer::rect()`](../struct.Renderer.html#method.rect)

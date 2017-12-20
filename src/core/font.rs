@@ -38,7 +38,7 @@ impl Font {
     /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
     /// ```
     pub fn builder(context: &RenderContext) -> FontBuilder {
-        create_fontbuilder(context)
+        FontBuilder::new(context)
     }
 
     /// Creates a font instance from a file.
@@ -64,7 +64,7 @@ impl Font {
     /// let monospace_fonts = Font::query().monospace().italic().fetch();
     /// ```
     pub fn query() -> FontQueryBuilder {
-        create_fontquerybuilder()
+        FontQueryBuilder::new()
     }
 
     /// Returns a new font instance with given size.

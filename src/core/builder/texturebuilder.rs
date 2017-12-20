@@ -10,14 +10,6 @@ pub struct TextureBuilder<'a> {
     //file    : Option<&'a str>,
 }
 
-pub fn create_texturebuilder<'a>(context: &'a RenderContext) -> TextureBuilder {
-    TextureBuilder {
-        context : context,
-        info    : TextureInfo { ..TextureInfo::default() },
-        //file    : None,
-    }
-}
-
 impl<'a> TextureBuilder<'a> {
     /// Sets a width for the texture.
     pub fn width(mut self: Self, width: u32) -> Self {
@@ -63,5 +55,12 @@ impl<'a> TextureBuilder<'a> {
         } else {*/
             Ok(Texture::from_info(self.context, self.info))
         //}
+    }
+    pub(crate) fn new<'b>(context: &'b RenderContext) -> TextureBuilder {
+        TextureBuilder {
+            context : context,
+            info    : TextureInfo { ..TextureInfo::default() },
+            //file    : None,
+        }
     }
 }
