@@ -9,7 +9,7 @@ mod rendercontext;
 mod color;
 mod monitor;
 mod texture;
-pub mod program;
+mod program;
 pub mod uniform;
 mod postprocessor;
 mod builder;

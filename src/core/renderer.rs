@@ -1,6 +1,6 @@
 use prelude::*;
 use core::{
-    self, rendercontext, program,
+    self, rendercontext,
     Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
     blendmodes, TextureFormat
@@ -44,7 +44,7 @@ impl Renderer {
         Ok(Renderer {
             empty_texture   : identity_texture,
             context         : context,
-            program         : Rc::new(program::create(display, DEFAULT_FS)?),
+            program         : Rc::new(Program::new(display, DEFAULT_FS)?),
             target          : Rc::new(RefCell::new(target)),
         })
     }

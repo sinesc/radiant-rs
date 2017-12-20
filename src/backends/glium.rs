@@ -860,7 +860,7 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
     let vertices = layer.vertices();
     let vertices = vertices.deref();
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), core::program::sprite(program), &glium_uniforms, &layer.blendmode());
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
 }
 
 pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
@@ -882,7 +882,7 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
     let vertices = &context.single_rect;
     let vertices = &vertices[..];
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, false, 0, core::program::texture(program), &glium_uniforms, &blend);
+    context.backend_context.draw(target, unsafe { transmute(vertices) }, false, 0, &program.texture_program, &glium_uniforms, &blend);
 }
 
 // --------------
