@@ -4,26 +4,22 @@ use super::{Texture, Renderer};
 ///
 /// Postprocessing happens in three steps:
 ///
-/// - first, `target()` is invoked and expected to return the input texture target (from
-/// where the postprocessor intends to read input data).
-/// - `process()` is invoked and expected to perform the neccessary processing
-/// **excluding** the final draw operation.
-/// - `draw()` is invoked. At this point the renderer has already restored the drawing
-/// target so that this method is only required to draw the postprocessing result.
-///
-/// While you could combine processing and drawing within `draw()`, it is recommended
-/// to separate these as future versions might expand on this functionality.
+/// - first, `target()` is invoked and expected to return an input texture target (to
+/// which the user will draw the input data to be postprocessed).
+/// - `process()` is invoked. Any drawing operations performed within will target the
+/// input texture.
+/// - `draw()` is invoked. Any drawing operations performed within will target the
+/// destination defined by the user.
 pub trait Postprocessor {
     /// Custom type for the args parameter supplied to `process()` and `draw()`.
     type T;
-    /// Expected to return a texture to draw to.
+    /// Expected to return a texture for user drawing operations to target.
     fn target(self: &Self) -> &Texture;
-    /// Expected to processes input data. Draws issued within this function will
+    /// Optionally expected to processes input data. Draws issued within this function will
     /// target the texure returned by `target()` unless overridden via `Renderer::render_to()`.
-    /// This function is provided as you could also do this in `draw()`.
     #[allow(unused_variables)]
     fn process(self: &Self, renderer: &Renderer, args: &Self::T) { }
-    /// Expected to draw final result. Draws issued within this function will
+    /// Expected to draw the final result. Draws issued within this function will
     /// target the rendertarget that the postprocessor is supposed to render to.
     fn draw(self: &Self, renderer: &Renderer, args: &Self::T);
 }
