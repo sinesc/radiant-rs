@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, renderer, Layer, RenderContext, RawFrame};
+use core::{self, Renderer, Layer, RenderContext, RawFrame};
 use maths::{Point2, Vec2, Rect};
 use Color;
 use image::{self, GenericImage};
@@ -163,7 +163,7 @@ fn sprite_from_descriptor(context: &RenderContext, descriptor: SpriteDescriptor)
 fn build_raw_frames(image: &mut image::DynamicImage, sprite_parameters: &SpriteParameters) -> SpriteDescriptor {
 
     let SpriteParameters { dimensions: (frame_width, frame_height), num_frames, components, .. } = *sprite_parameters;
-    let (bucket_id, texture_size) = renderer::bucket_info(frame_width, frame_height);
+    let (bucket_id, texture_size) = Renderer::bucket_info(frame_width, frame_height);
     let num_frames = num_frames.0 * num_frames.1;
     let mut raw_frames = Vec::new();
 

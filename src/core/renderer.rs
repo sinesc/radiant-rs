@@ -118,40 +118,6 @@ impl Renderer {
         create_drawbuilderfill(self)
     }
 
-    /// Draws the rectangle described info to the current target.
-    pub(crate) fn draw_rect(self: &Self, target: DrawRectInfo) -> &Self {
-
-        // open context
-        let mut context = self.context.lock();
-        let context = context.deref_mut();
-
-        // use default or custom program and texture
-        let program = target.program.unwrap_or(&self.program);
-        let texture = target.texture.unwrap_or(&self.empty_texture);
-        let color = target.color.unwrap_or(Color::WHITE);
-        let blendmode = target.blendmode.unwrap_or(blendmodes::ALPHA);
-        let model_matrix = target.model_matrix.unwrap_or(Mat4::identity());
-        let view_matrix = match target.view_matrix {
-            DrawRectInfoViewSource::Matrix(matrix) => matrix,
-            DrawRectInfoViewSource::One => *VIEWPORT_ONE,
-            DrawRectInfoViewSource::Target => {
-                let dim = self.target.borrow().last().unwrap().dimensions();
-                Mat4::viewport(dim.0 as f32, dim.1 as f32)
-            }
-            DrawRectInfoViewSource::Display => {
-                let dim = context.display.dimensions();
-                Mat4::viewport(dim.0 as f32, dim.1 as f32)
-            }
-            DrawRectInfoViewSource::Source => {
-                let dim = texture.dimensions();
-                Mat4::viewport(dim.0 as f32, dim.1 as f32)
-            }
-        };
-
-        backend::draw_rect(self.target.borrow().last().unwrap(), program, context, blendmode, target, view_matrix, model_matrix, color, texture);
-        self
-    }
-
     /// Reroutes draws issued within `draw_func()` to given Texture.
     ///
     /// # Examples
@@ -245,6 +211,50 @@ impl Renderer {
         self.program.deref()
     }
 
+    /// Draws the rectangle described info to the current target.
+    pub(crate) fn draw_rect(self: &Self, target: DrawRectInfo) -> &Self {
+
+        // open context
+        let mut context = self.context.lock();
+        let context = context.deref_mut();
+
+        // use default or custom program and texture
+        let program = target.program.unwrap_or(&self.program);
+        let texture = target.texture.unwrap_or(&self.empty_texture);
+        let color = target.color.unwrap_or(Color::WHITE);
+        let blendmode = target.blendmode.unwrap_or(blendmodes::ALPHA);
+        let model_matrix = target.model_matrix.unwrap_or(Mat4::identity());
+        let view_matrix = match target.view_matrix {
+            DrawRectInfoViewSource::Matrix(matrix) => matrix,
+            DrawRectInfoViewSource::One => *VIEWPORT_ONE,
+            DrawRectInfoViewSource::Target => {
+                let dim = self.target.borrow().last().unwrap().dimensions();
+                Mat4::viewport(dim.0 as f32, dim.1 as f32)
+            }
+            DrawRectInfoViewSource::Display => {
+                let dim = context.display.dimensions();
+                Mat4::viewport(dim.0 as f32, dim.1 as f32)
+            }
+            DrawRectInfoViewSource::Source => {
+                let dim = texture.dimensions();
+                Mat4::viewport(dim.0 as f32, dim.1 as f32)
+            }
+        };
+
+        backend::draw_rect(self.target.borrow().last().unwrap(), program, context, blendmode, target, view_matrix, model_matrix, color, texture);
+        self
+    }
+
+    /// Returns the appropriate bucket_id and padded texture size for the given texture size
+    pub(crate) fn bucket_info(width: u32, height: u32) -> (u32, u32) {
+        let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
+        let size = 2u32.pow(ln2);
+        // skip first five sizes 1x1 to 16x16, use id 0 for font-cache
+        let bucket_id = cmp::max(0, ln2 - 4 + 1);
+        assert!(bucket_id < rendercontext::NUM_BUCKETS as u32, "texture size exceeded configured maximum");
+        (bucket_id, size)
+    }
+
     /// Pushes a target onto the target stack
     fn push_target<T>(self: &Self, target: &T) where T: AsRenderTarget {
         self.target.borrow_mut().push(target.as_render_target().clone());
@@ -254,16 +264,6 @@ impl Renderer {
     fn pop_target(self: &Self) {
         self.target.borrow_mut().pop();
     }
-}
-
-/// Returns the appropriate bucket_id and padded texture size for the given texture size
-pub fn bucket_info(width: u32, height: u32) -> (u32, u32) {
-    let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
-    let size = 2u32.pow(ln2);
-    // skip first five sizes 1x1 to 16x16, use id 0 for font-cache
-    let bucket_id = cmp::max(0, ln2 - 4 + 1);
-    assert!(bucket_id < rendercontext::NUM_BUCKETS as u32, "texture size exceeded configured maximum");
-    (bucket_id, size)
 }
 
 /// A struct used to describe a rectangle for Renderer::rect
