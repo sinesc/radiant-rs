@@ -14,7 +14,7 @@ pub use maths::{Point2, Rect};
 // doc has trouble with another maths module
 pub mod math {
     //! Mostly optional math structs.
-    pub use maths::{Mat4, Vec2, Vec3, Angle, VecType};
+    pub use maths::{Mat4, Mat4Stack, Vec2, Vec3, Angle, VecType};
 }
 
 pub mod utils {

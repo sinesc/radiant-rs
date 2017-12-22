@@ -846,8 +846,8 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
 
     let mut glium_uniforms = GliumUniformList::from_uniform_list(&program.uniforms);
     glium_uniforms
-        .add("u_view", GliumUniform::Mat4(layer.view_matrix().deref().into()))
-        .add("u_model", GliumUniform::Mat4(layer.model_matrix().deref().into()))
+        .add("u_view", GliumUniform::Mat4(layer.view_matrix().deref().deref().into()))
+        .add("u_model", GliumUniform::Mat4(layer.model_matrix().deref().deref().into()))
         .add("_rd_color", GliumUniform::Vec4(layer.color().deref().into()))
         .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.0.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
         .add("_rd_comp", GliumUniform::UnsignedInt(component))

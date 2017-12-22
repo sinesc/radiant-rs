@@ -1,4 +1,5 @@
 mod mat4;
+mod mat4stack;
 mod vec2;
 mod vec3;
 mod angle;
@@ -6,6 +7,7 @@ mod rect;
 use prelude::*;
 
 pub use self::mat4::Mat4;
+pub use self::mat4stack::Mat4Stack;
 pub use self::vec2::Vec2;
 pub use self::vec3::Vec3;
 pub use self::angle::Angle;

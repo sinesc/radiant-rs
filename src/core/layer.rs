@@ -1,6 +1,6 @@
 use prelude::*;
 use avec;
-use maths::{Mat4, Point2, Rect};
+use maths::{Mat4, Mat4Stack, Point2, Rect};
 use core::{blendmodes, BlendMode, rendercontext, Color, Program, Vertex};
 use maths::Vec2;
 
@@ -20,8 +20,8 @@ static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 /// Drawing to a layer is a wait-free atomic operation that can be safely performed from multiple threads at
 /// the same time. Modifying layer properties like the matrices may cause other threads to wait.
 pub struct Layer {
-    view_matrix     : Mutex<Mat4<f32>>,
-    model_matrix    : Mutex<Mat4<f32>>,
+    view_matrix     : Mutex<Mat4Stack<f32>>,
+    model_matrix    : Mutex<Mat4Stack<f32>>,
     blend           : Mutex<BlendMode>,
     color           : Mutex<Color>,
     contents        : Arc<LayerContents>,
@@ -94,7 +94,7 @@ impl Layer {
 
     /// Returns a mutex guarded mutable reference to the view matrix.
     /// See [`set_view_matrix()`](#method.set_view_matrix) for a description of the view matrix.
-    pub fn view_matrix(self: &Self) -> MutexGuard<Mat4<f32>> {
+    pub fn view_matrix(self: &Self) -> MutexGuard<Mat4Stack<f32>> {
         self.view_matrix.lock().unwrap()
     }
 
@@ -111,7 +111,7 @@ impl Layer {
 
     /// Returns a mutex guarded mutable reference to the model matrix.
     /// See [`set_model_matrix()`](#method.set_model_matrix) for a description of the model matrix.
-    pub fn model_matrix(self: &Self) -> MutexGuard<Mat4<f32>> {
+    pub fn model_matrix(self: &Self) -> MutexGuard<Mat4Stack<f32>> {
         self.model_matrix.lock().unwrap()
     }
 
@@ -241,8 +241,8 @@ impl Layer {
     fn create<T>(dimensions: T, program: Option<Program>) -> Self where Vec2<f32>: From<T> {
         let dimensions = Vec2::from(dimensions);
         Layer {
-            view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1)),
-            model_matrix    : Mutex::new(Mat4::identity()),
+            view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1).into()),
+            model_matrix    : Mutex::new(Mat4::identity().into()),
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::WHITE),
             contents        : Arc::new(LayerContents {
@@ -258,10 +258,10 @@ impl Layer {
     /// Creates a clone.
     fn create_clone(self: &Self, program: Option<Program>) -> Self {
         Layer {
-            view_matrix     : Mutex::new(self.view_matrix().deref().clone()),
-            model_matrix    : Mutex::new(self.model_matrix().deref().clone()),
-            blend           : Mutex::new(self.blendmode().deref().clone()),
-            color           : Mutex::new(self.color().deref().clone()),
+            view_matrix     : Mutex::new(self.view_matrix().clone().into()),
+            model_matrix    : Mutex::new(self.model_matrix().clone().into()),
+            blend           : Mutex::new(self.blendmode().clone()),
+            color           : Mutex::new(self.color().clone()),
             contents        : self.contents.clone(),
             program         : program,
         }
