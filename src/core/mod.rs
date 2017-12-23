@@ -102,10 +102,10 @@ impl RenderTarget {
             RenderTarget::Display(ref target_display) => {
                 match *source {
                     RenderTarget::Display(_) => {
-                        target_display.frame.borrow().as_ref().unwrap().copy_rect(source_rect, target_rect, filter);
+                        target_display.frame(|ref mut frame| frame.copy_rect(source_rect, target_rect, filter));
                     },
                     RenderTarget::Texture(ref src_texture) => {
-                        target_display.frame.borrow().as_ref().unwrap().copy_rect_from_texture(src_texture, source_rect, target_rect, filter);
+                        target_display.frame(|ref mut frame| frame.copy_rect_from_texture(src_texture, source_rect, target_rect, filter));
                     }
                     RenderTarget::None => { }
                 }
@@ -113,7 +113,7 @@ impl RenderTarget {
             RenderTarget::Texture(ref target_texture) => {
                 match *source {
                     RenderTarget::Display(ref src_display) => {
-                        target_texture.handle.copy_rect_from_frame(src_display.frame.borrow().as_ref().unwrap(), source_rect, target_rect, filter);
+                        src_display.frame(|ref mut frame| target_texture.handle.copy_rect_from_frame(frame, source_rect, target_rect, filter));
                     },
                     RenderTarget::Texture(ref src_texture) => {
                         target_texture.handle.copy_rect_from(&src_texture.handle, source_rect, target_rect, filter);
@@ -131,7 +131,7 @@ impl RenderTarget {
                 match *source {
                     RenderTarget::Display(_) => { /* blitting entire frame to entire frame makes no sense */ },
                     RenderTarget::Texture(ref src_texture) => {
-                        target_display.frame.borrow().as_ref().unwrap().copy_from_texture(src_texture, filter);
+                        target_display.frame(|ref mut frame| frame.copy_from_texture(src_texture, filter));
                     }
                     RenderTarget::None => { }
                 }
@@ -139,7 +139,7 @@ impl RenderTarget {
             RenderTarget::Texture(ref target_texture) => {
                 match *source {
                     RenderTarget::Display(ref src_display) => {
-                        target_texture.handle.copy_from_frame(src_display.frame.borrow().as_ref().unwrap(), filter);
+                        src_display.frame(|ref mut frame| target_texture.handle.copy_from_frame(frame, filter));
                     },
                     RenderTarget::Texture(ref src_texture) => {
                         target_texture.handle.copy_from(&src_texture.handle, filter);

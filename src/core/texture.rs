@@ -127,12 +127,6 @@ pub enum TextureWrap {
 /// Internal texture format. Note that the shader will always see a floating
 /// point representation. U[n]* will have their minimum value mapped to 0.0 and
 /// their maximum to 1.0.
-///
-/// The following formats are recommended:
-///
-/// - `F16F16F16F16` for multipass, color gradiant heavy effects
-/// - `F11F11F10` if no alpha channel is required
-/// - `U8U8U8U8` for single pass drawing
 #[derive(Copy, Clone, PartialEq)]
 pub enum TextureFormat {
     U8,

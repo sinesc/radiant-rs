@@ -295,10 +295,11 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
     }
 
     /// Sets the matrix value from another matrix.
-    pub fn set(&mut self, other: Mat4<T>) {
+    pub fn set(&mut self, other: Mat4<T>) -> &mut Self {
         for (k, v) in other.0.iter().enumerate() {
             self.0[k] = *v;
         }
+        self
     }
 
     /// Returns a pure rotation matrix for given matrix

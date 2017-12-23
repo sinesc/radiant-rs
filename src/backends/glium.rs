@@ -18,7 +18,7 @@ pub mod public {
     use std::sync::{Arc, RwLock};
 
     /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop
-    pub fn create_display(display: &glium::Display, events_loop: Rc<RefCell<glium::glutin::EventsLoop>>) -> core::Display {        
+    pub fn create_display(display: &glium::Display, events_loop: Rc<RefCell<glium::glutin::EventsLoop>>) -> core::Display {
         core::Display {
             handle: super::Display(display.clone(), events_loop),
             frame: Rc::new(RefCell::new(None)),
@@ -27,7 +27,7 @@ pub mod public {
     }
     /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
     pub fn get_frame<F>(display: &core::Display, mut callback: F) where F: FnMut(&mut glium::Frame) {
-        callback(&mut display.frame.borrow_mut().as_mut().unwrap().0)
+        display.frame(|ref mut frame| callback(&mut frame.0))
     }
 }
 
@@ -660,7 +660,7 @@ impl Context {
 
         match *target {
             core::RenderTarget::Display(ref display) => {
-                display.frame.borrow_mut().as_mut().unwrap().0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap()
+                display.frame(|ref mut frame| frame.0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap());
             }
             core::RenderTarget::Texture(ref texture) => {
                 texture.handle.0.as_surface().draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
@@ -886,11 +886,49 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
 }
 
 // --------------
-// Blending
+// Misc
 // --------------
 
-#[inline(always)]
+// Converts given blendmode to glium blendmode
 fn glium_blendmode(blendmode: &core::BlendMode) -> glium::Blend {
+
+    fn blendfunc(function: core::BlendingFunction) -> glium::BlendingFunction {
+
+        use core::BlendingFunction as CF;
+        use self::glium::BlendingFunction as GF;
+
+        fn blendfactor(factor: core::LinearBlendingFactor) -> glium::LinearBlendingFactor {
+            use core::LinearBlendingFactor as CB;
+            use self::glium::LinearBlendingFactor as GB;
+            match factor {
+                CB::Zero                      => GB::Zero,
+                CB::One                       => GB::One,
+                CB::SourceColor               => GB::SourceColor,
+                CB::OneMinusSourceColor       => GB::OneMinusSourceColor,
+                CB::DestinationColor          => GB::DestinationColor,
+                CB::OneMinusDestinationColor  => GB::OneMinusDestinationColor,
+                CB::SourceAlpha               => GB::SourceAlpha,
+                CB::OneMinusSourceAlpha       => GB::OneMinusSourceAlpha,
+                CB::DestinationAlpha          => GB::DestinationAlpha,
+                CB::OneMinusDestinationAlpha  => GB::OneMinusDestinationAlpha,
+                CB::SourceAlphaSaturate       => GB::SourceAlphaSaturate,
+                CB::ConstantColor             => GB::ConstantColor,
+                CB::OneMinusConstantColor     => GB::OneMinusConstantColor,
+                CB::ConstantAlpha             => GB::ConstantAlpha,
+                CB::OneMinusConstantAlpha     => GB::OneMinusConstantAlpha,
+            }
+        }
+
+        match function {
+            CF::AlwaysReplace                               => GF::AlwaysReplace,
+            CF::Min                                         => GF::Min,
+            CF::Max                                         => GF::Max,
+            CF::Addition { source, destination }            => GF::Addition { source: blendfactor(source), destination: blendfactor(destination) },
+            CF::Subtraction { source, destination }         => GF::Subtraction { source: blendfactor(source), destination: blendfactor(destination) },
+            CF::ReverseSubtraction { source, destination }  => GF::Subtraction { source: blendfactor(source), destination: blendfactor(destination) },
+        }
+    }
+
     glium::Blend {
         color: blendfunc(blendmode.color),
         alpha: blendfunc(blendmode.alpha),
@@ -898,47 +936,7 @@ fn glium_blendmode(blendmode: &core::BlendMode) -> glium::Blend {
     }
 }
 
-#[inline(always)]
-fn blendfunc(function: core::BlendingFunction) -> glium::BlendingFunction {
-    use core::BlendingFunction as CF;
-    use self::glium::BlendingFunction as GF;
-    match function {
-        CF::AlwaysReplace                               => GF::AlwaysReplace,
-        CF::Min                                         => GF::Min,
-        CF::Max                                         => GF::Max,
-        CF::Addition { source, destination }            => GF::Addition { source: blendfactor(source), destination: blendfactor(destination) },
-        CF::Subtraction { source, destination }         => GF::Subtraction { source: blendfactor(source), destination: blendfactor(destination) },
-        CF::ReverseSubtraction { source, destination }  => GF::Subtraction { source: blendfactor(source), destination: blendfactor(destination) },
-    }
-}
-
-#[inline(always)]
-fn blendfactor(factor: core::LinearBlendingFactor) -> glium::LinearBlendingFactor {
-    use core::LinearBlendingFactor as CB;
-    use self::glium::LinearBlendingFactor as GB;
-    match factor {
-        CB::Zero                      => GB::Zero,
-        CB::One                       => GB::One,
-        CB::SourceColor               => GB::SourceColor,
-        CB::OneMinusSourceColor       => GB::OneMinusSourceColor,
-        CB::DestinationColor          => GB::DestinationColor,
-        CB::OneMinusDestinationColor  => GB::OneMinusDestinationColor,
-        CB::SourceAlpha               => GB::SourceAlpha,
-        CB::OneMinusSourceAlpha       => GB::OneMinusSourceAlpha,
-        CB::DestinationAlpha          => GB::DestinationAlpha,
-        CB::OneMinusDestinationAlpha  => GB::OneMinusDestinationAlpha,
-        CB::SourceAlphaSaturate       => GB::SourceAlphaSaturate,
-        CB::ConstantColor             => GB::ConstantColor,
-        CB::OneMinusConstantColor     => GB::OneMinusConstantColor,
-        CB::ConstantAlpha             => GB::ConstantAlpha,
-        CB::OneMinusConstantAlpha     => GB::OneMinusConstantAlpha,
-    }
-}
-
-// --------------
-// Misc
-// --------------
-
+// Converts copy/blit operations coordinate rectangles to gliums rectangle format.
 fn blit_coords(source_rect: Rect<i32>, source_height: u32, target_rect: Rect<i32>, target_height: u32) -> (glium::Rect, glium::BlitTarget) {
     (glium::Rect {
         left: (source_rect.0).0 as u32,
@@ -954,6 +952,7 @@ fn blit_coords(source_rect: Rect<i32>, source_height: u32, target_rect: Rect<i32
     })
 }
 
+// Converts texture filter to glium magnify filter.
 fn magnify_filter(filter: core::TextureFilter) -> glium::uniforms::MagnifySamplerFilter {
     if filter == core::TextureFilter::Linear {
         glium::uniforms::MagnifySamplerFilter::Linear

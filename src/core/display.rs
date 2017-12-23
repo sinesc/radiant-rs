@@ -216,11 +216,13 @@ impl Display {
 
     /// Clears the display with given color without swapping buffers.
     pub(crate) fn clear(self: &Self, color: Color) {
-        if let Some(ref mut frame) = self.frame.borrow_mut().as_mut() {
-            frame.clear(color);
-        } else {
-            panic!("Failed to clear frame: None prepared.");
-        }
+        self.frame.borrow_mut().as_mut().expect("Failed to clear frame: None prepared.").clear(color);
+    }
+
+    /// Provides a mutable reference to the backend frame to the given function.
+    pub(crate) fn frame<T>(self: &Self, func: T) where T: FnOnce(&mut backend::Frame) {
+        let mut frame = self.frame.borrow_mut();
+        func(frame.as_mut().expect("Failed to get frame: None prepared."));
     }
 }
 
