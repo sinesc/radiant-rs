@@ -37,7 +37,8 @@ use maths::{Rect, Point2};
 pub enum Event {
     KeyboardInput(usize, bool),
     MouseInput(usize, bool),
-    MouseMoved(i32, i32),
+    MouseDelta(i32, i32),
+    MousePosition(i32, i32),
     Focused,
     Closed,
 }

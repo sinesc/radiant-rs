@@ -73,8 +73,7 @@ impl Display {
     }
 
     /// Enables cursor grab mode. While in this mode, the mouse cursor will be hidden and
-    /// constrained to the window. Additionally, [`Input`](struct.Input.html) will be able to
-    /// provide mouse movement deltas and allow mouse coordinates to exceed the window-bounds.
+    /// constrained to the window.
     ///
     /// Grab mode will be temporarily released when the window loses focus and automatically
     /// restored once it regains focus.
@@ -156,17 +155,11 @@ impl Display {
                         input_data.key[key_id] = InputState::Repeat;
                     }
                 },
-                Event::MouseMoved(x, y) => {
-                    if input_data.cursor_grabbed {
-                        let center = ((input_data.dimensions.0 / 2) as i32, (input_data.dimensions.1 / 2) as i32);
-                        let old_mouse = input_data.mouse;
-                        let delta = (x - center.0, y - center.1);
-                        input_data.mouse = (old_mouse.0 + delta.0, old_mouse.1 + delta.1);
-                        input_data.mouse_delta = delta;
-                        self.handle.set_cursor_position(Point2(center.0, center.1));
-                    } else {
-                        input_data.mouse = (x, y);
-                    }
+                Event::MouseDelta(x, y) => {
+                    input_data.mouse_delta = (x, y);
+                },
+                Event::MousePosition(x, y) => {
+                    input_data.mouse = (x, y);
                 },
                 Event::MouseInput(button_id, down) => {
                     let currently_down = match input_data.button[button_id] {

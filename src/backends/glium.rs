@@ -99,6 +99,7 @@ impl Display {
         use self::glutin::DeviceEvent;
         use self::glutin::WindowEvent;
         use self::glutin::KeyboardInput;
+        use self::glutin::MouseButton;
 
         match event {
             GlutinEvent::WindowEvent { event: window_event, .. } => {
@@ -109,12 +110,23 @@ impl Display {
                     WindowEvent::Closed => {
                         Some(core::Event::Closed)
                     }
-                    WindowEvent::KeyboardInput { input: KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }, .. } => {
+                    WindowEvent::CursorMoved { position: (x, y), .. } => {
+                        Some(core::Event::MousePosition(x as i32, y as i32))
+                    }
+                    WindowEvent::KeyboardInput { input: KeyboardInput { state, virtual_keycode: Some(virtual_code), .. }, .. } => {
                         let key_id = Self::map_key_code(virtual_code) as usize;
                         if key_id < core::NUM_KEYS {
-                            Some(core::Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
+                            Some(core::Event::KeyboardInput(key_id, state == ElementState::Pressed))
                         } else {
                             None
+                        }
+                    }
+                    WindowEvent::MouseInput { button, state, .. } => {
+                        match button {
+                            MouseButton::Left => Some(core::Event::MouseInput(0, state == ElementState::Pressed)),
+                            MouseButton::Middle => Some(core::Event::MouseInput(1, state == ElementState::Pressed)),
+                            MouseButton::Right => Some(core::Event::MouseInput(2, state == ElementState::Pressed)),
+                            MouseButton::Other(index) => Some(core::Event::MouseInput(3 + index as usize, state == ElementState::Pressed)),
                         }
                     }
                     _ => None
@@ -122,24 +134,8 @@ impl Display {
             },
             GlutinEvent::DeviceEvent { event: device_event, .. } => {
                 match device_event {
-                    // !todo why is it both a window and device event?
-                    DeviceEvent::Key(KeyboardInput { state: element_state, virtual_keycode: Some(virtual_code), .. }) => {
-                        let key_id = Self::map_key_code(virtual_code) as usize;
-                        if key_id < core::NUM_KEYS {
-                            Some(core::Event::KeyboardInput(key_id, element_state == ElementState::Pressed))
-                        } else {
-                            None
-                        }
-                    }
                     DeviceEvent::MouseMotion { delta: (x, y) } => {
-                        Some(core::Event::MouseMoved(x as i32, y as i32))
-                    }
-                    DeviceEvent::Button { button: button_id, state: element_state } => {
-                        if (button_id as usize) < core::NUM_BUTTONS {
-                            Some(core::Event::MouseInput(button_id as usize, element_state == ElementState::Pressed))
-                        } else {
-                            None
-                        }
+                        Some(core::Event::MouseDelta(x as i32, y as i32))
                     }
                     _ => None
                 }
