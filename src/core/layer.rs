@@ -87,8 +87,8 @@ impl Layer {
     /// View matrix transformation is applied after the objects are fully positioned on the layer.
     /// As a result, manipulating the view matrix has the effect of manipulating the layer itself,
     /// e.g. rotating the entire layer.
-    pub fn set_view_matrix(self: &Self, matrix: Mat4<f32>) -> &Self {
-        self.view_matrix().set(matrix);
+    pub fn set_view_matrix<T>(self: &Self, matrix: T) -> &Self where T: Into<Mat4<f32>> {
+        self.view_matrix().set(matrix.into());
         self
     }
 
@@ -104,8 +104,8 @@ impl Layer {
     /// on the layer. As a result, manipulating the model matrix has the effect of manipulating
     /// every object on the layer in the same way, e.g. rotating every individual object on the
     /// layer around a point relative to the individual object.
-    pub fn set_model_matrix(self: &Self, matrix: Mat4<f32>) -> &Self {
-        self.model_matrix().set(matrix);
+    pub fn set_model_matrix<T>(self: &Self, matrix: T) -> &Self where T: Into<Mat4<f32>> {
+        self.model_matrix().set(matrix.into());
         self
     }
 

@@ -1,6 +1,7 @@
 use prelude::*;
 use maths::Mat4;
 
+/// A stack of 4x4 matrices.
 pub struct Mat4Stack<T: Debug + Float + NumCast = f32> (Vec<Mat4<T>>);
 
 impl<T> Mat4Stack<T> where T: Debug + Float + NumCast {
@@ -10,12 +11,14 @@ impl<T> Mat4Stack<T> where T: Debug + Float + NumCast {
         Mat4Stack(vec![ matrix ])
     }
 
+    /// Pushes a copy of the current matrix on the stack.
     pub fn push(self: &mut Self) -> &mut Mat4<T> {
         let last = *self.0.last().unwrap();
         self.0.push(last);
         self.0.last_mut().unwrap()
     }
 
+    /// Removes the top matrix from the stack and replaces the current matrix with it.
     pub fn pop(self: &mut Self) -> &mut Mat4<T> {
         self.0.pop().unwrap();
         self.0.last_mut().unwrap()
