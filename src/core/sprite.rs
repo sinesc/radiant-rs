@@ -20,7 +20,7 @@ impl<'a> Sprite {
 
     /// Creates a new sprite texture. Given filename is expected to end
     /// on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
-    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Sprite> {
+    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Self> {
         let path = Path::new(file);
         let mut image = image::open(&path)?;
         let parameters = Self::parse_parameters(image.dimensions(), path);
@@ -29,7 +29,7 @@ impl<'a> Sprite {
     }
 
     /// Creates a new sprite texture.
-    pub fn from_data(context: &RenderContext, data: &[u8], parameters: &SpriteParameters) -> core::Result<Sprite> {
+    pub fn from_data(context: &RenderContext, data: &[u8], parameters: &SpriteParameters) -> core::Result<Self> {
         let mut image = image::load_from_memory(data)?;
         let descriptor = Self::build_raw_frames(&mut image, parameters);
         Result::Ok(Self::new(context, descriptor))
@@ -145,18 +145,20 @@ impl<'a> Sprite {
             let mut dest = image::DynamicImage::new_rgba8(pad_size, pad_size);
             dest.copy_from(&subimage, 0, 0);
             RawFrame {
-                data: Self::convert_color(dest.to_rgba()).into_raw(),
+                data: core::convert_color(dest.to_rgba()).into_raw(),
                 width: pad_size,
                 height: pad_size,
+                channels: 4,
             }
 
         } else {
 
             // perfect fit
             RawFrame {
-                data: Self::convert_color(subimage.to_rgba()).into_raw(),
+                data: core::convert_color(subimage.to_rgba()).into_raw(),
                 width: frame_width,
                 height: frame_height,
+                channels: 4,
             }
         }
     }
@@ -232,24 +234,6 @@ impl<'a> Sprite {
                 layout      : SpriteLayout::HORIZONTAL
             }
         }
-    }
-
-    /// Converts Srgb to rgb and multiplies image color channels with alpha channel
-    fn convert_color(mut image: image::RgbaImage) -> image::RgbaImage {
-        use palette::Rgb;
-        use palette::pixel::Srgb;
-        for (_, _, pixel) in image.enumerate_pixels_mut() {
-            let alpha = pixel[3] as f32 / 255.0;
-            let rgb = Rgb::from(Srgb::new(
-                pixel[0] as f32 / 255.0,
-                pixel[1] as f32 / 255.0,
-                pixel[2] as f32 / 255.0
-            ));
-            pixel[0] = (alpha * rgb.red * 255.0) as u8;
-            pixel[1] = (alpha * rgb.green * 255.0) as u8;
-            pixel[2] = (alpha * rgb.blue * 255.0) as u8;
-        }
-        image
     }
 
     /// Returns the texture id for given frame

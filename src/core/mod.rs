@@ -185,3 +185,21 @@ impl From<image::ImageError> for Error {
 
 /// Radiant result.
 pub type Result<T> = result::Result<T, Error>;
+
+/// Converts Srgb to rgb and multiplies image color channels with alpha channel
+pub fn convert_color(mut image: image::RgbaImage) -> image::RgbaImage {
+    use palette::Rgb;
+    use palette::pixel::Srgb;
+    for (_, _, pixel) in image.enumerate_pixels_mut() {
+        let alpha = pixel[3] as f32 / 255.0;
+        let rgb = Rgb::from(Srgb::new(
+            pixel[0] as f32 / 255.0,
+            pixel[1] as f32 / 255.0,
+            pixel[2] as f32 / 255.0
+        ));
+        pixel[0] = (alpha * rgb.red * 255.0) as u8;
+        pixel[1] = (alpha * rgb.green * 255.0) as u8;
+        pixel[2] = (alpha * rgb.blue * 255.0) as u8;
+    }
+    image
+}

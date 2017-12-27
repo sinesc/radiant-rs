@@ -399,30 +399,26 @@ impl Iterator for MonitorIterator {
 pub struct Texture2d(glium::texture::Texture2d);
 
 impl Texture2d {
-    pub fn new(context: &mut core::RenderContextData, info: &core::TextureInfo) -> Texture2d {
-        let texture = glium::texture::Texture2d::empty_with_format(
-            &context.display.handle.0,
-            Self::convert_format(info.format),
-            glium::texture::MipmapsOption::NoMipmap,
-            info.width,
-            info.height,
-        ).unwrap();
-        texture.as_surface().clear_color(0.0, 0.0, 0.0, 0.0);
+    pub fn new(display: &Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Texture2d {
+        let texture = if let Some(rawdata) = data {
+            glium::texture::Texture2d::with_format(
+                &display.0,
+                RawFrame(rawdata),
+                Self::convert_format(format),
+                glium::texture::MipmapsOption::NoMipmap
+            ).unwrap()
+        } else {
+            let texture = glium::texture::Texture2d::empty_with_format(
+                &display.0,
+                Self::convert_format(format),
+                glium::texture::MipmapsOption::NoMipmap,
+                width,
+                height,
+            ).unwrap();
+            texture.as_surface().clear_color(0.0, 0.0, 0.0, 0.0);
+            texture
+        };
         Texture2d(texture)
-    }
-    /// Creates a new cache texture for the renderer.
-    pub fn font_cache(display: &Display, width: u32, height: u32) -> Texture2d {
-        Texture2d(glium::texture::Texture2d::with_format(
-            &display.0,
-            glium::texture::RawImage2d {
-                data: Cow::Owned(vec![128u8; width as usize * height as usize]),
-                width: width,
-                height: height,
-                format: glium::texture::ClientFormat::U8
-            },
-            glium::texture::UncompressedFloatFormat::U8,
-            glium::texture::MipmapsOption::NoMipmap
-        ).unwrap())
     }
     pub fn clear(self: &Self, color: core::Color) {
         let core::Color(r, g, b, a) = color;
@@ -508,7 +504,11 @@ impl<'a> glium::texture::Texture2dDataSource<'a> for RawFrame {
             data: Cow::Owned(self.0.data),
             width: self.0.width,
             height: self.0.height,
-            format: glium::texture::ClientFormat::U8U8U8U8,
+            format: match self.0.channels {
+                1 => glium::texture::ClientFormat::U8,
+                4 => glium::texture::ClientFormat::U8U8U8U8,
+                _ => glium::texture::ClientFormat::U8,  // !todo ugly, need enum
+            }
         }
     }
 }

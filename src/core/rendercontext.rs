@@ -46,6 +46,7 @@ pub struct RawFrame {
     pub data    : Vec<u8>,
     pub width   : u32,
     pub height  : u32,
+    pub channels: u8,
 }
 
 /// A weak reference back to a sprite.
@@ -188,18 +189,28 @@ impl RenderContextData {
     /// Create a new instance
     pub fn new(display: &Display, initial_capacity: usize) -> core::Result<Self> {
 
+        let size = 512;
         let mut tex_arrays = Vec::new();
 
         for _ in 0..NUM_BUCKETS {
             tex_arrays.push(RawFrameArray::new(display));
         }
 
+        let data = core::RawFrame {
+            width   : size,
+            height  : size,
+            data    : vec![0u8; size as usize * size as usize],
+            channels: 1,
+        };
+
+        let texture = backend::Texture2d::new(&display.handle, size, size, core::TextureFormat::U8, Some(data));
+
         Ok(RenderContextData {
             backend_context     : backend::Context::new(&display.handle, initial_capacity),
             tex_arrays          : tex_arrays,
             display             : display.clone(),
-            font_cache          : font::FontCache::new(512, 512, 0.01, 0.01),
-            font_texture        : Rc::new(backend::Texture2d::font_cache(&display.handle, 512, 512)),
+            font_cache          : font::FontCache::new(size, size, 0.01, 0.01),
+            font_texture        : Rc::new(texture),
             single_rect         : Self::create_single_rect(),
             generation          : Self::create_generation(),
         })

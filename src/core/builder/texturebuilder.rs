@@ -5,7 +5,7 @@ use maths::*;
 #[must_use]
 #[derive(Clone)]
 pub struct TextureBuilder<'a> {
-    info    : TextureInfo,
+    info    : TextureInfo<'a>,
     context : &'a RenderContext,
     //file    : Option<&'a str>,
 }
@@ -48,13 +48,13 @@ impl<'a> TextureBuilder<'a> {
         self.info.format = format;
         self
     }
+    pub fn file(mut self: Self, file: &'a str) -> Self {
+        self.info.file = Some(file);
+        self
+    }
     /// Returns the constructed Texture instance.
     pub fn build(self: Self) -> Result<Texture> {
-        /*if let Some(file) = self.file {
-            Texture::from_file(self.context, file)
-        } else {*/
-            Ok(Texture::from_info(self.context, self.info))
-        //}
+        Texture::from_info(self.context, self.info)
     }
     pub(crate) fn new<'b>(context: &'b RenderContext) -> TextureBuilder {
         TextureBuilder {
