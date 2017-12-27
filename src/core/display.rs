@@ -140,6 +140,8 @@ impl Display {
             }
         }
 
+        input_data.mouse_delta = (0, 0);
+
         self.handle.poll_events(|event| {
             match event {
                 Event::KeyboardInput(key_id, down) => {
