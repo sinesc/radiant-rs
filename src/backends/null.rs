@@ -4,7 +4,6 @@ Null-Renderer
 This sample show the minimum required implementation of a backend.
 */
 
-use prelude::*;
 use core;
 use maths::*;
 
@@ -38,7 +37,7 @@ impl Display {
     }
     pub fn set_cursor_position(self: &Self, position: Point2<i32>) {        
     }
-    pub fn set_cursor_state(self: &Self, state: core::display::CursorState) {
+    pub fn set_cursor_state(self: &Self, state: core::CursorState) {
     }
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
     }
@@ -119,10 +118,7 @@ impl Iterator for MonitorIterator {
 pub struct Texture2d();
 
 impl Texture2d {
-    pub fn new(context: &mut core::RenderContextData, info: &core::TextureInfo) -> Texture2d {
-        Texture2d()
-    }
-    pub fn font_cache(display: &Display, width: u32, height: u32) -> Texture2d {
+    pub fn new(display: &Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Texture2d {
         Texture2d()
     }
     pub fn clear(self: &Self, color: core::Color) {

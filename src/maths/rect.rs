@@ -5,6 +5,15 @@ use maths::Vec2;
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Point2<T = f32>(pub T, pub T) where T: Copy + Clone + Debug;
 
+impl<T> Point2<T> where T: Copy + Clone + Debug {
+    pub fn x(self: &Self) -> T {
+        self.0
+    }
+    pub fn y(self: &Self) -> T {
+        self.1
+    }
+}
+
 impl<T> From<(T, T)> for Point2<T> where T: Copy + Clone + Debug {
     fn from(source: (T, T)) -> Self {
         Point2(source.0, source.1)
