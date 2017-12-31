@@ -25,8 +25,10 @@ pub trait Postprocessor {
 }
 
 mod basic;
+mod bloom;
 
 pub mod postprocessors {
     //! A set of predefined postprocessors for use with `Renderer::postprocess()`.
-    pub use super::basic::Basic;
+    pub use super::basic::*;
+    pub use super::bloom::*;
 }
