@@ -21,60 +21,6 @@ impl Color {
     pub const YELLOW: Color = Color(1.0, 1.0, 0.0, 1.0);
     pub const CYAN: Color = Color(0.0, 1.0, 1.0, 1.0);
     pub const MAGENTA: Color = Color(1.0, 0.0, 1.0, 1.0);
-    
-    /// Creates a new instance with a channels set to zero.
-    #[deprecated]
-    pub fn transparent() -> Color {
-        Self::TRANSPARENT
-    }
-
-    /// Returns opaque white color.
-    #[deprecated]
-    pub fn white() -> Color {
-        Self::WHITE
-    }
-
-    /// Returns opaque black color.
-    #[deprecated]
-    pub fn black() -> Color {
-        Self::BLACK
-    }
-
-    /// Returns opaque red color.
-    #[deprecated]
-    pub fn red() -> Color {
-        Self::RED
-    }
-
-    /// Returns opaque green color.
-    #[deprecated]
-    pub fn green() -> Color {
-        Self::GREEN
-    }
-
-    /// Returns opaque blue color.
-    #[deprecated]
-    pub fn blue() -> Color {
-        Self::BLUE
-    }
-
-    /// Returns opaque yellow color.
-    #[deprecated]
-    pub fn yellow() -> Color {
-        Self::YELLOW
-    }
-
-    /// Returns opaque cyan color.
-    #[deprecated]
-    pub fn cyan() -> Color {
-        Self::CYAN
-    }
-
-    /// Returns opaque magenta color.
-    #[deprecated]
-    pub fn magenta() -> Color {
-        Self::MAGENTA
-    }
 
     /// Creates a new instance with color channels set to one and the alpha channel set to given value.
     pub fn alpha(alpha: f32) -> Color {

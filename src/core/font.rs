@@ -67,8 +67,13 @@ impl Font {
         FontQueryBuilder::new()
     }
 
-    /// Returns a new font instance with given size.
+    #[deprecated]
     pub fn with_size(self: &Self, size: f32) -> Font {
+        self.clone_with_size(size)
+    }
+
+    /// Returns a new font instance with given size.
+    pub fn clone_with_size(self: &Self, size: f32) -> Font {
         let mut font = (*self).clone();
         font.size = size;
         font

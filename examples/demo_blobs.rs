@@ -22,7 +22,7 @@ pub fn main() {
     // Load sprite and fonts.
     let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
     let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
-    let big_font = font.with_size(24.0);
+    let big_font = font.clone_with_size(24.0);
 
     // Draw the sprite three times, tinted red, green and blue. No need to do this each frame since we're
     // only going to manipulate the matrices. Also write some text.
