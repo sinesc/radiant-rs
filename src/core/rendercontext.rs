@@ -83,7 +83,7 @@ impl RawFrameArray {
     fn new(display: &Display) -> Self {
         RawFrameArray {
             dirty   : false,
-            data    : Rc::new(backend::Texture2dArray::new(&display.handle, &Vec::new())), // !todo why rc?
+            data    : Rc::new(backend::Texture2dArray::new(display, &Vec::new())), // !todo why rc?
             raw     : Vec::new(),
             sprites : Vec::new(),
         }
@@ -105,7 +105,7 @@ impl RawFrameArray {
     fn update(self: &mut Self, display: &Display) {
         if self.dirty {
             self.dirty = false;
-            self.data = Rc::new(backend::Texture2dArray::new(&display.handle, &self.raw));
+            self.data = Rc::new(backend::Texture2dArray::new(display, &self.raw));
         }
     }
     /// Returns a list of tuples containing current sprite texture_id and required negative offset.
@@ -203,10 +203,10 @@ impl RenderContextData {
             channels: 1,
         };
 
-        let texture = backend::Texture2d::new(&display.handle, size, size, core::TextureFormat::U8, Some(data));
+        let texture = backend::Texture2d::new(display, size, size, core::TextureFormat::U8, Some(data));
 
         Ok(RenderContextData {
-            backend_context     : backend::Context::new(&display.handle, initial_capacity),
+            backend_context     : backend::Context::new(display, initial_capacity),
             tex_arrays          : tex_arrays,
             display             : display.clone(),
             font_cache          : font::FontCache::new(size, size, 0.01, 0.01),

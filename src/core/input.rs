@@ -26,6 +26,7 @@ pub struct InputData {
     pub key             : [ InputState; NUM_KEYS ],
     pub should_close    : bool,
     pub cursor_grabbed  : bool,
+    pub has_focus       : bool,
     pub dimensions      : (u32, u32),
 }
 
@@ -38,6 +39,7 @@ impl InputData {
             key             : [ InputState::Up; NUM_KEYS ],
             should_close    : false,
             cursor_grabbed  : false,
+            has_focus       : true,
             dimensions      : (0, 0),
         }
     }

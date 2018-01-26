@@ -33,16 +33,6 @@ use image;
 use prelude::*;
 use maths::{Rect, Point2};
 
-// An input event.
-pub enum Event {
-    KeyboardInput(usize, bool),
-    MouseInput(usize, bool),
-    MouseDelta(i32, i32),
-    MousePosition(i32, i32),
-    Focused,
-    Closed,
-}
-
 /// A vertex.
 #[derive(Copy, Clone, Default)]
 pub struct Vertex {
@@ -117,7 +107,7 @@ impl RenderTarget {
                         src_display.frame(|ref mut frame| target_texture.handle.copy_rect_from_frame(frame, source_rect, target_rect, filter));
                     },
                     RenderTarget::Texture(ref src_texture) => {
-                        target_texture.handle.copy_rect_from(&src_texture.handle, source_rect, target_rect, filter);
+                        target_texture.handle.copy_rect_from(src_texture, source_rect, target_rect, filter);
                     }
                     RenderTarget::None => { }
                 }
@@ -143,7 +133,7 @@ impl RenderTarget {
                         src_display.frame(|ref mut frame| target_texture.handle.copy_from_frame(frame, filter));
                     },
                     RenderTarget::Texture(ref src_texture) => {
-                        target_texture.handle.copy_from(&src_texture.handle, filter);
+                        target_texture.handle.copy_from(src_texture, filter);
                     }
                     RenderTarget::None => { }
                 }
@@ -159,6 +149,7 @@ pub enum Error {
     ImageError(String),
     ShaderError(String),
     IoError(io::Error),
+    FullscreenError(String),
     Failed,
 }
 

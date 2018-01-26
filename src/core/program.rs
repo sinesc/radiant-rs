@@ -45,7 +45,6 @@ impl Program {
     pub(crate) fn new(display: &Display, source: &str) -> core::Result<Program> {
         let sprite_fs = Self::insert_template(source, SPRITE_INC);
         let texture_fs = Self::insert_template(source, TEXTURE_INC);
-        let display_handle = &display.handle;
         let dimensions = display.dimensions();
         let mut uniforms = UniformList::new();
         uniforms.insert("u_view", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());
@@ -53,8 +52,8 @@ impl Program {
         uniforms.insert("_rd_color", Color::WHITE.as_uniform());
         Ok(Program {
             uniforms: uniforms,
-            sprite_program: Arc::new(backend::Program::new(display_handle, SPRITE_VS, &sprite_fs)?),
-            texture_program: Arc::new(backend::Program::new(display_handle, TEXTURE_VS, &texture_fs)?),
+            sprite_program: Arc::new(backend::Program::new(display, SPRITE_VS, &sprite_fs)?),
+            texture_program: Arc::new(backend::Program::new(display, TEXTURE_VS, &texture_fs)?),
         })
     }
     /// Inserts program boilterplate code into the shader source.

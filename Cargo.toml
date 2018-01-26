@@ -13,7 +13,7 @@ backend-glium = [ "glium" ]
 backend-null = [ ]
 
 [dependencies]
-glium = { version = "0.19.0", optional = true }
+glium = { version = "0.20.0", optional = true }
 image = "0.10.3"
 regex = "0.1.73"
 lazy_static = "0.2.1"

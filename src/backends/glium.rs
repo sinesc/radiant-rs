@@ -16,18 +16,30 @@ pub mod public {
     use std::cell::RefCell;
     use std::rc::Rc;
     use std::sync::{Arc, RwLock};
-
+    use std::mem;
+    
     /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop
     pub fn create_display(display: &glium::Display, events_loop: Rc<RefCell<glium::glutin::EventsLoop>>) -> core::Display {
         core::Display {
-            handle: super::Display(display.clone(), events_loop),
+            handle: super::Display { 
+                inner       : display.clone(), 
+                events_loop : events_loop,
+                descriptor  : None,
+                was_rebuilt : RefCell::new(false),
+            },
             frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(core::InputData::new())),
         }
     }
+
     /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
     pub fn get_frame<F>(display: &core::Display, mut callback: F) where F: FnMut(&mut glium::Frame) {
         display.frame(|ref mut frame| callback(&mut frame.0))
+    }
+
+    /// Returns the underlying glium Texture2d for given Texture
+    pub fn get_texture(texture: &core::Texture) -> Rc<glium::Texture2d> {
+        unsafe { mem::transmute(texture.handle.clone()) }
     }
 }
 
@@ -36,62 +48,100 @@ pub mod public {
 // --------------
 
 #[derive(Clone)]
-pub struct Display(glium::Display, Rc<RefCell<glutin::EventsLoop>>);
+pub struct Display {
+    inner       : glium::Display,
+    events_loop : Rc<RefCell<glutin::EventsLoop>>,
+    descriptor  : Option<RefCell<core::DisplayInfo>>,
+    was_rebuilt : RefCell<bool>,
+}
 
 impl Display {
+    fn build_window(descriptor: &core::DisplayInfo) -> glium::glutin::WindowBuilder {
+        glium::glutin::WindowBuilder::new()
+                    .with_dimensions(descriptor.width, descriptor.height)
+                    .with_title(descriptor.title.clone())
+                    .with_transparency(descriptor.transparent)
+                    .with_decorations(descriptor.decorations)
+                    .with_visibility(descriptor.visible)
+                    .with_fullscreen(if let Some(ref monitor) = descriptor.monitor { Some(monitor.inner.0.clone()) } else { None })
+    }
+    fn build_context(descriptor: &core::DisplayInfo) -> glium::glutin::ContextBuilder {
+        glium::glutin::ContextBuilder::new()
+                    .with_vsync(descriptor.vsync)
+    }
     pub fn new(descriptor: core::DisplayInfo) -> Display {
-
-        let window = glium::glutin::WindowBuilder::new()
-            .with_dimensions(descriptor.width, descriptor.height)
-            .with_title(descriptor.title)
-            .with_transparency(descriptor.transparent)
-            .with_decorations(descriptor.decorations)
-            .with_visibility(descriptor.visible)
-            .with_fullscreen(if let Some(monitor) = descriptor.monitor { Some(monitor.inner().0.clone()) } else { None });
-
-        let context = glium::glutin::ContextBuilder::new()
-            .with_vsync(descriptor.vsync);
-
         let events_loop = glutin::EventsLoop::new();
-        let display = glium::Display::new(window, context, &events_loop).unwrap();
-
-        Display(display, Rc::new(RefCell::new(events_loop)))
+        let display = {
+            let window = Self::build_window(&descriptor);
+            let context = Self::build_context(&descriptor);
+            glium::Display::new(window, context, &events_loop).unwrap()
+        };
+        Display { 
+            inner       : display, 
+            events_loop : Rc::new(RefCell::new(events_loop)),
+            descriptor  : Some(RefCell::new(descriptor)),
+            was_rebuilt : RefCell::new(false),
+        }
     }
     pub fn draw(self: &Self) -> Frame {
-        Frame(self.0.draw())
+        Frame(self.inner.draw())
     }
     pub fn framebuffer_dimensions(self: &Self) -> Point2<u32> {
-        self.0.get_framebuffer_dimensions().into()
+        self.inner.get_framebuffer_dimensions().into()
     }
     pub fn window_dimensions(self: &Self) -> Point2<u32> {
-        self.0.gl_window().get_inner_size().unwrap_or((0, 0)).into()
+        self.inner.gl_window().get_inner_size().unwrap_or((0, 0)).into()
     }
     pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
-        self.0.gl_window().set_cursor_position(position.0, position.1).unwrap();
+        self.inner.gl_window().set_cursor_position(position.0, position.1).unwrap();
     }
     pub fn set_cursor_state(self: &Self, state: core::CursorState) {
         use core::CursorState as CS;
-        self.0.gl_window().set_cursor_state(match state {
+        self.inner.gl_window().set_cursor_state(match state {
             CS::Normal => glium::glutin::CursorState::Normal,
             CS::Hide => glium::glutin::CursorState::Hide,
             CS::Grab => glium::glutin::CursorState::Grab,
         }).unwrap();
     }
+    pub fn set_fullscreen(self: &Self, monitor: Option<core::Monitor>) -> bool {
+        // glium set_fullscreen NYI as of 0.20.0
+        /*if let Some(monitor) = monitor {
+            self.0.gl_window().set_fullscreen(Some(monitor.inner.0.clone())); 
+        } else {
+            self.0.gl_window().set_fullscreen(None);
+        }*/
+
+        // add/remove fullscreen from descriptor (only kept around because set_fullscreen is NYI)
+        let events_loop = self.events_loop.borrow();
+        let mut descriptor = self.descriptor.as_ref().unwrap().borrow_mut();
+        descriptor.monitor = monitor;
+
+        // rebuild display with changed fullscreen setting
+        let window = Self::build_window(descriptor.deref());
+        let context = Self::build_context(descriptor.deref());
+        *self.was_rebuilt.borrow_mut() = true;
+        self.inner.rebuild(window, context, &events_loop).is_ok()  
+    }
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
-        self.1.borrow_mut().poll_events(|glutin_event| {
+        self.events_loop.borrow_mut().poll_events(|glutin_event| {
             if let Some(event) = Self::map_event(glutin_event) {
-                callback(event);
+                // suppress close event when going to fullscreen
+                if event == core::Event::Close && *self.was_rebuilt.borrow() {
+                    *self.was_rebuilt.borrow_mut() = false;
+                } else {
+                    callback(event);
+                }
             }
         });
     }
     pub fn show(self: &Self) {
-        self.0.gl_window().show();
+        self.inner.gl_window().show();
     }
     pub fn hide(self: &Self) {
-        self.0.gl_window().hide()
+        self.inner.gl_window().hide()
     }
     pub fn set_title(self: &Self, title: &str) {
-        self.0.gl_window().set_title(title);
+        self.inner.gl_window().set_title(title);
     }
     fn map_event(event: glium::glutin::Event) -> Option<core::Event> {
         use self::glutin::ElementState;
@@ -105,10 +155,13 @@ impl Display {
             GlutinEvent::WindowEvent { event: window_event, .. } => {
                 match window_event {
                     WindowEvent::Focused(true) => {
-                        Some(core::Event::Focused)
+                        Some(core::Event::Focus)
+                    }
+                    WindowEvent::Focused(false) => {
+                        Some(core::Event::Blur)
                     }
                     WindowEvent::Closed => {
-                        Some(core::Event::Closed)
+                        Some(core::Event::Close)
                     }
                     WindowEvent::CursorMoved { position: (x, y), .. } => {
                         Some(core::Event::MousePosition(x as i32, y as i32))
@@ -308,11 +361,15 @@ impl Display {
 pub struct Frame(glium::Frame);
 
 impl Frame {
+
+    /// Clears the frame with the given color.
     pub fn clear(self: &mut Self, color: core::Color) {
         let core::Color(r, g, b, a) = color;
         self.0.clear_color(r, g, b, a);
     }
-    pub fn swap(self: Self) {
+
+    /// Finishes the frame. Called on swap.
+    pub fn finish(self: Self) {
         self.0.finish().unwrap();
     }
 
@@ -345,10 +402,10 @@ pub struct Program(glium::Program);
 
 impl Program {
     /// Creates a shader program from given vertex- and fragment-shader sources.
-    pub fn new(display: &Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
+    pub fn new(display: &core::Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
         use self::glium::program::ProgramCreationError;
         use core::Error;
-        match glium::Program::from_source(&display.0, vertex_shader, fragment_shader, None) {
+        match glium::Program::from_source(&display.handle.inner, vertex_shader, fragment_shader, None) {
             Err(ProgramCreationError::CompilationError(message)) => { Err(Error::ShaderError(format!("Shader compilation failed with: {}", message))) }
             Err(ProgramCreationError::LinkingError(message))     => { Err(Error::ShaderError(format!("Shader linking failed with: {}", message))) }
             Err(_)                                               => { Err(Error::ShaderError("No shader support found".to_string())) }
@@ -365,9 +422,13 @@ impl Program {
 pub struct Monitor(glium::glutin::MonitorId);
 
 impl Monitor {
+
+    /// Returns the device dimensions
     pub fn get_dimensions(self: &Self) -> Point2<u32> {
         self.0.get_dimensions().into()
     }
+
+    /// Returns the device name.
     pub fn get_name(self: &Self) -> Option<String> {
         self.0.get_name()
     }
@@ -376,8 +437,10 @@ impl Monitor {
 pub struct MonitorIterator(glium::glutin::AvailableMonitorsIter);
 
 impl MonitorIterator {
-    pub fn new(display: &Display) -> Self {
-        MonitorIterator(display.1.borrow().get_available_monitors())
+
+    /// Returns an inter
+    pub fn new(display: &core::Display) -> Self {
+        MonitorIterator(display.handle.events_loop.borrow().get_available_monitors())
     }
 }
 
@@ -399,17 +462,17 @@ impl Iterator for MonitorIterator {
 pub struct Texture2d(glium::texture::Texture2d);
 
 impl Texture2d {
-    pub fn new(display: &Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Texture2d {
+    pub fn new(display: &core::Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Self {
         let texture = if let Some(rawdata) = data {
             glium::texture::Texture2d::with_format(
-                &display.0,
+                &display.handle.inner,
                 RawFrame(rawdata),
                 Self::convert_format(format),
                 glium::texture::MipmapsOption::NoMipmap
             ).unwrap()
         } else {
             let texture = glium::texture::Texture2d::empty_with_format(
-                &display.0,
+                &display.handle.inner,
                 Self::convert_format(format),
                 glium::texture::MipmapsOption::NoMipmap,
                 width,
@@ -440,14 +503,14 @@ impl Texture2d {
             }
         );
     }
-    pub fn copy_from(self: &Self, src_texture: &Texture2d, filter: core::TextureFilter) {
-        src_texture.0.as_surface().fill(&self.0.as_surface(), magnify_filter(filter))
+    pub fn copy_from(self: &Self, src_texture: &core::Texture, filter: core::TextureFilter) {
+        src_texture.handle.0.as_surface().fill(&self.0.as_surface(), magnify_filter(filter))
     }
-    pub fn copy_rect_from(self: &Self, src_texture: &Texture2d, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
+    pub fn copy_rect_from(self: &Self, src_texture: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
         let target_height = self.0.height();
-        let source_height = src_texture.0.height();
+        let source_height = src_texture.handle.0.height();
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
-        src_texture.0.as_surface().blit_color(&glium_src_rect, &self.0.as_surface(), &glium_target_rect, magnify_filter(filter));
+        src_texture.handle.0.as_surface().blit_color(&glium_src_rect, &self.0.as_surface(), &glium_target_rect, magnify_filter(filter));
     }
     pub fn copy_from_frame(self: &Self, src_frame: &Frame, filter: core::TextureFilter) {
         src_frame.0.fill(&self.0.as_surface(), magnify_filter(filter));
@@ -517,7 +580,7 @@ pub struct Texture2dArray(glium::texture::Texture2dArray);
 
 impl Texture2dArray {
     /// Generates glium texture array from given vector of textures
-    pub fn new(display: &Display, raw: &Vec<core::RawFrame>) -> Self {
+    pub fn new(display: &core::Display, raw: &Vec<core::RawFrame>) -> Self {
 
         use self::glium::texture;
         use std::mem::transmute;
@@ -526,9 +589,9 @@ impl Texture2dArray {
 
         Texture2dArray(
             if raw_wrapped.len() > 0 {
-                texture::Texture2dArray::with_format(&display.0, raw_wrapped, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
+                texture::Texture2dArray::with_format(&display.handle.inner, raw_wrapped, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
             } else {
-                texture::Texture2dArray::empty_with_format(&display.0, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
+                texture::Texture2dArray::empty_with_format(&display.handle.inner, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
             }
         )
     }
@@ -565,14 +628,17 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(display: &Display, initial_capacity: usize) -> Self {
+
+    /// Creates a new backend context.
+    pub fn new(display: &core::Display, initial_capacity: usize) -> Self {
         Context {
-            display: display.0.clone(),
-            index_buffer: Self::create_index_buffer(&display.0, initial_capacity),
+            display: display.handle.inner.clone(),
+            index_buffer: Self::create_index_buffer(&display.handle.inner, initial_capacity),
             vertex_buffers: Vec::new(),
         }
     }
 
+    /// Creates an index buffer for rectangles consisting of two triangles.
     fn create_index_buffer(display: &glium::Display, max_sprites: usize) -> glium::IndexBuffer<u32> {
 
         let mut data = Vec::with_capacity(max_sprites as usize * 6);
@@ -597,6 +663,7 @@ impl Context {
         }
     }
 
+    /// Select a vertex buffer for given number of vertices.
     fn select_vertex_buffer(self: &mut Self, buffer_hint: usize, num_vertices: usize) -> (usize, bool) {
 
         const MAX_BUFFERS: usize = 10;
@@ -621,6 +688,7 @@ impl Context {
         }
     }
 
+    /// Draw given vertices.
     fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[Vertex], dirty: bool, buffer_hint: usize, program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
 
         let num_vertices = vertices.len();

@@ -98,7 +98,7 @@ impl Texture {
                 channels: 4,
             });
         }
-        let texture = backend::Texture2d::new(&context.display.handle, info.width, info.height, info.format, info.data);
+        let texture = backend::Texture2d::new(&context.display, info.width, info.height, info.format, info.data);
         Ok(Texture {
             handle      : Rc::new(texture),
             minify      : info.minify,

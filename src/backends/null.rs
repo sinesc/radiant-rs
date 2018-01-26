@@ -35,6 +35,9 @@ impl Display {
     pub fn window_dimensions(self: &Self) -> Point2<u32> {
         Point2(0, 0)
     }
+    pub fn set_fullscreen(self: &Self, monitor: Option<core::Monitor>) -> bool {
+        false
+    }
     pub fn set_cursor_position(self: &Self, position: Point2<i32>) {        
     }
     pub fn set_cursor_state(self: &Self, state: core::CursorState) {
@@ -58,7 +61,7 @@ pub struct Frame();
 impl Frame {
     pub fn clear(self: &mut Self, color: core::Color) {
     }
-    pub fn swap(self: Self) {
+    pub fn finish(self: Self) {
     }
     pub fn copy_from_texture(self: &Self, source: &core::Texture, filter: core::TextureFilter) {
     }
@@ -75,7 +78,7 @@ impl Frame {
 pub struct Program();
 
 impl Program {
-    pub fn new(display: &Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
+    pub fn new(display: &core::Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
         Ok(Program())
     }
 }
@@ -99,7 +102,7 @@ impl Monitor {
 pub struct MonitorIterator();
 
 impl MonitorIterator {
-    pub fn new(display: &Display) -> Self {
+    pub fn new(display: &core::Display) -> Self {
         MonitorIterator()
     }
 }
@@ -118,16 +121,16 @@ impl Iterator for MonitorIterator {
 pub struct Texture2d();
 
 impl Texture2d {
-    pub fn new(display: &Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Texture2d {
+    pub fn new(display: &core::Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Texture2d {
         Texture2d()
     }
     pub fn clear(self: &Self, color: core::Color) {
     }
     pub fn write(self: &Self, rect: &Rect<u32>, data: &Vec<u8>) {
     }
-    pub fn copy_from(self: &Self, src_texture: &Texture2d, filter: core::TextureFilter) {
+    pub fn copy_from(self: &Self, src_texture: &core::Texture, filter: core::TextureFilter) {
     }
-    pub fn copy_rect_from(self: &Self, src_texture: &Texture2d, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
+    pub fn copy_rect_from(self: &Self, src_texture: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
     }
     pub fn copy_from_frame(self: &Self, src_frame: &Frame, filter: core::TextureFilter) {
     }
@@ -142,7 +145,7 @@ impl Texture2d {
 pub struct Texture2dArray();
 
 impl Texture2dArray {
-    pub fn new(display: &Display, raw: &Vec<core::RawFrame>) -> Self {
+    pub fn new(display: &core::Display, raw: &Vec<core::RawFrame>) -> Self {
         Texture2dArray()
     }
 }
@@ -154,7 +157,7 @@ impl Texture2dArray {
 pub struct Context();
 
 impl Context {
-    pub fn new(display: &Display, initial_capacity: usize) -> Self {
+    pub fn new(display: &core::Display, initial_capacity: usize) -> Self {
         Context()
     }
 }

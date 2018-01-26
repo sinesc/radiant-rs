@@ -1,10 +1,10 @@
 use prelude::*;
-use core::input::{InputData, InputState, NUM_KEYS, NUM_BUTTONS};
-use core::monitor;
-use core::{AsRenderTarget, RenderTarget, Color};
+//use core::input::{InputData, InputState, NUM_KEYS, NUM_BUTTONS};
+//use core::monitor::Monitor;
+//use core::{AsRenderTarget, RenderTarget, Color};
+use core::*;
 use maths::Point2;
 use core::builder::*;
-use core::Event;
 use backends::backend;
 
 /// A target to render to, e.g. a window or full screen.
@@ -44,6 +44,31 @@ impl Display {
         self.handle.hide();
     }
 
+    /// Switches to fullscreen mode on the primary monitor.
+    pub fn set_fullscreen(self: &Self) -> Result<()> {
+        if let Some(backend_monitor) = backend::MonitorIterator::new(self).next() {
+            let monitor = Monitor::new(backend_monitor);
+            self.set_fullscreen_on(monitor)
+        } else {
+            Err(Error::FullscreenError("Failed select monitor device.".to_string()))
+        }
+    }
+
+    /// Switches to fullscreen mode on the given monitor.
+    pub fn set_fullscreen_on(self: &Self, monitor: Monitor) -> Result<()> {
+        if !self.handle.set_fullscreen(Some(monitor)) {
+            self.handle.set_fullscreen(None);
+            Err(Error::FullscreenError("Failed to switch to fullscreen.".to_string()))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Switches to windowed mode.
+    pub fn set_windowed(self: &Self) {
+        self.handle.set_fullscreen(None);
+    }
+
     /// Prepares a frame for rendering.
     pub fn prepare_frame(self: &Self) {
         if self.frame.borrow().is_some() {
@@ -66,7 +91,7 @@ impl Display {
     pub fn swap_frame(self: &Self) {
         let frame = mem::replace(&mut *self.frame.borrow_mut(), None);
         if let Some(frame) = frame {
-            frame.swap();
+            frame.finish();
         } else {
             panic!("No frame currently prepared, nothing to swap.");
         }
@@ -78,9 +103,11 @@ impl Display {
     /// Grab mode will be temporarily released when the window loses focus and automatically
     /// restored once it regains focus.
     pub fn grab_cursor(self: &Self) {
-        self.handle.set_cursor_state(CursorState::Grab);
-        self.input_data.write().unwrap().cursor_grabbed = true;
-        self.handle.set_cursor_position(Point2(100, 100));
+        let mut input_data = self.input_data.write().unwrap();
+        if input_data.has_focus {
+            self.handle.set_cursor_state(CursorState::Grab);
+        }
+        input_data.cursor_grabbed = true;
     }
 
     /// Hides the mouse cursor while it is inside the window.
@@ -95,17 +122,22 @@ impl Display {
         self.input_data.write().unwrap().cursor_grabbed = false;
     }
 
+    /// Sets the mouse cursor position.
+    pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
+        self.handle.set_cursor_position(position);
+    }
+
     /// Returns the window dimensions.
     pub fn dimensions(self: &Self) -> Point2<u32> {
         self.handle.framebuffer_dimensions()
     }
 
     /// Returns a vector of available monitors.
-    pub fn monitors(self: &Self) -> Vec<monitor::Monitor> {
-        let iter = backend::MonitorIterator::new(&self.handle);
-        let mut result = Vec::<monitor::Monitor>::new();
+    pub fn monitors(self: &Self) -> Vec<Monitor> {
+        let iter = backend::MonitorIterator::new(self);
+        let mut result = Vec::<Monitor>::new();
         for monitor in iter {
-            result.push(monitor::Monitor::new(monitor));
+            result.push(Monitor::new(monitor));
         }
         result
     }
@@ -115,7 +147,7 @@ impl Display {
     pub fn poll_events(self: &Self) -> &Self {
         let mut input_data = self.input_data.write().unwrap();
 
-        // !todo poll_id, check if released/pressed(poll_id) == poll_id
+        // todo: poll_id, check if released/pressed(poll_id) == poll_id
         for key_id in 0..NUM_KEYS {
             match input_data.key[key_id] {
                 InputState::Pressed | InputState::Repeat => {
@@ -174,14 +206,18 @@ impl Display {
                         input_data.button[button_id] = InputState::Released
                     }
                 },
-                Event::Focused => {
+                Event::Focus => {
+                    input_data.has_focus = true;
                     // restore grab after focus loss
                     if input_data.cursor_grabbed {
-                        self.handle.set_cursor_state(CursorState::Normal);
                         self.handle.set_cursor_state(CursorState::Grab);
                     }
                 }
-                Event::Closed => {
+                Event::Blur => {
+                    input_data.has_focus = false;
+                    self.handle.set_cursor_state(CursorState::Normal);
+                }
+                Event::Close => {
                     input_data.should_close = true;
                 }
             }
@@ -221,27 +257,41 @@ impl Display {
     }
 }
 
-pub enum CursorState {
-    Normal,
-    Hide,
-    Grab,
-}
-
 impl AsRenderTarget for Display {
     fn as_render_target(self: &Self) -> RenderTarget {
         RenderTarget::Display(self.clone())
     }
 }
 
+/// The current state of the mouse cursor.
+#[derive(Debug)]
+pub enum CursorState {
+    Normal,
+    Hide,
+    Grab,
+}
+
+// An input event.
+#[derive(Debug, PartialEq)]
+pub enum Event {
+    KeyboardInput(usize, bool),
+    MouseInput(usize, bool),
+    MouseDelta(i32, i32),
+    MousePosition(i32, i32),
+    Focus,
+    Blur,
+    Close,
+}
+
 /// A struct describing a [`Display`](struct.Display.html) to be created.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DisplayInfo {
     pub width       : u32,
     pub height      : u32,
     pub title       : String,
     pub transparent : bool,
     pub decorations : bool,
-    pub monitor     : Option<monitor::Monitor>,
+    pub monitor     : Option<Monitor>,
     pub vsync       : bool,
     pub visible     : bool,
 }
