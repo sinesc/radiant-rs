@@ -68,7 +68,7 @@ impl RenderTarget {
                 display.clear(color);
             },
             RenderTarget::Texture(ref texture) => {
-                texture.handle.clear(color);
+                texture.clear(color);
             }
             RenderTarget::None => { }
         }

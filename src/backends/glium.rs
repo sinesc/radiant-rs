@@ -21,12 +21,12 @@ pub mod public {
     /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop
     pub fn create_display(display: &glium::Display, events_loop: Rc<RefCell<glium::glutin::EventsLoop>>) -> core::Display {
         core::Display {
-            handle: super::Display { 
+            handle: Rc::new(super::Display { 
                 inner       : display.clone(), 
                 events_loop : events_loop,
                 descriptor  : None,
                 was_rebuilt : RefCell::new(false),
-            },
+            }),
             frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(core::InputData::new())),
         }
@@ -47,7 +47,6 @@ pub mod public {
 // Display
 // --------------
 
-#[derive(Clone)]
 pub struct Display {
     inner       : glium::Display,
     events_loop : Rc<RefCell<glutin::EventsLoop>>,
@@ -570,7 +569,7 @@ impl<'a> glium::texture::Texture2dDataSource<'a> for RawFrame {
             format: match self.0.channels {
                 1 => glium::texture::ClientFormat::U8,
                 4 => glium::texture::ClientFormat::U8U8U8U8,
-                _ => glium::texture::ClientFormat::U8,  // !todo ugly, need enum
+                _ => glium::texture::ClientFormat::U8,  // todo: ugly, need enum
             }
         }
     }
