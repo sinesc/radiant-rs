@@ -42,10 +42,10 @@ impl Program {
         self.uniforms.remove(name)
     }
     /// Creates a new program. Used in rendercontext creation when the full context is not yet available.
-    pub(crate) fn new(display: &Display, source: &str) -> core::Result<Program> {
+    pub(crate) fn new(display: &backend::Display, source: &str) -> core::Result<Program> {
         let sprite_fs = Self::insert_template(source, SPRITE_INC);
         let texture_fs = Self::insert_template(source, TEXTURE_INC);
-        let dimensions = display.dimensions();
+        let dimensions = display.framebuffer_dimensions();
         let mut uniforms = UniformList::new();
         uniforms.insert("u_view", Mat4::viewport(dimensions.0 as f32, dimensions.1 as f32).as_uniform());
         uniforms.insert("u_model", Mat4::<f32>::identity().as_uniform());

@@ -21,12 +21,12 @@ pub mod public {
     /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop
     pub fn create_display(display: &glium::Display, events_loop: Rc<RefCell<glium::glutin::EventsLoop>>) -> core::Display {
         core::Display {
-            handle: Rc::new(super::Display { 
+            handle: super::Display(Rc::new(super::DisplayInner { 
                 inner       : display.clone(), 
                 events_loop : events_loop,
                 descriptor  : None,
                 was_rebuilt : RefCell::new(false),
-            }),
+            })),
             frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(core::InputData::new())),
         }
@@ -47,11 +47,21 @@ pub mod public {
 // Display
 // --------------
 
-pub struct Display {
+pub struct DisplayInner {
     inner       : glium::Display,
     events_loop : Rc<RefCell<glutin::EventsLoop>>,
     descriptor  : Option<RefCell<core::DisplayInfo>>,
     was_rebuilt : RefCell<bool>,
+}
+
+#[derive(Clone)]
+pub struct Display(Rc<DisplayInner>);
+
+impl Deref for Display {
+    type Target = DisplayInner;
+    fn deref(self: &Self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl Display {
@@ -75,12 +85,12 @@ impl Display {
             let context = Self::build_context(&descriptor);
             glium::Display::new(window, context, &events_loop).unwrap()
         };
-        Display { 
+        Display(Rc::new(DisplayInner { 
             inner       : display, 
             events_loop : Rc::new(RefCell::new(events_loop)),
             descriptor  : Some(RefCell::new(descriptor)),
             was_rebuilt : RefCell::new(false),
-        }
+        }))
     }
     pub fn draw(self: &Self) -> Frame {
         Frame(self.inner.draw())
@@ -401,10 +411,10 @@ pub struct Program(glium::Program);
 
 impl Program {
     /// Creates a shader program from given vertex- and fragment-shader sources.
-    pub fn new(display: &core::Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
+    pub fn new(display: &Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
         use self::glium::program::ProgramCreationError;
         use core::Error;
-        match glium::Program::from_source(&display.handle.inner, vertex_shader, fragment_shader, None) {
+        match glium::Program::from_source(&display.inner, vertex_shader, fragment_shader, None) {
             Err(ProgramCreationError::CompilationError(message)) => { Err(Error::ShaderError(format!("Shader compilation failed with: {}", message))) }
             Err(ProgramCreationError::LinkingError(message))     => { Err(Error::ShaderError(format!("Shader linking failed with: {}", message))) }
             Err(_)                                               => { Err(Error::ShaderError("No shader support found".to_string())) }
@@ -461,17 +471,17 @@ impl Iterator for MonitorIterator {
 pub struct Texture2d(glium::texture::Texture2d);
 
 impl Texture2d {
-    pub fn new(display: &core::Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Self {
+    pub fn new(display: &Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Self {
         let texture = if let Some(rawdata) = data {
             glium::texture::Texture2d::with_format(
-                &display.handle.inner,
+                &display.inner,
                 RawFrame(rawdata),
                 Self::convert_format(format),
                 glium::texture::MipmapsOption::NoMipmap
             ).unwrap()
         } else {
             let texture = glium::texture::Texture2d::empty_with_format(
-                &display.handle.inner,
+                &display.inner,
                 Self::convert_format(format),
                 glium::texture::MipmapsOption::NoMipmap,
                 width,
@@ -579,7 +589,7 @@ pub struct Texture2dArray(glium::texture::Texture2dArray);
 
 impl Texture2dArray {
     /// Generates glium texture array from given vector of textures
-    pub fn new(display: &core::Display, raw: &Vec<core::RawFrame>) -> Self {
+    pub fn new(display: &Display, raw: &Vec<core::RawFrame>) -> Self {
 
         use self::glium::texture;
         use std::mem::transmute;
@@ -588,9 +598,9 @@ impl Texture2dArray {
 
         Texture2dArray(
             if raw_wrapped.len() > 0 {
-                texture::Texture2dArray::with_format(&display.handle.inner, raw_wrapped, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
+                texture::Texture2dArray::with_format(&display.inner, raw_wrapped, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
             } else {
-                texture::Texture2dArray::empty_with_format(&display.handle.inner, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
+                texture::Texture2dArray::empty_with_format(&display.inner, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
             }
         )
     }

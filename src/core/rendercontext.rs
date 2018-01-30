@@ -21,14 +21,14 @@ unsafe impl Send for RenderContext { }
 unsafe impl Sync for RenderContext { }
 
 impl RenderContext {
-    /// Retrieves the display associated with this rendercontext.
-    pub fn display(self: &Self) -> Display {
-        self.lock().display.clone()
-    }
     /// Prunes no longer used textures. Requires all layers to be cleared before
     /// adding new sprites or rendering the layer.
     pub fn prune(self: &Self) {
         self.lock().prune();
+    }
+    /// Retrieves the display associated with this rendercontext.
+    pub(crate) fn display(self: &Self) -> backend::Display {
+        self.lock().display.clone()
     }
     /// Creates a new RenderContext
     pub(crate) fn new(data: RenderContextData) -> RenderContext {
@@ -80,7 +80,7 @@ pub struct RawFrameArray {
 }
 
 impl RawFrameArray {
-    fn new(display: &Display) -> Self {
+    fn new(display: &backend::Display) -> Self {
         RawFrameArray {
             dirty   : false,
             data    : Rc::new(backend::Texture2dArray::new(display, &Vec::new())), // !todo why rc?
@@ -102,7 +102,7 @@ impl RawFrameArray {
         self.sprites.push(SpriteBackRef::new(sprite_data));
     }
     /// Updates texture array in video memory.
-    fn update(self: &mut Self, display: &Display) {
+    fn update(self: &mut Self, display: &backend::Display) {
         if self.dirty {
             self.dirty = false;
             self.data = Rc::new(backend::Texture2dArray::new(display, &self.raw));
@@ -150,7 +150,7 @@ impl RawFrameArray {
         }
     }
     /// Prunes no longer used textures from the array and update sprite texture ids and generations.
-    fn prune(self: &mut Self, display: &Display, generation: usize) {
+    fn prune(self: &mut Self, display: &backend::Display, generation: usize) {
         if let Some(mapping) = self.create_prune_map() {
             // Remove unused textures from raw data.
             let destination_map = self.prune_raw_textures(&mapping);
@@ -177,7 +177,7 @@ impl RawFrameArray {
 pub struct RenderContextData {
     pub backend_context     : backend::Context,
     pub tex_arrays          : Vec<RawFrameArray>,
-    pub display             : Display,
+    pub display             : backend::Display,
     pub font_cache          : font::FontCache,
     pub font_texture        : Rc<backend::Texture2d>,
     pub single_rect         : [core::Vertex; 4],
@@ -193,7 +193,7 @@ impl RenderContextData {
         let mut tex_arrays = Vec::new();
 
         for _ in 0..NUM_BUCKETS {
-            tex_arrays.push(RawFrameArray::new(display));
+            tex_arrays.push(RawFrameArray::new(&display.handle));
         }
 
         let data = core::RawFrame {
@@ -203,12 +203,12 @@ impl RenderContextData {
             channels: 1,
         };
 
-        let texture = backend::Texture2d::new(display, size, size, core::TextureFormat::U8, Some(data));
+        let texture = backend::Texture2d::new(&display.handle, size, size, core::TextureFormat::U8, Some(data));
 
         Ok(RenderContextData {
             backend_context     : backend::Context::new(display, initial_capacity),
             tex_arrays          : tex_arrays,
-            display             : display.clone(),
+            display             : display.handle.clone(),
             font_cache          : font::FontCache::new(size, size, 0.01, 0.01),
             font_texture        : Rc::new(texture),
             single_rect         : Self::create_single_rect(),

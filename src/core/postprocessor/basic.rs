@@ -50,7 +50,7 @@ impl Basic {
     /// Creates a new instance. The shader can use `sheet*()` to access the input texture.
     pub fn new(context: &RenderContext, program: Program) -> Self {
 
-        let Point2(width, height) = context.display().dimensions();
+        let Point2(width, height) = context.display().framebuffer_dimensions();
 
         let result = Basic {
             source      : Texture::new(&context, width, height),

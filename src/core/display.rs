@@ -10,7 +10,7 @@ use backends::backend;
 /// A target to render to, e.g. a window or full screen.
 #[derive(Clone)]
 pub struct Display {
-    pub(crate) handle: Rc<backend::Display>,
+    pub(crate) handle: backend::Display,
     pub(crate) frame: Rc<RefCell<Option<backend::Frame>>>,
     pub(crate) input_data: Arc<RwLock<InputData>>,
 }
@@ -239,7 +239,7 @@ impl Display {
     /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
     pub(crate) fn new(descriptor: DisplayInfo) -> Display {
         Display {
-            handle: Rc::new(backend::Display::new(descriptor)),
+            handle: backend::Display::new(descriptor),
             frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(InputData::new())),
         }

@@ -44,7 +44,7 @@ impl Renderer {
         Ok(Renderer {
             empty_texture   : identity_texture,
             context         : context,
-            program         : Rc::new(Program::new(display, DEFAULT_FS)?),
+            program         : Rc::new(Program::new(&display.handle, DEFAULT_FS)?),
             target          : Rc::new(RefCell::new(target)),
         })
     }
@@ -232,7 +232,7 @@ impl Renderer {
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
             DrawRectInfoViewSource::Display => {
-                let dim = context.display.dimensions();
+                let dim = context.display.framebuffer_dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
             DrawRectInfoViewSource::Source => {
