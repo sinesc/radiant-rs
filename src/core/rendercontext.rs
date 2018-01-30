@@ -187,13 +187,13 @@ pub struct RenderContextData {
 impl RenderContextData {
 
     /// Create a new instance
-    pub fn new(display: &Display, initial_capacity: usize) -> core::Result<Self> {
+    pub fn new(display: &backend::Display, initial_capacity: usize) -> core::Result<Self> {
 
         let size = 512;
         let mut tex_arrays = Vec::new();
 
         for _ in 0..NUM_BUCKETS {
-            tex_arrays.push(RawFrameArray::new(&display.handle));
+            tex_arrays.push(RawFrameArray::new(display));
         }
 
         let data = core::RawFrame {
@@ -203,12 +203,12 @@ impl RenderContextData {
             channels: 1,
         };
 
-        let texture = backend::Texture2d::new(&display.handle, size, size, core::TextureFormat::U8, Some(data));
+        let texture = backend::Texture2d::new(display, size, size, core::TextureFormat::U8, Some(data));
 
         Ok(RenderContextData {
             backend_context     : backend::Context::new(display, initial_capacity),
             tex_arrays          : tex_arrays,
-            display             : display.handle.clone(),
+            display             : display.clone(),
             font_cache          : font::FontCache::new(size, size, 0.01, 0.01),
             font_texture        : Rc::new(texture),
             single_rect         : Self::create_single_rect(),

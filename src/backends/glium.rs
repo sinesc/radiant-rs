@@ -18,18 +18,43 @@ pub mod public {
     use std::sync::{Arc, RwLock};
     use std::mem;
     
-    /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop
-    pub fn create_display(display: &glium::Display, events_loop: Rc<RefCell<glium::glutin::EventsLoop>>) -> core::Display {
+    /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop.
+    /// This allows for glium rendering but keeps radiant display handling.
+    pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
         core::Display {
             handle: super::Display(Rc::new(super::DisplayInner { 
                 inner       : display.clone(), 
-                events_loop : events_loop,
+                events_loop : Some(RefCell::new(events_loop)),
                 descriptor  : None,
                 was_rebuilt : RefCell::new(false),
             })),
             frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(core::InputData::new())),
         }
+    }
+
+    /// Creates a new radiant_rs::Renderer from given glium::Display.
+    /// This allows for glium rendering and display handling while radiant only handles 2d rendering.
+    pub fn create_renderer(display: &glium::Display) -> core::Result<core::Renderer> {
+        
+        let display = super::Display(Rc::new(super::DisplayInner { 
+            inner       : display.clone(), 
+            events_loop : None,
+            descriptor  : None,
+            was_rebuilt : RefCell::new(false),
+        }));
+        let context_data = core::RenderContextData::new(&display, core::INITIAL_CAPACITY)?;
+        let context = core::RenderContext::new(context_data);
+        let target = vec![ /*RenderTarget::Display(display.clone())*/ ];
+        let identity_texture = core::Texture::builder(&context).format(core::TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
+        identity_texture.clear(core::Color::WHITE);
+
+        Ok(core::Renderer {
+            empty_texture   : identity_texture,
+            context         : context,
+            program         : Rc::new(core::Program::new(&display, core::DEFAULT_FS)?),
+            target          : Rc::new(RefCell::new(target)),
+        })
     }
 
     /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
@@ -49,7 +74,7 @@ pub mod public {
 
 pub struct DisplayInner {
     inner       : glium::Display,
-    events_loop : Rc<RefCell<glutin::EventsLoop>>,
+    events_loop : Option<RefCell<glutin::EventsLoop>>,
     descriptor  : Option<RefCell<core::DisplayInfo>>,
     was_rebuilt : RefCell<bool>,
 }
@@ -87,7 +112,7 @@ impl Display {
         };
         Display(Rc::new(DisplayInner { 
             inner       : display, 
-            events_loop : Rc::new(RefCell::new(events_loop)),
+            events_loop : Some(RefCell::new(events_loop)),
             descriptor  : Some(RefCell::new(descriptor)),
             was_rebuilt : RefCell::new(false),
         }))
@@ -121,7 +146,7 @@ impl Display {
         }*/
 
         // add/remove fullscreen from descriptor (only kept around because set_fullscreen is NYI)
-        let events_loop = self.events_loop.borrow();
+        let events_loop = self.events_loop.as_ref().unwrap().borrow();
         let mut descriptor = self.descriptor.as_ref().unwrap().borrow_mut();
         descriptor.monitor = monitor;
 
@@ -132,7 +157,7 @@ impl Display {
         self.inner.rebuild(window, context, &events_loop).is_ok()  
     }
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
-        self.events_loop.borrow_mut().poll_events(|glutin_event| {
+        self.events_loop.as_ref().unwrap().borrow_mut().poll_events(|glutin_event| {
             if let Some(event) = Self::map_event(glutin_event) {
                 // suppress close event when going to fullscreen
                 if event == core::Event::Close && *self.was_rebuilt.borrow() {
@@ -449,7 +474,7 @@ impl MonitorIterator {
 
     /// Returns an inter
     pub fn new(display: &core::Display) -> Self {
-        MonitorIterator(display.handle.events_loop.borrow().get_available_monitors())
+        MonitorIterator(display.handle.events_loop.as_ref().unwrap().borrow().get_available_monitors())
     }
 }
 
@@ -639,10 +664,10 @@ pub struct Context {
 impl Context {
 
     /// Creates a new backend context.
-    pub fn new(display: &core::Display, initial_capacity: usize) -> Self {
+    pub fn new(display: &Display, initial_capacity: usize) -> Self {
         Context {
-            display: display.handle.inner.clone(),
-            index_buffer: Self::create_index_buffer(&display.handle.inner, initial_capacity),
+            display: display.inner.clone(),
+            index_buffer: Self::create_index_buffer(&display.inner, initial_capacity),
             vertex_buffers: Vec::new(),
         }
     }

@@ -10,7 +10,7 @@ use maths::{Rect, Mat4};
 use backends::backend;
 
 /// Default fragment shader program
-const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
+pub const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
 
 lazy_static! {
     static ref VIEWPORT_ONE: Mat4 = Mat4::viewport(1.0, 1.0);
@@ -24,10 +24,10 @@ lazy_static! {
 /// drawing.
 #[derive(Clone)]
 pub struct Renderer {
-    context         : RenderContext,
-    program         : Rc<Program>,
-    target          : Rc<RefCell<Vec<RenderTarget>>>,
-    empty_texture   : Texture,
+    pub(crate) context         : RenderContext,
+    pub(crate) program         : Rc<Program>,
+    pub(crate) target          : Rc<RefCell<Vec<RenderTarget>>>,
+    pub(crate) empty_texture   : Texture,
 }
 
 impl Renderer {
@@ -35,7 +35,7 @@ impl Renderer {
     /// Returns a new renderer instance.
     pub fn new(display: &Display) -> core::Result<Self> {
 
-        let context_data = RenderContextData::new(display, rendercontext::INITIAL_CAPACITY)?;
+        let context_data = RenderContextData::new(&display.handle, rendercontext::INITIAL_CAPACITY)?;
         let context = RenderContext::new(context_data);
         let target = vec![ RenderTarget::Display(display.clone()) ];
         let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
