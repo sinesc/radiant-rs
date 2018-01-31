@@ -259,7 +259,7 @@ impl Display {
 
 impl AsRenderTarget for Display {
     fn as_render_target(self: &Self) -> RenderTarget {
-        RenderTarget::Display(self.clone())
+        RenderTarget::Frame(self.frame.clone())
     }
 }
 

@@ -426,6 +426,11 @@ impl Frame {
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
         source.handle.0.as_surface().blit_color(&glium_src_rect, &self.0, &glium_target_rect, magnify_filter(filter));
     }
+
+    /// Returns the dimensions of the frame.
+    pub fn dimensions(self: &Self) -> Point2<u32> {
+        self.0.get_dimensions().into()
+    }
 }
 
 // --------------
@@ -757,8 +762,11 @@ impl Context {
         // draw
 
         match *target {
-            core::RenderTarget::Display(ref display) => {
-                display.frame(|ref mut frame| frame.0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap());
+            core::RenderTarget::Frame(ref display) => {
+                let mut frame = display.borrow_mut();
+                frame.as_mut().expect("Failed to get frame: None prepared.")
+                .0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
+                //display.frame(|ref mut frame| frame.0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap());
             }
             core::RenderTarget::Texture(ref texture) => {
                 texture.handle.0.as_surface().draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();

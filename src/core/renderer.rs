@@ -37,7 +37,7 @@ impl Renderer {
 
         let context_data = RenderContextData::new(&display.handle, rendercontext::INITIAL_CAPACITY)?;
         let context = RenderContext::new(context_data);
-        let target = vec![ RenderTarget::Display(display.clone()) ];
+        let target = vec![ RenderTarget::Frame(display.frame.clone()) ];
         let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::WHITE);
 
