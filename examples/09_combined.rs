@@ -18,7 +18,8 @@ pub fn main() {
 
     // A custom example bloom effect postprocessor. The arguments define
     // bloom quality, bloom spread and brightness.
-    let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, 10.0);
+    // note: Radiant now also includes a predefined Bloom postprocessor. This example uses a similar implementation.
+    let bloom_effect = bloom::Bloom::new(&renderer.context(), display.dimensions(), 2, 5, 10.0);
 
     let surface = Texture::new(&renderer.context(), 640, 480);
     let thumbnail = Texture::new(&renderer.context(), 640, 480);

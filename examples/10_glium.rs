@@ -4,8 +4,6 @@ extern crate radiant_rs;
 use radiant_rs::{backend, Renderer, Layer, Sprite, Color, utils, blendmodes};
 use glium::Surface;
 use glium::index::PrimitiveType;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub fn main() {
 
@@ -80,7 +78,7 @@ pub fn main() {
     };
     
     // Create a Radiant Display from an existing glium Display and glutin EventsLoop.
-    let display = backend::create_display(&glium_display, Rc::new(RefCell::new(events_loop)));
+    let display = backend::create_display(&glium_display, events_loop);
 
     // Create the renderer, a sprite and a layer
     let renderer = Renderer::new(&display).unwrap();

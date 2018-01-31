@@ -12,7 +12,7 @@ pub fn main() {
 
     // Load spritesheet containing components for rgba and a "lightmap". Create custom postprocessor.
     let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/battery_lightmapped_128x128x15x2.png").unwrap();
-    let bloom_effect = bloom::Bloom::new(&renderer.context(), 2, 5, 5.0);
+    let bloom_effect = bloom::Bloom::new(&renderer.context(), display.dimensions(), 2, 5, 5.0);
 
     // A bunch of layers. The lightmap layers use component 1 (the "lightmap") of the sprite.
     let color_layer = Layer::new((640., 480.));
