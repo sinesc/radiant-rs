@@ -1,5 +1,5 @@
 pub use core::{
-    BlendMode, blendmodes,
+    BlendMode, BlendingFunction, LinearBlendingFactor, blendmodes,
     Display, Monitor,
     Renderer, RenderTarget, RenderContext, AsRenderTarget,
     Layer, Sprite, Font, Color,

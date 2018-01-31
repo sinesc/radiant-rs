@@ -1,7 +1,7 @@
 use prelude::*;
 use maths::Vec2;
 
-/// A 2-dimensional point.
+/// A point in 2d space.
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Point2<T = f32>(pub T, pub T) where T: Copy + Clone + Debug;
 

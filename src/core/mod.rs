@@ -13,6 +13,7 @@ mod program;
 mod uniform;
 mod postprocessor;
 mod builder;
+mod rendertarget;
 
 pub use self::blendmode::*;
 pub use self::input::*;
@@ -29,10 +30,9 @@ pub use self::program::*;
 pub use self::uniform::*;
 pub use self::postprocessor::*;
 pub use self::builder::*;
+pub use self::rendertarget::*;
 use image;
 use prelude::*;
-use maths::{Rect, Point2};
-use backends::backend;
 
 /// A vertex.
 #[derive(Copy, Clone, Default)]
@@ -45,136 +45,6 @@ pub struct Vertex {
     pub texture_id  : u32,
     pub texture_uv  : [f32; 2],
     pub components  : u32,
-}
-
-/// A target for rendering.
-pub trait AsRenderTarget {
-    /// Returns RenderTarget enum containing a texture or a frame.
-    fn as_render_target(self: &Self) -> RenderTarget;
-}
-
-/// An opaque type representing rendering targets like Display or Texture.
-#[derive(Clone)]
-pub struct RenderTarget(pub(crate) RenderTargetInner);
-
-impl RenderTarget {
-    /// Creates a new frame rendertarget.
-    pub(crate) fn frame(frame: &Rc<RefCell<Option<backend::Frame>>>) -> RenderTarget {
-        RenderTarget(RenderTargetInner::Frame(frame.clone()))
-    }
-    /// Creates a new texture rendertarget.
-    pub(crate) fn texture(texture: &Texture) -> RenderTarget{
-        RenderTarget(RenderTargetInner::Texture(texture.clone()))
-    }
-    /// Creates a null rendertarget.
-    pub fn none() -> RenderTarget{
-        RenderTarget(RenderTargetInner::None)
-    }
-}
-
-/// An enum of render target type instances.
-#[derive(Clone)]
-pub enum RenderTargetInner {
-    None,
-    Frame(Rc<RefCell<Option<backend::Frame>>>),
-    Texture(Texture),
-}
-
-impl RenderTargetInner {
-    /// Clears the target.
-    fn clear(self: &Self, color: Color) {
-        match *self {
-            RenderTargetInner::Frame(ref display) => {
-                //display.clear(color);
-                let mut frame = display.borrow_mut();
-                frame.as_mut().expect("Failed to get frame: None prepared.").clear(color);
-            },
-            RenderTargetInner::Texture(ref texture) => {
-                texture.clear(color);
-            }
-            RenderTargetInner::None => { }
-        }
-    }
-    /// Returns the dimensions of the target.
-    fn dimensions(self: &Self) -> Point2<u32> {
-        match *self {
-            RenderTargetInner::Frame(ref display) => {
-                let mut frame = display.borrow_mut();
-                frame.as_mut().expect("Failed to get frame: None prepared.").dimensions()
-                //display.dimensions()
-            },
-            RenderTargetInner::Texture(ref texture) => {
-                texture.dimensions()
-            }
-            RenderTargetInner::None => {
-                Point2(0, 0)
-            }
-        }
-    }
-    /// Blits a source rect to a rect on the target.
-    fn blit_rect(self: &Self, source: &RenderTarget, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: TextureFilter) {
-        match *self {
-            RenderTargetInner::Frame(ref target_display) => {
-                match source.0 {
-                    RenderTargetInner::Frame(_) => {
-                        let mut frame = target_display.borrow_mut();
-                        frame.as_mut().expect("Failed to get frame: None prepared.").copy_rect(source_rect, target_rect, filter);
-                        //target_display.frame(|ref mut frame| frame.copy_rect(source_rect, target_rect, filter));
-                    },
-                    RenderTargetInner::Texture(ref src_texture) => {
-                        let mut frame = target_display.borrow_mut();
-                        frame.as_mut().expect("Failed to get frame: None prepared.").copy_rect_from_texture(src_texture, source_rect, target_rect, filter);
-                        //target_display.frame(|ref mut frame| frame.copy_rect_from_texture(src_texture, source_rect, target_rect, filter));
-                    }
-                    RenderTargetInner::None => { }
-                }
-            },
-            RenderTargetInner::Texture(ref target_texture) => {
-                match source.0 {
-                    RenderTargetInner::Frame(ref src_display) => {
-                        let mut frame = src_display.borrow_mut();
-                        target_texture.handle.copy_rect_from_frame(frame.as_mut().expect("Failed to get frame: None prepared."), source_rect, target_rect, filter);
-                        //src_display.frame(|ref mut frame| target_texture.handle.copy_rect_from_frame(frame, source_rect, target_rect, filter));
-                    },
-                    RenderTargetInner::Texture(ref src_texture) => {
-                        target_texture.handle.copy_rect_from(src_texture, source_rect, target_rect, filter);
-                    }
-                    RenderTargetInner::None => { }
-                }
-            }
-            RenderTargetInner::None => { }
-        }
-    }
-    /// Blits to the target.
-    fn blit(self: &Self, source: &RenderTarget, filter: TextureFilter) {
-        match *self {
-            RenderTargetInner::Frame(ref target_display) => {
-                match source.0 {
-                    RenderTargetInner::Frame(_) => { /* blitting entire frame to entire frame makes no sense */ },
-                    RenderTargetInner::Texture(ref src_texture) => {
-                        let mut frame = target_display.borrow_mut();
-                        frame.as_mut().expect("Failed to get frame: None prepared.").copy_from_texture(src_texture, filter);
-                        //target_display.frame(|ref mut frame| frame.copy_from_texture(src_texture, filter));
-                    }
-                    RenderTargetInner::None => { }
-                }
-            },
-            RenderTargetInner::Texture(ref target_texture) => {
-                match source.0 {
-                    RenderTargetInner::Frame(ref src_display) => {
-                        let mut frame = src_display.borrow_mut();
-                        target_texture.handle.copy_from_frame(frame.as_mut().expect("Failed to get frame: None prepared."), filter);
-                        //src_display.frame(|ref mut frame| target_texture.handle.copy_from_frame(frame, filter));
-                    },
-                    RenderTargetInner::Texture(ref src_texture) => {
-                        target_texture.handle.copy_from(src_texture, filter);
-                    }
-                    RenderTargetInner::None => { }
-                }
-            }
-            RenderTargetInner::None => { }
-        }
-    }
 }
 
 /// Radiant errors.

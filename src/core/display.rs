@@ -1,7 +1,4 @@
 use prelude::*;
-//use core::input::{InputData, InputState, NUM_KEYS, NUM_BUTTONS};
-//use core::monitor::Monitor;
-//use core::{AsRenderTarget, RenderTarget, Color};
 use core::*;
 use maths::Point2;
 use core::builder::*;
@@ -245,15 +242,10 @@ impl Display {
         }
     }
 
-    /* /// Clears the display with given color without swapping buffers.
-    pub(crate) fn clear(self: &Self, color: Color) {
-        self.frame.borrow_mut().as_mut().expect("Failed to clear frame: None prepared.").clear(color);
-    }*/
-
     /// Provides a mutable reference to the backend frame to the given function.
     pub(crate) fn frame<T>(self: &Self, func: T) where T: FnOnce(&mut backend::Frame) {
         let mut frame = self.frame.borrow_mut();
-        func(frame.as_mut().expect("Failed to get frame: None prepared."));
+        func(frame.as_mut().expect(NO_FRAME_PREPARED));
     }
 }
 

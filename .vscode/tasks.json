@@ -99,6 +99,15 @@
                 "update"
             ],
             "problemMatcher": []
-        }
+        },
+        {
+            "label": "cargo rustdoc",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "rustdoc"
+            ],
+            "problemMatcher": []
+        },
     ]
 }

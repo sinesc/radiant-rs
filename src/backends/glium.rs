@@ -764,9 +764,8 @@ impl Context {
         match target.0 {
             core::RenderTargetInner::Frame(ref display) => {
                 let mut frame = display.borrow_mut();
-                frame.as_mut().expect("Failed to get frame: None prepared.")
-                .0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
-                //display.frame(|ref mut frame| frame.0.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap());
+                let frame = &mut frame.as_mut().expect(core::NO_FRAME_PREPARED).0;
+                frame.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
             }
             core::RenderTargetInner::Texture(ref texture) => {
                 texture.handle.0.as_surface().draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
