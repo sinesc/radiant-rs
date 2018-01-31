@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, RenderContext, Display, AsUniform, UniformList, Color};
+use core::{self, RenderContext, AsUniform, UniformList, Color};
 use maths::{Mat4};
 use backends::backend;
 

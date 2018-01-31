@@ -2,7 +2,7 @@ use prelude::*;
 use core::{
     self, rendercontext,
     Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
-    RenderContext, RenderContextData, AsRenderTarget, RenderTarget,
+    RenderContext, RenderContextData, AsRenderTarget, RenderTarget, RenderTargetInner,
     blendmodes, TextureFormat
 };
 use core::builder::*;
@@ -37,7 +37,7 @@ impl Renderer {
 
         let context_data = RenderContextData::new(&display.handle, rendercontext::INITIAL_CAPACITY)?;
         let context = RenderContext::new(context_data);
-        let target = vec![ RenderTarget::Frame(display.frame.clone()) ];
+        let target = vec![ RenderTarget(RenderTargetInner::Frame(display.frame.clone())) ];
         let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::WHITE);
 
@@ -58,7 +58,7 @@ impl Renderer {
 
     /// Clears the current target.
     pub fn clear(self: &Self, color: Color) -> &Self {
-        self.target.borrow().last().unwrap().clear(color);
+        self.target.borrow().last().unwrap().0.clear(color);
         self
     }
 
@@ -196,14 +196,14 @@ impl Renderer {
     /// This is a blitting operation that uses integral pixel coordinates (top/left = 0/0).
     /// Coordinates must be entirely contained within their respective sources. No blending is performed.
     pub fn copy_rect_from<R, S, T>(self: &Self, source: &R, source_rect: S, target_rect: T, filter: TextureFilter) where R: AsRenderTarget, Rect<i32>: From<S> + From<T> {
-        self.target.borrow().last().unwrap().blit_rect(&source.as_render_target(), source_rect.into(), target_rect.into(), filter);
+        self.target.borrow().last().unwrap().0.blit_rect(&source.as_render_target(), source_rect.into(), target_rect.into(), filter);
     }
 
     /// Copies the entire source, overwriting the entire current target.
     ///
     /// This is a blitting operation, no blending is performed.
     pub fn copy_from<R>(self: &Self, source: &R, filter: TextureFilter) where R: AsRenderTarget {
-        self.target.borrow().last().unwrap().blit(&source.as_render_target(), filter);
+        self.target.borrow().last().unwrap().0.blit(&source.as_render_target(), filter);
     }
 
     /// Returns a reference to the default rendering program.
@@ -228,7 +228,7 @@ impl Renderer {
             DrawRectInfoViewSource::Matrix(matrix) => matrix,
             DrawRectInfoViewSource::One => *VIEWPORT_ONE,
             DrawRectInfoViewSource::Target => {
-                let dim = self.target.borrow().last().unwrap().dimensions();
+                let dim = self.target.borrow().last().unwrap().0.dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
             DrawRectInfoViewSource::Display => {

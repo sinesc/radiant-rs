@@ -245,10 +245,10 @@ impl Display {
         }
     }
 
-    /// Clears the display with given color without swapping buffers.
+    /* /// Clears the display with given color without swapping buffers.
     pub(crate) fn clear(self: &Self, color: Color) {
         self.frame.borrow_mut().as_mut().expect("Failed to clear frame: None prepared.").clear(color);
-    }
+    }*/
 
     /// Provides a mutable reference to the backend frame to the given function.
     pub(crate) fn frame<T>(self: &Self, func: T) where T: FnOnce(&mut backend::Frame) {
@@ -259,7 +259,7 @@ impl Display {
 
 impl AsRenderTarget for Display {
     fn as_render_target(self: &Self) -> RenderTarget {
-        RenderTarget::Frame(self.frame.clone())
+        RenderTarget::frame(&self.frame)
     }
 }
 

@@ -111,7 +111,7 @@ impl Texture {
 
 impl AsRenderTarget for Texture {
     fn as_render_target(self: &Self) -> RenderTarget {
-        RenderTarget::Texture(self.clone())
+        RenderTarget::texture(self)
     }
 }
 

@@ -1,4 +1,4 @@
-use core::{self, Display, font, SpriteData, Vertex};
+use core::{self, font, SpriteData, Vertex};
 use prelude::*;
 use std::default::Default;
 use backends::backend;
