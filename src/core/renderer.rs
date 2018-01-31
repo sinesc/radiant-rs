@@ -140,8 +140,8 @@ impl Renderer {
     /// });
     /// # display.swap_frame();
     /// ```
-    pub fn render_to<F>(self: &Self, texture: &Texture, mut draw_func: F) -> &Self where F: FnMut() {
-        self.push_target(texture);
+    pub fn render_to<F, T>(self: &Self, target: &T, mut draw_func: F) -> &Self where F: FnMut(), T: AsRenderTarget {
+        self.push_target(target);
         draw_func();
         self.pop_target();
         self
