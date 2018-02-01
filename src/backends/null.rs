@@ -69,6 +69,9 @@ impl Frame {
     }
     pub fn copy_rect_from_texture(self: &Self, source: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
     }
+    pub fn dimensions(self: &Self) -> Point2<u32> {
+        Point2(0, 0)
+    }
 }
 
 // --------------
@@ -78,7 +81,7 @@ impl Frame {
 pub struct Program();
 
 impl Program {
-    pub fn new(display: &core::Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
+    pub fn new(display: &Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
         Ok(Program())
     }
 }
@@ -121,7 +124,7 @@ impl Iterator for MonitorIterator {
 pub struct Texture2d();
 
 impl Texture2d {
-    pub fn new(display: &core::Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Texture2d {
+    pub fn new(display: &Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Texture2d {
         Texture2d()
     }
     pub fn clear(self: &Self, color: core::Color) {
@@ -145,7 +148,7 @@ impl Texture2d {
 pub struct Texture2dArray();
 
 impl Texture2dArray {
-    pub fn new(display: &core::Display, raw: &Vec<core::RawFrame>) -> Self {
+    pub fn new(display: &Display, raw: &Vec<core::RawFrame>) -> Self {
         Texture2dArray()
     }
 }
@@ -157,7 +160,7 @@ impl Texture2dArray {
 pub struct Context();
 
 impl Context {
-    pub fn new(display: &core::Display, initial_capacity: usize) -> Self {
+    pub fn new(display: &Display, initial_capacity: usize) -> Self {
         Context()
     }
 }
