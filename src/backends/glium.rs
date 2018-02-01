@@ -37,9 +37,9 @@ pub mod public {
     /// Creates a new radiant_rs::Renderer from given glium::Display.
     /// 
     /// As an alternative to backend::create_display(), this allows for glium rendering and display handling while radiant only handles 2d rendering.
-    /// Note that this renderer does not have a default target. Use Renderer::render_to to specify one or backend::render_to to target
+    /// Note that this renderer does not have a default target. Use `Renderer::render_to()` to specify one or `backend::target_frame()` to target
     /// a glium::Frame.
-    /// TODO: add helpful panic message if user tries to use this renderer without targeting a texture or glium::Frame first
+    // TODO: add helpful panic message if user tries to use this renderer without targeting a texture or glium::Frame first
     pub fn create_renderer(display: &glium::Display) -> core::Result<core::Renderer> {
         
         let display = super::Display(Rc::new(super::DisplayInner { 
@@ -62,28 +62,33 @@ pub mod public {
         })
     }
 
-    /// Causes given renderer to render to the given glium::Frame within the closure. Returns the original glium::Frame.
+    /// Causes given renderer to render to the given glium::Frame within the closure.
     /// 
-    /// Renderer default to rendering to the current frame, unless they were created by create_renderer(), in which case control of the
-    /// frame/display remains outside of radiant. This method allows such Renderers to output to glium frames.
-    /// TODO: super clunky
-    pub fn render_to<F>(renderer: &core::Renderer, frame: glium::Frame, draw_func: F) -> glium::Frame where F: FnMut() {
+    /// Renderers default to rendering to the current frame, unless they were created by `backend::create_renderer()`, in which case control of the
+    /// frame/display remains outside of Radiant. This method allows such Renderers to output to Glium frames.
+    pub fn target_frame<F>(renderer: &core::Renderer, frame: &mut glium::Frame, draw_func: F) where F: FnMut() {
 
-        // wrap glium frame as rendertarget
-        let backend_frame = super::Frame(frame);
-        let wrapper = Rc::new(RefCell::new(Some(backend_frame)));
-        let target = core::RenderTarget::frame(&wrapper);
+        let wrapper = {
+            // we need to own the frame to wrap it
+            let owned_frame = mem::replace(frame, unsafe { mem::uninitialized() });
+            // wrap glium frame to make it rendertarget compatible
+            let backend_frame = super::Frame(owned_frame);
+            Rc::new(RefCell::new(Some(backend_frame)))
+        };
 
         // render to that target
-        renderer.render_to(&target, draw_func);
+        renderer.render_to(&core::RenderTarget::frame(&wrapper), draw_func);
 
-        // undo the wrapping and return the frame unharmed...
+        // undo the wrapping
         let backend_frame = mem::replace(&mut *wrapper.borrow_mut(), None).unwrap();
-        backend_frame.into_inner()
+        let owned_frame = backend_frame.into_inner();
+        // move the frame back, forget owned_frame
+        let uninitialized = mem::replace(frame, owned_frame);
+        mem::forget(uninitialized);
     }
 
     /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
-    pub fn get_frame<F>(display: &core::Display, mut callback: F) where F: FnMut(&mut glium::Frame) {
+    pub fn take_frame<F>(display: &core::Display, mut callback: F) where F: FnMut(&mut glium::Frame) {
         display.frame(|ref mut frame| callback(&mut frame.0))
     }
 

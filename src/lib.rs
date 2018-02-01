@@ -27,8 +27,8 @@ The examples folder contains multiple small examples. They can be run via `cargo
 
 # Integrating with existing glium projects (or any supported backend)
 
-Radiant can be integrated with supported backends using the APIs provided in the [backend](backend/index.html) module. The 10_glium example shows how
-to do this with Glium.
+Radiant can be integrated with supported backends using the APIs provided in the [backend](backend/index.html) module. The `10_glium_less` and `11_glium_more`
+examples shows how to do this with Glium.
 
 These APIs are currently experimental and likely subject to change.
 

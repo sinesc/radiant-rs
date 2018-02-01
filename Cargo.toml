@@ -1,6 +1,6 @@
 [package]
 name = "radiant-rs"
-version = "0.9.1"
+version = "0.10.0"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 description = "Thread-safe Rust sprite rendering engine with a friendly API and custom shader support"
 documentation = "https://docs.rs/radiant-rs/"
@@ -75,8 +75,12 @@ name = "09_combined"
 path = "examples/09_combined.rs"
 
 [[example]]
-name = "10_glium"
-path = "examples/10_glium.rs"
+name = "10_glium_less"
+path = "examples/10_glium_less.rs"
+
+[[example]]
+name = "11_glium_more"
+path = "examples/11_glium_more.rs"
 
 [[example]]
 name = "98_threads"
