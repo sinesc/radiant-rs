@@ -30,12 +30,18 @@ impl RenderTarget {
     }
 }
 
+impl AsRenderTarget for RenderTarget {
+    fn as_render_target(self: &Self) -> RenderTarget {
+        self.clone()
+    }
+}
+
 /// An enum of render target type instances.
 #[derive(Clone)]
 pub enum RenderTargetInner {
     None,
-    Frame(Rc<RefCell<Option<backend::Frame>>>),
-    Texture(Texture),
+    Frame(Rc<RefCell<Option<backend::Frame>>>),  
+    Texture(Texture),                            
 }
 
 impl RenderTargetInner {

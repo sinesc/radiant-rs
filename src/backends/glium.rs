@@ -19,7 +19,8 @@ pub mod public {
     use std::mem;
     
     /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop.
-    /// This allows for glium rendering but keeps radiant display handling.
+    /// 
+    /// As an alternative to backend::create_renderer(), this allows for glium rendering but keeps radiant display handling.
     pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
         core::Display {
             handle: super::Display(Rc::new(super::DisplayInner { 
@@ -34,7 +35,11 @@ pub mod public {
     }
 
     /// Creates a new radiant_rs::Renderer from given glium::Display.
-    /// This allows for glium rendering and display handling while radiant only handles 2d rendering.
+    /// 
+    /// As an alternative to backend::create_display(), this allows for glium rendering and display handling while radiant only handles 2d rendering.
+    /// Note that this renderer does not have a default target. Use Renderer::render_to to specify one or backend::render_to to target
+    /// a glium::Frame.
+    /// TODO: add helpful panic message if user tries to use this renderer without targeting a texture or glium::Frame first
     pub fn create_renderer(display: &glium::Display) -> core::Result<core::Renderer> {
         
         let display = super::Display(Rc::new(super::DisplayInner { 
@@ -55,6 +60,26 @@ pub mod public {
             program         : Rc::new(core::Program::new(&display, core::DEFAULT_FS)?),
             target          : Rc::new(RefCell::new(target)),
         })
+    }
+
+    /// Causes given renderer to render to the given glium::Frame within the closure. Returns the original glium::Frame.
+    /// 
+    /// Renderer default to rendering to the current frame, unless they were created by create_renderer(), in which case control of the
+    /// frame/display remains outside of radiant. This method allows such Renderers to output to glium frames.
+    /// TODO: super clunky
+    pub fn render_to<F>(renderer: &core::Renderer, frame: glium::Frame, draw_func: F) -> glium::Frame where F: FnMut() {
+
+        // wrap glium frame as rendertarget
+        let backend_frame = super::Frame(frame);
+        let wrapper = Rc::new(RefCell::new(Some(backend_frame)));
+        let target = core::RenderTarget::frame(&wrapper);
+
+        // render to that target
+        renderer.render_to(&target, draw_func);
+
+        // undo the wrapping and return the frame unharmed...
+        let backend_frame = mem::replace(&mut *wrapper.borrow_mut(), None).unwrap();
+        backend_frame.into_inner()
     }
 
     /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
@@ -395,6 +420,11 @@ impl Display {
 pub struct Frame(glium::Frame);
 
 impl Frame {
+
+    /// Consumes the Frame, returning a glium::Frame.
+    pub(crate) fn into_inner(self: Self) -> glium::Frame {
+        self.0
+    }
 
     /// Clears the frame with the given color.
     pub fn clear(self: &mut Self, color: core::Color) {
