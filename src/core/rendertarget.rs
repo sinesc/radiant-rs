@@ -1,13 +1,12 @@
 use prelude::*;
-use maths::{Rect, Point2};
-use core::{Texture, Color, TextureFilter};
+use core::{Texture, Color, TextureFilter, Rect, Point2};
 use backends::backend;
 
 pub const NO_FRAME_PREPARED: &'static str = "Failed to get frame: None prepared.";
 
 /// A target for rendering.
 pub trait AsRenderTarget {
-    /// Returns RenderTarget enum containing a texture or a frame.
+    /// Returns a RenderTarget representing a texture or a frame.
     fn as_render_target(self: &Self) -> RenderTarget;
 }
 
@@ -69,7 +68,7 @@ impl RenderTargetInner {
                 texture.dimensions()
             }
             RenderTargetInner::None => {
-                Point2(0, 0)
+                (0, 0)
             }
         }
     }

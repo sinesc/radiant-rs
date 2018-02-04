@@ -1,5 +1,4 @@
 use core::*;
-use maths::*;
 use std::sync::Mutex;
 use std::mem::swap;
 use std::cmp::{min, max};
@@ -155,7 +154,7 @@ impl Bloom {
     fn create_targets(context: &RenderContext, base_divider: u32, divider_factor: u32) -> [[Texture; 5]; 2] {
 
         let display = context.display();
-        let Point2(width, height) = display.framebuffer_dimensions();
+        let (width, height) = display.framebuffer_dimensions();
         let builder = Texture::builder(context).format(TextureFormat::F16F16F16F16);
 
         let f0 = base_divider;

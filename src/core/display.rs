@@ -1,6 +1,5 @@
 use prelude::*;
 use core::*;
-use maths::Point2;
 use core::builder::*;
 use backends::backend;
 

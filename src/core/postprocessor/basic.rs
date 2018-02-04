@@ -1,5 +1,4 @@
 use core::{Texture, Renderer, RenderContext, Program, BlendMode, Postprocessor, Color};
-use maths::{Point2};
 
 /// A basic postprocessor that applies a Program to the given input once.
 ///
@@ -50,7 +49,7 @@ impl Basic {
     /// Creates a new instance. The shader can use `sheet*()` to access the input texture.
     pub fn new(context: &RenderContext, program: Program) -> Self {
 
-        let Point2(width, height) = context.display().framebuffer_dimensions();
+        let (width, height) = context.display().framebuffer_dimensions();
 
         let result = Basic {
             source      : Texture::new(&context, width, height),

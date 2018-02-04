@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use core::{Color, Renderer, DrawRectInfo, DrawRectInfoViewSource, Texture, BlendMode, Program};
-use maths::{Rect, Mat4};
+use core::math::*;
 
 #[derive(Clone)]
 pub struct DrawBuilderFill;
@@ -12,7 +12,7 @@ impl DrawBuilderFill {
             renderer: renderer,
             phantomdata: PhantomData,
             info: DrawRectInfo {
-                rect: (0., 0., 1., 1.).into(),
+                rect: ((0., 0.), (1., 1.)),
                 color: None,
                 texture: None,
                 blendmode: None,

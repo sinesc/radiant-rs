@@ -142,8 +142,6 @@ extern crate palette;
 mod prelude;
 mod backends;
 mod core;
-mod maths;
-mod misc;
 
 mod public;
 pub use public::*;

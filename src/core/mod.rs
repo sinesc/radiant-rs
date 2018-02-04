@@ -14,6 +14,7 @@ mod uniform;
 mod postprocessor;
 mod builder;
 mod rendertarget;
+pub mod math;
 
 pub use self::blendmode::*;
 pub use self::input::*;
@@ -31,6 +32,7 @@ pub use self::uniform::*;
 pub use self::postprocessor::*;
 pub use self::builder::*;
 pub use self::rendertarget::*;
+pub use self::math::*;
 use image;
 use prelude::*;
 

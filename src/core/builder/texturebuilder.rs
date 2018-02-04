@@ -1,5 +1,4 @@
 use core::*;
-use maths::*;
 
 /// A Texture builder.
 #[must_use]

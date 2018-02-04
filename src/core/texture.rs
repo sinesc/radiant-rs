@@ -1,7 +1,6 @@
 use prelude::*;
-use core::{self, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget};
+use core::{self, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget, Point2};
 use core::builder::*;
-use maths::Point2;
 use image::{self, GenericImage};
 use backends::backend;
 
@@ -104,7 +103,7 @@ impl Texture {
             minify      : info.minify,
             magnify     : info.magnify,
             wrap        : info.wrap,
-            dimensions  : Point2(info.width, info.height),
+            dimensions  : (info.width, info.height),
         })
     }
 }

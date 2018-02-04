@@ -1,8 +1,7 @@
 use prelude::*;
 use avec;
-use maths::{Mat4, Mat4Stack, Point2, Rect};
 use core::{blendmodes, BlendMode, rendercontext, Color, Program, Vertex};
-use maths::Vec2;
+use core::math::*;
 
 static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
@@ -51,12 +50,12 @@ impl Layer {
 
     /// Creates a new layer with given dimensions, meaning that is is created with
     /// a view matrix that maps the given dimensions to the entirety of the drawing target.
-    pub fn new<T>(dimensions: T) -> Self where Vec2<f32>: From<T> {
+    pub fn new<T>(dimensions: T) -> Self where Point2<f32>: From<T> {
         Self::create(dimensions, None)
     }
 
     /// Creates a new layer with given dimensions and fragment program.
-    pub fn with_program<T>(dimensions: T, program: Program) -> Self where Vec2<f32>: From<T> {
+    pub fn with_program<T>(dimensions: T, program: Program) -> Self where Point2<f32>: From<T> {
         Self::create(dimensions, Some(program))
     }
 
@@ -87,8 +86,8 @@ impl Layer {
     /// View matrix transformation is applied after the objects are fully positioned on the layer.
     /// As a result, manipulating the view matrix has the effect of manipulating the layer itself,
     /// e.g. rotating the entire layer.
-    pub fn set_view_matrix<T>(self: &Self, matrix: T) -> &Self where T: Into<Mat4<f32>> {
-        self.view_matrix().set(matrix.into());
+    pub fn set_view_matrix<T>(self: &Self, matrix: T) -> &Self where Mat4<f32>: From<T> {
+        self.view_matrix().set(&matrix.into());
         self
     }
 
@@ -104,8 +103,8 @@ impl Layer {
     /// on the layer. As a result, manipulating the model matrix has the effect of manipulating
     /// every object on the layer in the same way, e.g. rotating every individual object on the
     /// layer around a point relative to the individual object.
-    pub fn set_model_matrix<T>(self: &Self, matrix: T) -> &Self where T: Into<Mat4<f32>> {
-        self.model_matrix().set(matrix.into());
+    pub fn set_model_matrix<T>(self: &Self, matrix: T) -> &Self where Mat4<f32>: From<T> {
+        self.model_matrix().set(&matrix.into());
         self
     }
 
@@ -151,7 +150,7 @@ impl Layer {
     }
 
     /// Draws a rectangle on given layer.
-    pub(crate) fn add_rect(self: &Self, generation: Option<usize>, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<f32>, dim: Point2, color: Color, rotation: f32, scale: Vec2) {
+    pub(crate) fn add_rect(self: &Self, generation: Option<usize>, bucket_id: u8, texture_id: u32, components: u8, uv: Rect, pos: Point2, anchor: Point2<f32>, dim: Point2, color: Color, rotation: f32, scale: Point2) {
 
         self.set_dirty(true);
         if generation.is_some() && !self.set_generation(generation.unwrap()) {
@@ -179,7 +178,7 @@ impl Layer {
             color       : color.into(),
             bucket_id   : bucket_id,
             texture_id  : texture_id,
-            texture_uv  : uv.top_left().into(),
+            texture_uv  : uv.top_left().as_array(),
             components  : components,
         });
 
@@ -190,7 +189,7 @@ impl Layer {
             color       : color.into(),
             bucket_id   : bucket_id,
             texture_id  : texture_id,
-            texture_uv  : uv.top_right().into(),
+            texture_uv  : uv.top_right().as_array(),
             components  : components,
         });
 
@@ -201,7 +200,7 @@ impl Layer {
             color       : color.into(),
             bucket_id   : bucket_id,
             texture_id  : texture_id,
-            texture_uv  : uv.bottom_left().into(),
+            texture_uv  : uv.bottom_left().as_array(),
             components  : components,
         });
 
@@ -212,7 +211,7 @@ impl Layer {
             color       : color.into(),
             bucket_id   : bucket_id,
             texture_id  : texture_id,
-            texture_uv  : uv.bottom_right().into(),
+            texture_uv  : uv.bottom_right().as_array(),
             components  : components,
         });
     }
@@ -238,8 +237,8 @@ impl Layer {
     }
 
     /// Creates a new layer
-    fn create<T>(dimensions: T, program: Option<Program>) -> Self where Vec2<f32>: From<T> {
-        let dimensions = Vec2::from(dimensions);
+    fn create<T>(dimensions: T, program: Option<Program>) -> Self where Point2<f32>: From<T> {
+        let dimensions = Point2::from(dimensions);
         Layer {
             view_matrix     : Mutex::new(Mat4::viewport(dimensions.0, dimensions.1).into()),
             model_matrix    : Mutex::new(Mat4::identity().into()),

@@ -1,6 +1,5 @@
 use prelude::*;
-use core::{self, Layer, RenderContext, Color};
-use maths::{Point2, Vec2, Rect};
+use core::{self, Layer, RenderContext, Color, Point2, Rect};
 use core::builder::*;
 use rusttype;
 use backends::backend;
@@ -80,23 +79,23 @@ impl Font {
     }
 
     /// Write to given layer.
-    pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color) -> &Font where Vec2<f32>: From<T> {
-        let position = Vec2::from(position);
+    pub fn write<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color) -> &Font where Point2<f32>: From<T> {
+        let position = Point2::from(position);
         self.write_paragraph(layer, text, position.0, position.1, 0.0, color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels.
-    pub fn write_wrapped<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32) -> &Font where Vec2<f32>: From<T> {
-        let position = Vec2::from(position);
+    pub fn write_wrapped<T>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32) -> &Font where Point2<f32>: From<T> {
+        let position = Point2::from(position);
         self.write_paragraph(layer, text, position.0, position.1, max_width, color, 0.0, 1.0, 1.0);
         self
     }
 
     /// Write to given layer. Breaks lines after max_width pixels and applies given rotation and scaling.
-    pub fn write_transformed<T, U>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32, rotation: f32, scale: U) -> &Font where Vec2<f32>: From<T>+From<U> {
-        let position = Vec2::from(position);
-        let scale = Vec2::from(scale);
+    pub fn write_transformed<T, U>(self: &Self, layer: &Layer, text: &str, position: T, color: Color, max_width: f32, rotation: f32, scale: U) -> &Font where Point2<f32>: From<T>+From<U> {
+        let position = Point2::from(position);
+        let scale = Point2::from(scale);
         self.write_paragraph(layer, text, position.0, position.1, max_width, color, rotation, scale.0, scale.1);
         self
     }
@@ -139,8 +138,8 @@ impl Font {
 
         context.font_cache.queue(self.font_id, &glyphs);
 
-        let anchor = Point2(0., 0.);
-        let scale = Vec2(scale_x, scale_y);
+        let anchor = (0., 0.);
+        let scale = (scale_x, scale_y);
         let cos_rot = rotation.cos();
         let sin_rot = rotation.sin();
 
@@ -150,7 +149,7 @@ impl Font {
                 let dist_y = pos.1 * scale_y;
                 let offset_x = x + dist_x * cos_rot - dist_y * sin_rot;
                 let offset_y = y + dist_x * sin_rot + dist_y * cos_rot;
-                layer.add_rect(None, bucket_id, 0, 1, uv, Point2(offset_x, offset_y), anchor, dim, color, rotation, scale);
+                layer.add_rect(None, bucket_id, 0, 1, uv, (offset_x, offset_y), anchor, dim, color, rotation, scale);
             }
         }
     }
@@ -255,7 +254,7 @@ impl FontCache {
         }
 
         cache.cache_queued(|rect, data| {
-            queue.push( (Rect(Point2(rect.min.x, rect.min.y), Point2(rect.max.x, rect.max.y)), data.to_vec()) );
+            queue.push( ( ((rect.min.x, rect.min.y), (rect.max.x, rect.max.y)), data.to_vec() ) );
             dirties = true;
         }).unwrap();
 
@@ -280,9 +279,9 @@ impl FontCache {
     pub fn rect_for(self: &Self, font_id: usize, glyph: &rusttype::PositionedGlyph) -> Option<(Rect, Point2, Point2)> {
         let cache = self.cache.lock().unwrap();
         if let Ok(Some((uv_rect, screen_rect))) = cache.rect_for(font_id, glyph) {
-            let uv = Rect::new(uv_rect.min.x, uv_rect.min.y, uv_rect.max.x, uv_rect.max.y);
-            let pos = Point2(screen_rect.min.x as f32, screen_rect.min.y as f32);
-            let dim = Point2((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
+            let uv = ((uv_rect.min.x, uv_rect.min.y), (uv_rect.max.x, uv_rect.max.y));
+            let pos = (screen_rect.min.x as f32, screen_rect.min.y as f32);
+            let dim = ((screen_rect.max.x - screen_rect.min.x) as f32, (screen_rect.max.y - screen_rect.min.y) as f32);
             Some((uv, pos, dim))
         } else {
             None

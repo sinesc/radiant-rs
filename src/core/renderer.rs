@@ -5,8 +5,8 @@ use core::{
     RenderContext, RenderContextData, AsRenderTarget, RenderTarget, RenderTargetInner,
     blendmodes, TextureFormat
 };
+use core::math::*;
 use core::builder::*;
-use maths::{Rect, Mat4};
 use backends::backend;
 
 /// Default fragment shader program

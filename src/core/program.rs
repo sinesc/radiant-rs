@@ -1,6 +1,6 @@
 use prelude::*;
 use core::{self, RenderContext, AsUniform, UniformList, Color};
-use maths::{Mat4};
+use core::math::*;
 use backends::backend;
 
 const SPRITE_INC: &'static str = include_str!("../shader/sprite.inc.fs");

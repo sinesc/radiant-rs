@@ -4,7 +4,7 @@ use std::borrow::Cow;
 use self::glium::uniforms::{Uniforms, AsUniformValue};
 use self::glium::{glutin, Surface};
 use core;
-use maths::*;
+use core::math::*;
 
 // --------------
 // Public interface provided to Radiant-API-user in radiant_rs::backend 
@@ -986,8 +986,8 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
 
     let mut glium_uniforms = GliumUniformList::from_uniform_list(&program.uniforms);
     glium_uniforms
-        .add("u_view", GliumUniform::Mat4(layer.view_matrix().deref().deref().into()))
-        .add("u_model", GliumUniform::Mat4(layer.model_matrix().deref().deref().into()))
+        .add("u_view", GliumUniform::Mat4(*layer.view_matrix().deref().deref()))
+        .add("u_model", GliumUniform::Mat4(*layer.model_matrix().deref().deref()))
         .add("_rd_color", GliumUniform::Vec4(layer.color().deref().into()))
         .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.0.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
         .add("_rd_comp", GliumUniform::UnsignedInt(component))
@@ -1015,8 +1015,8 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
         .add("u_model", GliumUniform::Mat4(model_matrix.into()))
         .add("_rd_color", GliumUniform::Vec4(color.into()))
         .add("_rd_tex", GliumUniform::Texture2d(&texture.handle.0))
-        .add("_rd_offset", GliumUniform::Vec2(info.rect.0.into()))
-        .add("_rd_dimensions", GliumUniform::Vec2(info.rect.1.into()))
+        .add("_rd_offset", GliumUniform::Vec2(info.rect.0.as_array()))
+        .add("_rd_dimensions", GliumUniform::Vec2(info.rect.1.as_array()))
         .add("_rd_has_tex", GliumUniform::Bool(info.texture.is_some()));
 
     let vertices = &context.single_rect;

@@ -1,5 +1,4 @@
-use core::{Display, DisplayInfo, Monitor};
-use maths::Point2;
+use core::{Display, DisplayInfo, Monitor, Point2};
 
 /// A display builder.
 ///
