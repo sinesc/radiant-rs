@@ -1,0 +1,8 @@
+[package]
+name = "radiant-utils"
+version = "0.1.0"
+authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
+
+[dependencies]
+radiant-rs = "0.11.0"
+num-traits = "0.1.36"

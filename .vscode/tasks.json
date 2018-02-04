@@ -1,0 +1,114 @@
+{
+    "version": "2.0.0",
+    "presentation": {
+        "reveal": "always",
+        "panel": "new"
+    },
+    "tasks": [
+        {
+            "label": "cargo build",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo build (release)",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--release"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo run",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo run (release)",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--release"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo run example",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--example",
+                "${fileBasenameNoExtension}"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo run example (release)",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--release",
+                "--example",
+                "${fileBasenameNoExtension}"
+            ],
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo test",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "test"
+            ],
+            "group": "test",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo clean",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "clean"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "cargo update",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "update"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "cargo rustdoc",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "rustdoc",
+                "--open"
+            ],
+            "problemMatcher": []
+        },
+    ]
+}
