@@ -1,5 +1,7 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Program, utils, blendmodes, postprocessors};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Program, blendmodes, postprocessors};
+use ru::Matrix;
 
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Basic postprocessor example").build();
@@ -20,7 +22,7 @@ pub fn main() {
     // using the given program, but there is a trait to implement custom postprocessors.
     let ripple_effect = postprocessors::Basic::new(&renderer.context(), program);
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
         layer.model_matrix().rotate(frame.delta_f32 * 1.1);

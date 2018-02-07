@@ -1,5 +1,6 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Color, utils};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Color};
 
 pub fn main() {
 
@@ -7,7 +8,7 @@ pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Empty window example").build();
 
     // A simple mainloop helper (just an optional utility function)
-    utils::renderloop(|_| {
+    ru::renderloop(|_| {
 
         // Clear current backbuffer frame (black)
         display.clear_frame(Color::BLACK);

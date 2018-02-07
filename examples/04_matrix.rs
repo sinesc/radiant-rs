@@ -1,5 +1,7 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Sprite, Color, utils, blendmodes};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, blendmodes};
+use ru::Matrix;
 
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Matrix example").build();
@@ -14,7 +16,7 @@ pub fn main() {
     sprite.draw(&layer, 0, (190., 100.), Color::WHITE);
     sprite.draw(&layer, 0, (160., 155.), Color::WHITE);
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);
         let presentation_id = (frame.elapsed_f32 / 1.5) as u32 % 4;
 

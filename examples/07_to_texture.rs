@@ -1,5 +1,7 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Texture, TextureFilter, utils, blendmodes};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Texture, TextureFilter, blendmodes};
+use ru::Matrix;
 
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Drawing to textures example").build();
@@ -17,10 +19,10 @@ pub fn main() {
     // a low opacity black to make old contents slowly disappear.
     let surface = Texture::new(&renderer.context(), 640, 480);
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);
 
-        // Rotate the sprite matrices
+        // Rotate the sprite matrices (this uses the fairyjar::Matrix trait)
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
         layer.model_matrix().rotate(frame.delta_f32 * 1.1);
 
@@ -40,7 +42,7 @@ pub fn main() {
         }
 
         // Draw a small thumbnail of surface
-        renderer.copy_rect_from(&surface, (0, 0, 640, 480), (512, 384, 128, 96), TextureFilter::Linear);
+        renderer.copy_rect_from(&surface, ((0, 0), (640, 480)), ((512, 384), (128, 96)), TextureFilter::Linear);
 
         display.swap_frame();
         !display.poll_events().was_closed()

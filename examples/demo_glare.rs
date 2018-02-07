@@ -1,4 +1,5 @@
 extern crate radiant_rs;
+extern crate radiant_utils as ru;
 use radiant_rs::*;
 
 #[path="res/effects/bloom.rs"]
@@ -19,7 +20,7 @@ pub fn main() {
     let lightmap_layer = Layer::new((640., 480.));
     let unprocessed_lightmap_layer = Layer::new((640., 480.));
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);
 
         color_layer.clear();

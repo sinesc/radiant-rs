@@ -1,5 +1,6 @@
 extern crate radiant_rs;
-use radiant_rs::{Color, Renderer, Layer, Display, Font, blendmodes, utils};
+extern crate radiant_utils as ru;
+use radiant_rs::{Color, Renderer, Layer, Display, Font, blendmodes};
 use std::thread;
 use std::sync::{Arc, Barrier};
 
@@ -39,7 +40,7 @@ pub fn main() {
         });
     }
 
-    utils::renderloop(|_| {
+    ru::renderloop(|_| {
 
         // Unblock once all threads have finished drawing.
         draw_start.wait();

@@ -1,5 +1,7 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Program, utils};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Program};
+use ru::Matrix;
 
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Custom program example").build();
@@ -15,11 +17,11 @@ pub fn main() {
     let layer = Layer::new((320., 240.));
     let layer_custom = layer.clone_with_program(program);
 
-    // Translate them to the left/right.
+    // Translate them to the left/right (this uses the fairyjar::Matrix trait)
     layer.view_matrix().translate((-80., 0.));
     layer_custom.view_matrix().translate((80., 0.));
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);
         layer.clear();
 

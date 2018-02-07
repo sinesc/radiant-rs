@@ -1,7 +1,8 @@
 #[macro_use]
 extern crate glium;
 extern crate radiant_rs;
-use radiant_rs::{backend, Renderer, Layer, Sprite, Color, utils, blendmodes};
+extern crate radiant_utils as ru;
+use radiant_rs::{backend, Renderer, Layer, Sprite, Color, blendmodes};
 use glium::Surface;
 
 #[path="res/glium_utils.rs"]
@@ -37,7 +38,7 @@ pub fn main() {
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
 
         // Clear the layer, draw a few sprites to it
         layer.clear();

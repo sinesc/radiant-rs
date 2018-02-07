@@ -1,5 +1,6 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Font, Color, utils};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Renderer, Layer, Font, Color};
 
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Text example").build();
@@ -11,7 +12,7 @@ pub fn main() {
     let large = small.clone_with_size(48.0);
     let tiny_it = Font::builder(&renderer.context()).family("Arial").italic().size(12.0).build().unwrap();
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         layer.clear();
 
         // Colorize entire layer. This is applied multiplicatively to the contents of the layer on draw.

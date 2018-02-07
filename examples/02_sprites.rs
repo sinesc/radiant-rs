@@ -1,5 +1,6 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Sprite, Color, utils, blendmodes};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, blendmodes};
 
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Sprites example").build();
@@ -16,7 +17,7 @@ pub fn main() {
     // Layers have a blendmode setting that defines how their contents will be blended with the background on draw.
     layer.set_blendmode(blendmodes::LIGHTEN);
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
 
         // Clear the layer (layers could also be drawn multiple times, e.g. a static UI might not need to be updated each frame)
         layer.clear();

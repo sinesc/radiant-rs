@@ -1,5 +1,7 @@
 extern crate radiant_rs;
+extern crate radiant_utils as ru;
 use radiant_rs::*;
+use ru::Matrix;
 
 #[path="res/effects/bloom.rs"]
 mod bloom;
@@ -37,7 +39,7 @@ pub fn main() {
     let mut view2 = spark_layer.view_matrix().clone();
     let mut view3 = spark_layer.view_matrix().clone();
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);
 
         // Rotate the model matrix.

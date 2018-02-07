@@ -62,12 +62,12 @@ impl Postprocessor for Bloom {
 }
 
 impl Bloom {
-    pub fn new(context: &RenderContext, dimensions: Point2<u32>, iterations: u32, spread: u8, brightness: f32) -> Self {
+    pub fn new(context: &RenderContext, dimensions: (u32, u32), iterations: u32, spread: u8, brightness: f32) -> Self {
         use std::cmp::min;
 
         let blur_program = Program::from_string(&context, include_str!("blur.fs")).unwrap();
         let mut combine_program = Program::from_string(&context, include_str!("combine.fs")).unwrap();
-        let Point2(width, height) = dimensions;
+        let (width, height) = dimensions;
         let builder = Texture::builder(context).format(TextureFormat::F16F16F16F16);
 
         let targets = [ [

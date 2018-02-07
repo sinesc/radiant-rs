@@ -1,5 +1,7 @@
 extern crate radiant_rs;
-use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Texture, TextureFilter, utils, blendmodes};
+extern crate radiant_utils as ru;
+use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Texture, TextureFilter, blendmodes};
+use ru::Matrix;
 
 #[path="res/effects/bloom.rs"]
 mod bloom;
@@ -24,7 +26,7 @@ pub fn main() {
     let surface = Texture::new(&renderer.context(), 640, 480);
     let thumbnail = Texture::new(&renderer.context(), 640, 480);
 
-    utils::renderloop(|frame| {
+    ru::renderloop(|frame| {
         display.prepare_frame();
         layer.view_matrix().rotate_at((160., 120.), frame.delta_f32);
         layer.model_matrix().rotate(frame.delta_f32 * 1.1);
@@ -53,13 +55,13 @@ pub fn main() {
 
         // Draw small thumbnails of the intermediate and final surface.
         // Note: copy_* are fast pixel copy operations (no shaders/blending/transforms). Coordinates are in pixels (integers).
-        renderer.copy_rect_from(&thumbnail, (0, 0, 640, 480), (512, 288, 128, 96), TextureFilter::Linear);
-        renderer.copy_rect_from(&surface, (0, 0, 640, 480), (512, 384, 128, 96), TextureFilter::Linear);
+        renderer.copy_rect_from(&thumbnail, ((0, 0), (640, 480)), ((512, 288), (128, 96)), TextureFilter::Linear);
+        renderer.copy_rect_from(&surface, ((0, 0), (640, 480)), ((512, 384), (128, 96)), TextureFilter::Linear);
 
         // Draw color filtered variants of the thumbnail.
-        renderer.rect((469., 384., 43., 32.)).blendmode(blendmodes::ALPHA).texture(&surface).color(Color::RED).draw();
-        renderer.rect((469., 416., 43., 32.)).blendmode(blendmodes::ALPHA).texture(&surface).color(Color::GREEN).draw();
-        renderer.rect((469., 448., 43., 32.)).blendmode(blendmodes::ALPHA).texture(&surface).color(Color::BLUE).draw();
+        renderer.rect(((469., 384.), (43., 32.))).blendmode(blendmodes::ALPHA).texture(&surface).color(Color::RED).draw();
+        renderer.rect(((469., 416.), (43., 32.))).blendmode(blendmodes::ALPHA).texture(&surface).color(Color::GREEN).draw();
+        renderer.rect(((469., 448.), (43., 32.))).blendmode(blendmodes::ALPHA).texture(&surface).color(Color::BLUE).draw();
 
         layer.set_view_matrix(prev_view_matrix);
         display.swap_frame();
