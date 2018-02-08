@@ -30,7 +30,7 @@ palette = "0.2.1"
 [dev-dependencies]
 tiled = "0.4"
 glium = "0.20.0"
-radiant-utils = "0.1.0"
+radiant-utils = "0.1"
 
 [lib]
 name = "radiant_rs"
