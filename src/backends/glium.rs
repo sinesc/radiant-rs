@@ -263,6 +263,7 @@ impl Display {
     fn map_key_code(key: glium::glutin::VirtualKeyCode) -> core::InputId {
         use self::glutin::VirtualKeyCode as VK;
         use core::InputId as IID;
+        #[allow(unreachable_patterns)]
         match key {
             VK::Key1          => IID::Key1,
             VK::Key2          => IID::Key2,
@@ -332,6 +333,7 @@ impl Display {
             VK::Back          => IID::Backspace,
             VK::Return        => IID::Return,
             VK::Space         => IID::Space,
+            VK::Caret         => IID::Caret,
             VK::Numlock       => IID::Numlock,
             VK::Numpad0       => IID::Numpad0,
             VK::Numpad1       => IID::Numpad1,
@@ -414,6 +416,7 @@ impl Display {
             VK::Compose       => IID::Compose,
             VK::NavigateForward => IID::NavigateForward,
             VK::NavigateBackward => IID::NavigateBackward,
+            _                 => IID::Unsupported
         }
     }    
 }

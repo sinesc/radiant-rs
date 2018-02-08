@@ -147,6 +147,7 @@ enum_from_primitive! {
         Backslash,
         Calculator,
         Capital,
+        Caret,
         Colon,
         Comma,
         Convert,
