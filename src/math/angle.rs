@@ -1,5 +1,5 @@
 use super::vec2::Vec2;
-use radiant_rs::{Uniform, AsUniform};
+//use radiant_rs::{Uniform, AsUniform};
 use prelude::*;
 
 /// An Angle between -PI and PI.
@@ -202,7 +202,7 @@ impl<T> Div<T> for Angle<T> where T: Debug + Float {
         Angle::<T>(self.0 / other)
     }
 }
-
+/*
 impl AsUniform for Angle<f32> {
     fn as_uniform(&self) -> Uniform {
         Uniform::Float(self.0)
@@ -214,7 +214,7 @@ impl AsUniform for Angle<f64> {
         Uniform::Double(self.0)
     }
 }
-
+*/
 impl<T> Debug for Angle<T> where T: Debug + Float {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Angle({:?})", self.0)

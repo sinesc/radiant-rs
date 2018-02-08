@@ -1,6 +1,6 @@
 use prelude::*;
 use super::{Vec3, Vector, Angle, Rect, Point2};
-use radiant_rs::{Uniform, AsUniform};
+//use radiant_rs::{Uniform, AsUniform};
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone)]
@@ -253,7 +253,7 @@ impl Mul<Vec2<f64>> for f64 {
         Vec2::<f64>(self * other.0, self * other.1)
     }
 }
-
+/*
 impl AsUniform for Vec2<f32> {
     fn as_uniform(&self) -> Uniform {
         Uniform::Vec2([ self.0, self.1 ])
@@ -265,7 +265,7 @@ impl AsUniform for Vec2<f64> {
         Uniform::DoubleVec2([ self.0, self.1 ])
     }
 }
-
+*/
 impl<T> Debug for Vec2<T> where T: Debug + Float {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Vec2({:?}, {:?})", self.0, self.1)
