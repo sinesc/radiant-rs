@@ -1,3 +1,4 @@
+use radiant_rs::{Uniform, AsUniform};
 use prelude::*;
 use super::{Vec2, Vec3, Rect, Vector, Matrix};
 use super::matrix::Mat4 as Mat4Type;
@@ -263,6 +264,30 @@ impl<T: Debug + Float> Mul<Mat4<T>> for Mat4<T> {
                 a[0][2]*b[3][0] + a[1][2]*b[3][1] + a[2][2]*b[3][2] + a[3][2]*b[3][3],
                 a[0][3]*b[3][0] + a[1][3]*b[3][1] + a[2][3]*b[3][2] + a[3][3]*b[3][3],
             ],
+        ])
+    }
+}
+
+impl AsUniform for Mat4<f32> {
+    fn as_uniform(&self) -> Uniform {
+        let a = &self.0;
+        Uniform::Mat4([
+            [ a[0][0], a[0][1], a[0][2], a[0][3] ],
+            [ a[1][0], a[1][1], a[1][2], a[1][3] ],
+            [ a[2][0], a[2][1], a[2][2], a[2][3] ],
+            [ a[3][0], a[3][1], a[3][2], a[3][3] ],
+        ])
+    }
+}
+
+impl AsUniform for Mat4<f64> {
+    fn as_uniform(&self) -> Uniform {
+        let a = &self.0;
+        Uniform::DoubleMat4([
+            [ a[0][0], a[0][1], a[0][2], a[0][3] ],
+            [ a[1][0], a[1][1], a[1][2], a[1][3] ],
+            [ a[2][0], a[2][1], a[2][2], a[2][3] ],
+            [ a[3][0], a[3][1], a[3][2], a[3][3] ],
         ])
     }
 }

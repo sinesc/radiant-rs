@@ -1,6 +1,6 @@
+use radiant_rs::{Uniform, AsUniform};
 use prelude::*;
 use super::Vector;
-//use radiant_rs::{Uniform, AsUniform};
 
 /// A 3-dimensional vector.
 #[derive(Copy, Clone)]
@@ -165,7 +165,7 @@ impl Mul<Vec3<f64>> for f64 {
         Vec3::<f64>(self * other.0, self * other.1, self * other.2)
     }
 }
-/*
+
 impl AsUniform for Vec3<f32> {
     fn as_uniform(&self) -> Uniform {
         Uniform::Vec3([ self.0, self.1, self.2 ])
@@ -177,7 +177,7 @@ impl AsUniform for Vec3<f64> {
         Uniform::DoubleVec3([ self.0, self.1, self.2 ])
     }
 }
-*/
+
 impl<T> Debug for Vec3<T> where T: Debug + Float {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Vec3({:?}, {:?}, {:?})", self.0, self.1, self.2)

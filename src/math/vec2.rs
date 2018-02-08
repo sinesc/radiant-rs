@@ -1,6 +1,6 @@
+use radiant_rs::{Uniform, AsUniform};
 use prelude::*;
 use super::{Vec3, Vector, Angle, Rect, Point2};
-//use radiant_rs::{Uniform, AsUniform};
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone)]
@@ -105,24 +105,18 @@ impl<T> Vector<T> for Vec2<T> where T: Debug + Float {
     }
 }
 
-/*impl<T> From<(T, T)> for Vec2<T> where T: Debug + Float {
-    fn from(source: (T, T)) -> Self {
-        Vec2(source.0, source.1)
-    }
-}*/
-
 impl<T> From<Point2<T>> for Vec2<T> where T: Debug + Float {
     fn from(source: Point2<T>) -> Self {
         Vec2(source.0, source.1)
     }
 }
-/*
+
 impl From<(i32, i32)> for Vec2<f32> {
     fn from(source: (i32, i32)) -> Self {
         Vec2(source.0 as f32, source.1 as f32)
     }
 }
-*/
+
 impl<T> From<[ T; 2 ]> for Vec2<T> where T: Debug + Float {
     fn from(source: [ T; 2 ]) -> Self {
         Vec2(source[0], source[1])
@@ -253,7 +247,7 @@ impl Mul<Vec2<f64>> for f64 {
         Vec2::<f64>(self * other.0, self * other.1)
     }
 }
-/*
+
 impl AsUniform for Vec2<f32> {
     fn as_uniform(&self) -> Uniform {
         Uniform::Vec2([ self.0, self.1 ])
@@ -265,7 +259,7 @@ impl AsUniform for Vec2<f64> {
         Uniform::DoubleVec2([ self.0, self.1 ])
     }
 }
-*/
+
 impl<T> Debug for Vec2<T> where T: Debug + Float {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Vec2({:?}, {:?})", self.0, self.1)

@@ -8,5 +8,5 @@ repository = "https://github.com/sinesc/radiant-utils.git"
 license = "MIT"
 
 [dependencies]
-#radiant-rs = "0.11.0"
+radiant-rs = "0.11"
 num-traits = "0.1.36"
