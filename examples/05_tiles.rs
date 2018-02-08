@@ -8,6 +8,9 @@ use std::fs::File;
 use radiant_rs::*;
 use ru::Matrix;
 
+// Note: Recommended to be run with --release. This example loads a large tileset
+// using the image library which appears to be a bit sedate in debug mode.
+
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Tiles example").build();
     let renderer = Renderer::new(&display).unwrap();

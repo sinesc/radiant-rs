@@ -20,7 +20,7 @@ pub mod public {
     
     /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop.
     /// 
-    /// As an alternative to backend::create_renderer(), this allows for glium rendering but keeps radiant display handling.
+    /// As an alternative to [`backend::create_renderer()`](fn.create_renderer.html), this allows for glium rendering but keeps radiant display handling.
     pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
         core::Display {
             handle: super::Display(Rc::new(super::DisplayInner { 
@@ -36,7 +36,7 @@ pub mod public {
 
     /// Creates a new radiant_rs::Renderer from given glium::Display.
     /// 
-    /// As an alternative to backend::create_display(), this allows for glium rendering and display handling while radiant only handles 2d rendering.
+    /// As an alternative to [`backend::create_display()`](fn.create_display.html), this allows for glium rendering and display handling while radiant only handles 2d rendering.
     /// Note that this renderer does not have a default target. Use `Renderer::render_to()` to specify one or `backend::target_frame()` to target
     /// a glium::Frame.
     // TODO: add helpful panic message if user tries to use this renderer without targeting a texture or glium::Frame first

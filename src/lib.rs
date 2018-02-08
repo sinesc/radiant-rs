@@ -9,12 +9,14 @@ To view the reference, scroll down or collapse this block using the [-] to the l
 # Examples
 
 The examples folder contains multiple small examples. They can be run via `cargo run --example <example name>`, e.g.
-
-`cargo run --release --example demo_blobs` to run demo_blobs.rs
+`cargo run --example demo_blobs` to run demo_blobs.rs.
 
 # Basic rendering
 
-1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen.
+Radiant provides an optional [Display](struct.Display.html) struct to create windows and handle events. If that's what you want, great. Otherwise
+see further below on how to integrate Radiant with Glium.
+
+1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen. 
 2. Create a [renderer](struct.Renderer.html) with `Renderer::new()`. It is used to draw to rendertargets like the display.
 3. Grab a context from the renderer using the `context()` method. It is required for resource loading.
 4. Load [sprites](struct.Sprite.html) or [fonts](struct.Font.html) using e.g. `Font::from_file()` or `Sprite::from_file()`.
@@ -23,21 +25,13 @@ The examples folder contains multiple small examples. They can be run via `cargo
 7. Prepare a new frame and clear it using `Display::clear_frame()`. (If you don't want to clear, use `Display::prepare_frame()` instead.)
 8. Draw the contents of your layers to the display using `Renderer::draw_layer()`.
 9. Make the frame visible via `Display::swap_frame()`.
-10. Consider clearing the layer and goto 6. Or maybe simply change some layer properties and redraw it starting a step 7.
-
-# Integrating with existing glium projects (or any supported backend)
-
-Radiant can be integrated with supported backends using the APIs provided in the [backend](backend/index.html) module. The `10_glium_less` and `11_glium_more`
-examples shows how to do this with Glium.
-
-These APIs are currently experimental and likely subject to change.
 
 # Draw to texture/postprocess
 
 Postprocessors are custom effects that may be as simple as a single shader program or combine multiple shaders and textures into a single
 output.
 
-The renderer has a method [`Renderer::render_to()`](struct.Renderer.html#method.render_to) that accepts a texture and a closure. Anything
+The renderer has a method [`Renderer::render_to()`](struct.Renderer.html#method.render_to) that accepts a rendertarget (e.g. texture) and a closure. Anything
 drawn within the closure will be rendered to the texture.
 
 Likewise, use [`Renderer::postprocess()`](struct.Renderer.html#method.postprocess) to render using a postprocessor.
@@ -83,16 +77,18 @@ Currently sprite-sheets are required to be sheets of one or more either horizont
 can have multiple components aligned orthogonally to the frames. Components could be the sprite's color image, a light or distortion
 map for the shader etc.
 
-Filenames are required to express the sprite format, e.g. `battery_lightmapped_128x128x15x2` would be 15 frames of a 128x128 sprite using
-two components. This is a scaled version of how it could look. The Color component is in the top row, a lightmap component in the bottom
-row:
+Sprites can be created from either raw image data and a [SpriteParameters](support/struct.SpriteParameters.html) struct describing the
+sprite layout, or directly from a file.
+When loading from file, filenames are required to express the sprite format, e.g. `battery_lightmapped_128x128x15x2` would be 15 frames
+of a 128x128 sprite using two components. This is a scaled version of how it could look. The color component is in the top row, a lightmap
+component in the bottom row:
 
 ![Spritesheet](https://raw.githubusercontent.com/sinesc/radiant-rs/master/doc/spritesheet.png "Spritesheet")
 
 # Custom shaders
 
 Radiant supports the use of custom fragment shaders. These are normal glsl shaders. To simplify access to the default
-sampler (which might be a sampler2DArray or sampler2D, depending on what is drawn) a tiny wrapper is injected into the
+sampler (which might be a sampler2DArray or sampler2D, depending on what is drawn) a wrapper is injected into the
 source. The wrapper provides `sheet*()` functions similar to glsl's `texture*()` functions.
 This only applies to the default sampler. It is possible to add custom uniforms, including samplers, to your shader
 that would be sampled using the `texture*()` functions.
@@ -126,6 +122,17 @@ void main() {
     f_color = sheet(v_tex_coords) * v_color;
 }
 ```
+
+# Integrating with existing glium projects (or any supported backend)
+
+Radiant can be integrated with supported backends using the APIs provided in the [backend](backend/index.html) module. The `10_glium_less` and `11_glium_more`
+examples show two different approaches on  how to do this.
+
+Approach "more": Skip creating a Radiant Display and use [`backend::create_renderer()`](backend/fn.create_renderer.html) to create a renderer from a Glium Display. 
+Then use [`backend::target_frame`](backend/fn.target_frame.html) to direct the renderer to target the given Glium Frame instead.
+
+Approach "less": Use [`backend::create_display()`](backend/fn.create_display.html) to create a Radiant Display from a Glium Display *and* EventsLoop. Then use
+[`backend::take_frame()`](backend/fn.take_frame.html) to "borrow" a Glium Frame from Radiant.
 */
 
 #[macro_use] extern crate enum_primitive;
