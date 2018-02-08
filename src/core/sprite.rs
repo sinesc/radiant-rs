@@ -255,21 +255,21 @@ pub struct SpriteData {
 }
 
 /// Sprite parameter layout type. Sprites are arranged either horizontally or
-/// vertically on the the sprite sheet..
+/// vertically on the the sprite sheet.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum SpriteLayout {
     VERTICAL,
     HORIZONTAL,
 }
 
-/// Sprite parameters as extracted from file name.
-#[derive(Debug)]
+/// Sprite parameters describe how individual sprites are positioned on a sprite sheet.
+#[derive(Debug, Copy, Clone)]
 pub struct SpriteParameters {
-    dimensions  : (u32, u32),
-    num_frames  : (u32, u32),
-    components  : u32,
-    inner_margin: u32,
-    layout      : SpriteLayout
+    pub dimensions  : Point2<u32>,
+    pub num_frames  : Point2<u32>,
+    pub components  : u32,
+    pub inner_margin: u32,
+    pub layout      : SpriteLayout
 }
 
 /// Sprite details after processing.
