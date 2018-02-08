@@ -1,3 +1,4 @@
+#![allow(unused_variables, dead_code, unused_mut)]
 /*!
 Null-Renderer
 
@@ -5,7 +6,7 @@ This sample show the minimum required implementation of a backend.
 */
 
 use core;
-use maths::*;
+use core::math::*;
 
 // --------------
 // Public interface provided to Radiant-API-user in radiant_rs::backend 
@@ -30,10 +31,10 @@ impl Display {
         Frame()
     }
     pub fn framebuffer_dimensions(self: &Self) -> Point2<u32> {
-        Point2(0, 0)
+        (0, 0)
     }
     pub fn window_dimensions(self: &Self) -> Point2<u32> {
-        Point2(0, 0)
+        (0, 0)
     }
     pub fn set_fullscreen(self: &Self, monitor: Option<core::Monitor>) -> bool {
         false
@@ -70,7 +71,7 @@ impl Frame {
     pub fn copy_rect_from_texture(self: &Self, source: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
     }
     pub fn dimensions(self: &Self) -> Point2<u32> {
-        Point2(0, 0)
+        (0, 0)
     }
 }
 
@@ -95,7 +96,7 @@ pub struct Monitor();
 
 impl Monitor {
     pub fn get_dimensions(self: &Self) -> Point2<u32> {
-        Point2(0, 0)
+        (0, 0)
     }
     pub fn get_name(self: &Self) -> Option<String> {
         Some("Headless".to_string())
