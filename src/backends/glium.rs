@@ -333,7 +333,7 @@ impl Display {
             VK::Back          => IID::Backspace,
             VK::Return        => IID::Return,
             VK::Space         => IID::Space,
-            VK::Caret         => IID::Caret,
+            //VK::Caret         => IID::Caret,
             VK::Numlock       => IID::Numlock,
             VK::Numpad0       => IID::Numpad0,
             VK::Numpad1       => IID::Numpad1,
