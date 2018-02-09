@@ -233,6 +233,7 @@ enum_from_primitive! {
 
 impl InputId {
     pub fn button(id: usize) -> InputId {
+        use enum_primitive::FromPrimitive;
         let base = InputId::Mouse1 as isize;
         if (id >= 1) & (id <= 16) {
             InputId::from_isize(base + (id as isize - 1)).unwrap()
@@ -358,6 +359,7 @@ impl<'a> Iterator for InputIterator<'a> {
 
     fn next(self: &mut Self) -> Option<(InputId, InputState)> {
 
+        use enum_primitive::FromPrimitive;
         let position = self.position;
         self.position += 1;
 

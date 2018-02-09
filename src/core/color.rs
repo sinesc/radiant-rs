@@ -182,14 +182,13 @@ impl Color {
     }
 }
 
-
-impl<T> From<(T, T, T, T)> for Color where T: Debug + Float, f32: From<T> {
+impl<T> From<(T, T, T, T)> for Color where f32: From<T> {
     fn from(source: (T, T, T, T)) -> Self {
         Color(source.0.into(), source.1.into(), source.2.into(), source.3.into())
     }
 }
 
-impl<T> From<[ T; 4 ]> for Color where T: Debug + Float, f32: From<T> {
+impl<T> From<[ T; 4 ]> for Color where T: Copy, f32: From<T> {
     fn from(source: [ T; 4 ]) -> Self {
         Color(source[0].into(), source[1].into(), source[2].into(), source[3].into())
     }

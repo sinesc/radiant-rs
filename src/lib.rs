@@ -139,7 +139,6 @@ Approach "less": Use [`backend::create_display()`](backend/fn.create_display.htm
 #[macro_use] extern crate lazy_static;
 extern crate image;
 extern crate regex;
-extern crate num_traits;
 extern crate rusttype;
 extern crate unicode_normalization;
 extern crate font_loader;

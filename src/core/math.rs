@@ -57,9 +57,9 @@ impl AsUniform for Mat4<f64> {
 }
 
 /// A stack of 4x4 matrices.
-pub struct Mat4Stack<T = f32> (Vec<Mat4<T>>) where T: Copy + Debug;
+pub struct Mat4Stack<T = f32> (Vec<Mat4<T>>);
 
-impl<T> Mat4Stack<T> where T: Copy + Debug {
+impl<T> Mat4Stack<T> where T: Copy {
 
     /// Creates a new matrix stack.
     pub fn new(matrix: Mat4<T>) -> Mat4Stack<T> {
@@ -80,7 +80,7 @@ impl<T> Mat4Stack<T> where T: Copy + Debug {
     }
 }
 
-impl<T> Deref for Mat4Stack<T> where T: Copy + Debug {
+impl<T> Deref for Mat4Stack<T> where T: Copy {
     type Target = Mat4<T>;
 
     fn deref(&self) -> &Mat4<T> {
@@ -88,13 +88,13 @@ impl<T> Deref for Mat4Stack<T> where T: Copy + Debug {
     }
 }
 
-impl<T> DerefMut for Mat4Stack<T> where T: Copy + Debug {
+impl<T> DerefMut for Mat4Stack<T> where T: Copy {
     fn deref_mut(&mut self) -> &mut Mat4<T> {
         self.0.last_mut().unwrap()
     }
 }
 
-impl<T> From<Mat4<T>> for Mat4Stack<T> where T: Copy + Debug {
+impl<T> From<Mat4<T>> for Mat4Stack<T> where T: Copy {
     fn from(source: Mat4<T>) -> Self {
         Mat4Stack::new(source)
     }
@@ -104,17 +104,12 @@ impl<T> From<Mat4<T>> for Mat4Stack<T> where T: Copy + Debug {
 pub type Point2<T = f32> = (T, T);
 
 pub trait Point2Trait<T> {
-    fn new(x: T, y: T) -> Self;
     fn x(self: &Self) -> T;
     fn y(self: &Self) -> T;
     fn as_array(self: &Self) -> [ T; 2 ];
 }
 
-impl<T> Point2Trait<T> for Point2<T> where T: Copy + Debug {
-    #[inline]
-    fn new(x: T, y: T) -> Self {
-        (x, y)
-    }
+impl<T> Point2Trait<T> for Point2<T> where T: Copy {
     #[inline]
     fn x(self: &Self) -> T {
         self.0
@@ -133,7 +128,6 @@ impl<T> Point2Trait<T> for Point2<T> where T: Copy + Debug {
 pub type Rect<T = f32> = (Point2<T>, Point2<T>);
 
 pub trait RectTrait<T> {
-    fn new(x1: T, y1: T, x2: T, y2: T) -> Self;
     fn top_left(self: &Self) -> Point2<T>;
     fn top_right(self: &Self) -> Point2<T>;
     fn bottom_left(self: &Self) -> Point2<T>;
@@ -141,12 +135,7 @@ pub trait RectTrait<T> {
     fn as_array(self: &Self) -> [ T; 4 ];
 }
 
-impl<T> RectTrait<T> for Rect<T> where T: Copy + Debug {
-    /// Creates a new rectangle with given dimensions.
-    #[inline]
-    fn new(x1: T, y1: T, x2: T, y2: T) -> Self {
-        ((x1, y1), (x2, y2))
-    }
+impl<T> RectTrait<T> for Rect<T> where T: Copy {
     #[inline]
     fn top_left(self: &Self) -> Point2<T> {
         ((self.0).0, (self.0).1)
