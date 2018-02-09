@@ -1,6 +1,6 @@
 [package]
 name = "radiant-rs"
-version = "0.11.1"
+version = "0.11.2"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 description = "Thread-safe Rust sprite rendering engine with a friendly API and custom shader support"
 documentation = "https://docs.rs/radiant-rs/"
