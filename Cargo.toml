@@ -1,6 +1,6 @@
 [package]
 name = "radiant-utils"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 description = "Radiant example code support library"
 documentation = "https://docs.rs/radiant-utils/"
