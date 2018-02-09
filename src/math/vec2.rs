@@ -4,9 +4,9 @@ use super::{Vec3, Vector, Angle, Rect, Point2};
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone)]
-pub struct Vec2<T: Debug + Float = f32>(pub T, pub T);
+pub struct Vec2<T = f32>(pub T, pub T);
 
-impl<T> Vec2<T> where T: Debug + Float {
+impl<T> Vec2<T> where T: Float {
     /// Creates a new instances.
     pub fn new() -> Self {
         Vec2::<T>(T::zero(), T::zero())
@@ -99,25 +99,15 @@ impl<T> Vec2<T> where T: Debug + Float {
     }
 }
 
-impl<T> Vector<T> for Vec2<T> where T: Debug + Float {
+impl<T> Vector<T> for Vec2<T> where T: Copy {
     fn as_vec3(&self, neutral: T) -> Vec3<T> {
         Vec3::<T>(self.0, self.1, neutral)
     }
 }
 
-impl<T> From<Point2<T>> for Vec2<T> where T: Debug + Float {
-    fn from(source: Point2<T>) -> Self {
-        Vec2(source.0, source.1)
-    }
-}
+// from/to array
 
-impl From<(i32, i32)> for Vec2<f32> {
-    fn from(source: (i32, i32)) -> Self {
-        Vec2(source.0 as f32, source.1 as f32)
-    }
-}
-
-impl<T> From<[ T; 2 ]> for Vec2<T> where T: Debug + Float {
+impl<T> From<[ T; 2 ]> for Vec2<T> where T: Copy {
     fn from(source: [ T; 2 ]) -> Self {
         Vec2(source[0], source[1])
     }
@@ -135,21 +125,49 @@ impl From<Vec2<f64>> for [ f64; 2 ] {
     }
 }
 
-impl<T> Neg for Vec2<T> where T: Debug + Float {
+// from/to tuple struct
+
+impl<T> From<Point2<T>> for Vec2<T> {
+    fn from(source: Point2<T>) -> Self {
+        Vec2(source.0, source.1)
+    }
+}
+
+/*impl From<Point2<i32>> for Vec2<f32> {
+    fn from(source: Point2<i32>) -> Self {
+        Vec2(source.0 as f32, source.1 as f32)
+    }
+}*/
+
+impl From<Vec2<f32>> for Point2<f32> {
+    fn from(source: Vec2<f32>) -> Self {
+        (source.0, source.1)
+    }
+}
+
+impl From<Vec2<f64>> for Point2<f64> {
+    fn from(source: Vec2<f64>) -> Self {
+        (source.0, source.1)
+    }
+}
+
+// operators
+
+impl<T> Neg for Vec2<T> where T: Float {
     type Output = Vec2<T>;
     fn neg(self) -> Vec2<T> {
         Vec2::<T>(-self.0, -self.1)
     }
 }
 
-impl<T> Add for Vec2<T> where T: Debug + Float {
+impl<T> Add for Vec2<T> where T: Float {
     type Output = Vec2<T>;
     fn add(self, other: Vec2<T>) -> Vec2<T> {
         Vec2::<T>(self.0 + other.0, self.1 + other.1)
     }
 }
 
-impl<T> AddAssign for Vec2<T> where T: Debug + Float {
+impl<T> AddAssign for Vec2<T> where T: Float {
     fn add_assign(self: &mut Self, other: Vec2<T>) {
         *self = Vec2::<T> (
             self.0 + other.0,
@@ -158,14 +176,14 @@ impl<T> AddAssign for Vec2<T> where T: Debug + Float {
     }
 }
 
-impl<T> Sub for Vec2<T> where T: Debug + Float {
+impl<T> Sub for Vec2<T> where T: Float {
     type Output = Vec2<T>;
     fn sub(self, other: Vec2<T>) -> Vec2<T> {
         Vec2::<T>(self.0 - other.0, self.1 - other.1)
     }
 }
 
-impl<T> SubAssign for Vec2<T> where T: Debug + Float {
+impl<T> SubAssign for Vec2<T> where T: Float {
     fn sub_assign(self: &mut Self, other: Vec2<T>) {
         *self = Vec2::<T> (
             self.0 - other.0,
@@ -174,7 +192,7 @@ impl<T> SubAssign for Vec2<T> where T: Debug + Float {
     }
 }
 
-impl<T> Mul<Vec2<T>> for Vec2<T> where T: Debug + Float {
+impl<T> Mul<Vec2<T>> for Vec2<T> where T: Float {
     type Output = Vec2<T>;
     /// Multiplies individual vector components with those of the given vector.
     fn mul(self, other: Vec2<T>) -> Vec2<T> {
@@ -182,14 +200,14 @@ impl<T> Mul<Vec2<T>> for Vec2<T> where T: Debug + Float {
     }
 }
 
-impl<T> MulAssign<Vec2<T>> for Vec2<T> where T: Debug + Float {
+impl<T> MulAssign<Vec2<T>> for Vec2<T> where T: Float {
     /// Mutates the vector by multiplying its components with those of the given vector.
     fn mul_assign(&mut self, other: Vec2<T>) {
         *self = Vec2::<T>(self.0 * other.0, self.1 * other.1)
     }
 }
 
-impl<T> Mul<T> for Vec2<T> where T: Debug + Float {
+impl<T> Mul<T> for Vec2<T> where T: Float {
     type Output = Vec2<T>;
     /// Multiplies the vector with given scalar operand.
     fn mul(self, other: T) -> Vec2<T> {
@@ -197,14 +215,14 @@ impl<T> Mul<T> for Vec2<T> where T: Debug + Float {
     }
 }
 
-impl<T> MulAssign<T> for Vec2<T> where T: Debug + Float {
+impl<T> MulAssign<T> for Vec2<T> where T: Float {
     /// Mutates the vector by multiplying it with the scalar operand.
     fn mul_assign(&mut self, other: T) {
         *self = Vec2::<T>(self.0 * other, self.1 * other)
     }
 }
 
-impl<T> Div<Vec2<T>> for Vec2<T> where T: Debug + Float {
+impl<T> Div<Vec2<T>> for Vec2<T> where T: Float {
     type Output = Vec2<T>;
     /// Divides individual vector components with those of the given vector.
     fn div(self, other: Vec2<T>) -> Vec2<T> {
@@ -212,14 +230,14 @@ impl<T> Div<Vec2<T>> for Vec2<T> where T: Debug + Float {
     }
 }
 
-impl<T> DivAssign<Vec2<T>> for Vec2<T> where T: Debug + Float {
+impl<T> DivAssign<Vec2<T>> for Vec2<T> where T: Float {
     /// Mutates the vector by dividing its components with those of the given vector.
     fn div_assign(&mut self, other: Vec2<T>) {
         *self = Vec2::<T>(self.0 / other.0, self.1 / other.1)
     }
 }
 
-impl<T> Div<T> for Vec2<T> where T: Debug + Float {
+impl<T> Div<T> for Vec2<T> where T: Float {
     type Output = Vec2<T>;
     /// Divides the vector by given scalar operand.
     fn div(self, other: T) -> Vec2<T> {
@@ -227,7 +245,7 @@ impl<T> Div<T> for Vec2<T> where T: Debug + Float {
     }
 }
 
-impl<T> DivAssign<T> for Vec2<T> where T: Debug + Float {
+impl<T> DivAssign<T> for Vec2<T> where T: Float {
     /// Mutates the vector by dividing it by given scalar.
     fn div_assign(&mut self, other: T) {
         *self = Vec2::<T>(self.0 / other, self.1 / other)
@@ -248,6 +266,8 @@ impl Mul<Vec2<f64>> for f64 {
     }
 }
 
+// as radiant uniform
+
 impl AsUniform for Vec2<f32> {
     fn as_uniform(&self) -> Uniform {
         Uniform::Vec2([ self.0, self.1 ])
@@ -260,7 +280,9 @@ impl AsUniform for Vec2<f64> {
     }
 }
 
-impl<T> Debug for Vec2<T> where T: Debug + Float {
+// debug print
+
+impl<T> Debug for Vec2<T> where T: Debug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Vec2({:?}, {:?})", self.0, self.1)
     }

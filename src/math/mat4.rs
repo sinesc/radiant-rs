@@ -5,9 +5,9 @@ use super::matrix::Mat4 as Mat4Type;
 
 /// A 4x4 matrix.
 #[derive(Copy, Clone)]
-pub struct Mat4<T: Copy + Debug + Float + NumCast = f32>(pub [ [ T; 4 ]; 4 ]);
+pub struct Mat4<T = f32>(pub [ [ T; 4 ]; 4 ]);
 
-impl<T> Mat4<T> where T: Debug + Float + NumCast {
+impl<T> Mat4<T> where T: Float {
     /// Creates a zero matrix.
     pub fn new() -> Mat4<T> {
         Mat4([ [ T::zero(); 4]; 4 ])
@@ -147,7 +147,7 @@ impl<T> Mat4<T> where T: Debug + Float + NumCast {
 }
 
 /// 4x4 Matrices.
-impl<T> Matrix<T> for Mat4<T> where T: Debug + Float + NumCast {
+impl<T> Matrix<T> for Mat4<T> where T: Float {
     fn set<M>(self: &mut Self, other: M) -> &mut Self where Mat4Type<T>: From<M> {
         self.0 = other.into();
         self
@@ -195,7 +195,17 @@ impl<T> Matrix<T> for Mat4<T> where T: Debug + Float + NumCast {
     }
 }
 
-impl<T: Debug + Float> Mul<T> for Mat4<T> {
+// from array
+
+impl<T> From<Mat4Type<T>> for Mat4<T> where T: Copy {
+    fn from(source: Mat4Type<T>) -> Self {
+        Mat4(source)
+    }
+}
+
+// operators
+
+impl<T> Mul<T> for Mat4<T> where T: Float {
     type Output = Mat4<T>;
     fn mul(self, other: T) -> Mat4<T> {
         let a = self.0;
@@ -209,7 +219,7 @@ impl<T: Debug + Float> Mul<T> for Mat4<T> {
     }
 }
 
-impl<T> Mul<Vec2<T>> for Mat4<T> where T: Debug + Float {
+impl<T> Mul<Vec2<T>> for Mat4<T> where T: Float {
     type Output = Vec2<T>;
     /// Multiplies the matrix with given vector operand, using 0 as z-component and 1 as w-component of the vector.
     fn mul(self, other: Vec2<T>) -> Vec2<T> {
@@ -221,7 +231,7 @@ impl<T> Mul<Vec2<T>> for Mat4<T> where T: Debug + Float {
     }
 }
 
-impl<T> Mul<Vec3<T>> for Mat4<T> where T: Debug + Float {
+impl<T> Mul<Vec3<T>> for Mat4<T> where T: Float {
     type Output = Vec3<T>;
     /// Multiplies the matrix with given vector operand using 1 as w-component of the vector.
     fn mul(self, other: Vec3<T>) -> Vec3<T> {
@@ -234,7 +244,7 @@ impl<T> Mul<Vec3<T>> for Mat4<T> where T: Debug + Float {
     }
 }
 
-impl<T: Debug + Float> Mul<Mat4<T>> for Mat4<T> {
+impl<T> Mul<Mat4<T>> for Mat4<T> where T: Float {
     type Output = Mat4<T>;
     fn mul(self, other: Mat4<T>) -> Mat4<T> {
         let a = self.0;
@@ -268,6 +278,8 @@ impl<T: Debug + Float> Mul<Mat4<T>> for Mat4<T> {
     }
 }
 
+// as radiant uniform
+
 impl AsUniform for Mat4<f32> {
     fn as_uniform(&self) -> Uniform {
         let a = &self.0;
@@ -292,9 +304,11 @@ impl AsUniform for Mat4<f64> {
     }
 }
 
-impl<T: Debug + Float> Debug for Mat4<T> {
+// debug print
+
+impl<T> Debug for Mat4<T> where T: Debug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let a = self.0;
+        let a = &self.0;
         write!(f, "Mat4(
   {:?}, {:?}, {:?}, {:?}
   {:?}, {:?}, {:?}, {:?}

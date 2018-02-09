@@ -4,9 +4,9 @@ use super::Vec2;
 
 /// An Angle between -PI and PI.
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
-pub struct Angle<T: Debug + Float + NumCast = f32>(pub T);
+pub struct Angle<T = f32>(pub T);
 
-impl<T> Angle<T> where T: Debug + Float + NumCast {
+impl<T> Angle<T> where T: Float {
     /// Returns the angle's value in radians.
     pub fn to_radians(self: &Self) -> T {
         self.0
@@ -68,7 +68,7 @@ impl<T> Angle<T> where T: Debug + Float + NumCast {
     }
 }
 
-impl<T> From<T> for Angle<T> where T: Debug + Float {
+impl<T> From<T> for Angle<T> where T: Float {
     fn from(other: T) -> Angle<T> {
         Angle(other)
     }
@@ -98,7 +98,7 @@ impl<'a> From<&'a Angle<f32>> for f32 {
     }
 }
 
-impl<T> ToPrimitive for Angle<T> where T: Debug + Float {
+impl<T> ToPrimitive for Angle<T> where T: Float {
     fn to_f64(self: &Self) -> Option<f64> {
         NumCast::from(self.to_radians())
     }
@@ -114,7 +114,7 @@ impl<T> ToPrimitive for Angle<T> where T: Debug + Float {
     }
 }
 
-impl<T> FromPrimitive for Angle<T> where T: Debug + Float {
+impl<T> FromPrimitive for Angle<T> where T: Float {
     fn from_f64(n: f64) -> Option<Angle<T>> {
         Some(Angle(NumCast::from(n).unwrap()))
     }
@@ -129,7 +129,7 @@ impl<T> FromPrimitive for Angle<T> where T: Debug + Float {
     }
 }
 
-impl<T> Neg for Angle<T> where T: Debug + Float {
+impl<T> Neg for Angle<T> where T: Float {
     type Output = Angle<T>;
 
     fn neg(self) -> Angle<T> {
@@ -137,66 +137,66 @@ impl<T> Neg for Angle<T> where T: Debug + Float {
     }
 }
 
-impl<T> Add for Angle<T> where T: Debug + Float {
+impl<T> Add for Angle<T> where T: Float {
     type Output = Angle<T>;
     fn add(self, other: Angle<T>) -> Angle<T> {
         Angle::<T>(self.0 + other.0)
     }
 }
 
-impl<T> AddAssign for Angle<T> where T: Debug + Float {
+impl<T> AddAssign for Angle<T> where T: Float {
     fn add_assign(self: &mut Self, other: Angle<T>) {
         *self = Angle::<T>(self.0 + other.0)
     }
 }
 
-impl<T> Sub for Angle<T> where T: Debug + Float {
+impl<T> Sub for Angle<T> where T: Float {
     type Output = Angle<T>;
     fn sub(self, other: Angle<T>) -> Angle<T> {
         Angle::<T>(self.0 - other.0)
     }
 }
 
-impl<T> SubAssign for Angle<T> where T: Debug + Float {
+impl<T> SubAssign for Angle<T> where T: Float {
     fn sub_assign(self: &mut Self, other: Angle<T>) {
         *self = Angle::<T>(self.0 - other.0)
     }
 }
 
-impl<T> Mul<Angle<T>> for Angle<T> where T: Debug + Float {
+impl<T> Mul<Angle<T>> for Angle<T> where T: Float {
     type Output = Angle<T>;
     fn mul(self, other: Angle<T>) -> Angle<T> {
         Angle::<T>(self.0 * other.0)
     }
 }
 
-impl<T> MulAssign for Angle<T> where T: Debug + Float {
+impl<T> MulAssign for Angle<T> where T: Float {
     fn mul_assign(&mut self, other: Angle<T>) {
         *self = Angle::<T>(self.0 * other.0)
     }
 }
 
-impl<T> Mul<T> for Angle<T> where T: Debug + Float {
+impl<T> Mul<T> for Angle<T> where T: Float {
     type Output = Angle<T>;
     fn mul(self, other: T) -> Angle<T> {
         Angle::<T>(self.0 * other)
     }
 }
 
-impl<T> Div<Angle<T>> for Angle<T> where T: Debug + Float {
+impl<T> Div<Angle<T>> for Angle<T> where T: Float {
     type Output = Angle<T>;
     fn div(self, other: Angle<T>) -> Angle<T> {
         Angle::<T>(self.0 / other.0)
     }
 }
 
-impl<T> DivAssign for Angle<T> where T: Debug + Float {
+impl<T> DivAssign for Angle<T> where T: Float {
     fn div_assign(&mut self, other: Angle<T>) {
         *self = Angle::<T>(self.0 / other.0)
     }
 }
 
-impl<T> Div<T> for Angle<T> where T: Debug + Float {
+impl<T> Div<T> for Angle<T> where T: Float {
     type Output = Angle<T>;
     fn div(self, other: T) -> Angle<T> {
         Angle::<T>(self.0 / other)

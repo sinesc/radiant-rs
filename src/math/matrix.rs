@@ -5,7 +5,7 @@ use super::{Vec3, Vector};
 pub type Mat4<T = f32> = [ [ T; 4 ]; 4 ];
 
 /// Matrix-methods for 4x4 arrays.
-pub trait Matrix<T: Debug + Float + NumCast> { 
+pub trait Matrix<T> where T: Copy { 
     /// Sets the matrix value from another matrix.
     fn set<M>(self: &mut Self, other: M) -> &mut Self where Mat4<T>: From<M>;
     /// Translate matrix by given vector.
@@ -32,7 +32,7 @@ pub trait Matrix<T: Debug + Float + NumCast> {
     fn get_euler(self: &Self) -> Vec3<T>;
 }
 
-impl<T> Matrix<T> for Mat4<T> where T: Debug + Float + NumCast {   
+impl<T> Matrix<T> for Mat4<T> where T: Float {   
     fn set<M>(self: &mut Self, other: M) -> &mut Self where Mat4<T>: From<M> {
         *self = other.into();
         self
