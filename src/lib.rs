@@ -4,8 +4,6 @@
 /*!
 Rust sprite rendering engine with a friendly API, wait-free send+sync drawing targets and custom shader support.
 
-To view the reference, scroll down or collapse this block using the [-] to the left.
-
 # Examples
 
 The examples folder contains multiple small examples. They can be run via `cargo run --example <example name>`, e.g.
@@ -13,8 +11,8 @@ The examples folder contains multiple small examples. They can be run via `cargo
 
 # Basic rendering
 
-Radiant provides an optional [Display](struct.Display.html) struct to create windows and handle events. If that's what you want, great. Otherwise
-see further below on how to integrate Radiant with Glium.
+Radiant provides an optional [Display](struct.Display.html) struct to create windows and handle events. Alternatively you can provide Radiant
+with a Glium Display (or Display and EventsLoop) instead. See further down below for details. Otherwise, these are the steps to produce output:
 
 1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen. 
 2. Create a [renderer](struct.Renderer.html) with `Renderer::new()`. It is used to draw to rendertargets like the display.
@@ -61,15 +59,6 @@ renderer.render_to(&surface, || {
     //... or here without any postprocessor? ...
 });
 ```
-
-# Drawing from multiple threads
-
-1. Wrap fonts, sprites, and layers in `Arc`s.
-2. Clone the `Arc`s for each thread that needs their contents. The rendercontext can be cloned directly.
-3. Move the clones into the thread.
-4. Draw onto your layers, load sprites etc. from any thread(s). Layers are non-blocking for drawing operations,
-blocking for other manipulations (e.g. matrix modification).
-5. Perform steps 7-10 from the above list in the thread that created the `Renderer`; both it and `Display` do not implement `Send`.
 
 # Sprite-sheets
 
@@ -123,16 +112,25 @@ void main() {
 }
 ```
 
+# Drawing from multiple threads
+
+1. Wrap fonts, sprites, and layers in `Arc`s.
+2. Clone the `Arc`s for each thread that needs their contents. The rendercontext can be cloned directly.
+3. Move the clones into the thread.
+4. Draw onto your layers, load sprites etc. from any thread(s). Layers are non-blocking for drawing operations,
+blocking for other manipulations (e.g. matrix modification).
+5. Perform steps 7-10 from the above list in the thread that created the `Renderer`; both it and `Display` do not implement `Send`.
+
 # Integrating with existing glium projects (or any supported backend)
 
-Radiant can be integrated with supported backends using the APIs provided in the [backend](backend/index.html) module. The `10_glium_less` and `11_glium_more`
-examples show two different approaches on  how to do this.
+Radiant can be used with supported backends using the APIs provided in the [backend](backend/index.html) module. The `10_glium_less` and `11_glium_more`
+examples show two different approaches on how to do this.
 
 Approach "more": Skip creating a Radiant Display and use [`backend::create_renderer()`](backend/fn.create_renderer.html) to create a renderer from a Glium Display. 
 Then use [`backend::target_frame`](backend/fn.target_frame.html) to direct the renderer to target the given Glium Frame instead.
 
 Approach "less": Use [`backend::create_display()`](backend/fn.create_display.html) to create a Radiant Display from a Glium Display *and* EventsLoop. Then use
-[`backend::take_frame()`](backend/fn.take_frame.html) to "borrow" a Glium Frame from Radiant.
+[`backend::take_frame()`](backend/fn.take_frame.html) to "borrow" a Glium Frame from Radiant. This approach let's you keep Radiant's window/event handling.
 */
 
 #[macro_use] extern crate enum_primitive;
