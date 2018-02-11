@@ -92,7 +92,7 @@ impl Renderer {
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let tex = Texture::new(&renderer.context(), 1, 1);
     /// # display.prepare_frame();
-    /// renderer.rect((0., 0., 640., 480.)).blendmode(blendmodes::ALPHA).texture(&tex).draw();
+    /// renderer.rect(((0., 0.), (640., 480.))).blendmode(blendmodes::ALPHA).texture(&tex).draw();
     /// # display.swap_frame();
     /// ```
     pub fn rect<T>(self: &Self, target_rect: T) -> DrawBuilder<DrawBuilderRect> where Rect<f32>: From<T> {
@@ -135,7 +135,7 @@ impl Renderer {
     /// // Render something to it.
     /// # display.prepare_frame();
     /// renderer.render_to(&surface, || {
-    ///     renderer.rect((0., 0., 640., 480.)).texture(&some_texture).draw();
+    ///     renderer.rect(((0., 0.), (640., 480.))).texture(&some_texture).draw();
     ///     renderer.draw_layer(&some_layer, 0);
     /// });
     /// # display.swap_frame();
@@ -171,7 +171,7 @@ impl Renderer {
     /// // ... in your renderloop...
     /// # display.prepare_frame();
     /// renderer.postprocess(&my_postprocessor, &blendmodes::ALPHA, || {
-    ///     renderer.clear(Color::black());
+    ///     renderer.clear(Color::BLACK);
     ///     renderer.draw_layer(&my_layer, 0);
     /// });
     /// # display.swap_frame();

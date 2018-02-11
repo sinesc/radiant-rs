@@ -24,7 +24,7 @@ use core::{Texture, Renderer, RenderContext, Program, BlendMode, Postprocessor, 
 /// // ... in your renderloop...
 /// # display.prepare_frame();
 /// renderer.postprocess(&my_postprocessor, &blendmodes::ALPHA, || {
-///     renderer.clear(Color::black());
+///     renderer.clear(Color::BLACK);
 ///     renderer.draw_layer(&my_layer, 0);
 /// });
 /// # display.swap_frame();
