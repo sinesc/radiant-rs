@@ -203,6 +203,14 @@ impl<T> From<Mat4Type<T>> for Mat4<T> where T: Copy {
     }
 }
 
+// Default
+
+impl<T> Default for Mat4<T> where T: Float {
+    fn default() -> Self {
+        Mat4::new()
+    }
+}
+
 // operators
 
 impl<T> Mul<T> for Mat4<T> where T: Float {

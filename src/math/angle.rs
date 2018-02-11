@@ -68,6 +68,8 @@ impl<T> Angle<T> where T: Float {
     }
 }
 
+// from/to float
+
 impl<T> From<T> for Angle<T> where T: Float {
     fn from(other: T) -> Angle<T> {
         Angle(other)
@@ -97,6 +99,16 @@ impl<'a> From<&'a Angle<f32>> for f32 {
         other.to_radians() as f32
     }
 }
+
+// Default
+
+impl<T> Default for Angle<T> where T: Float {
+    fn default() -> Self {
+        Angle(T::zero())
+    }
+}
+
+// TODO: why?
 
 impl<T> ToPrimitive for Angle<T> where T: Float {
     fn to_f64(self: &Self) -> Option<f64> {
@@ -128,6 +140,8 @@ impl<T> FromPrimitive for Angle<T> where T: Float {
         Some(Angle(NumCast::from(n).unwrap()))
     }
 }
+
+// operators
 
 impl<T> Neg for Angle<T> where T: Float {
     type Output = Angle<T>;
@@ -203,6 +217,8 @@ impl<T> Div<T> for Angle<T> where T: Float {
     }
 }
 
+// as radiant uniform
+
 impl AsUniform for Angle<f32> {
     fn as_uniform(&self) -> Uniform {
         Uniform::Float(self.0)
@@ -214,6 +230,8 @@ impl AsUniform for Angle<f64> {
         Uniform::Double(self.0)
     }
 }
+
+// debug print
 
 impl<T> Debug for Angle<T> where T: Debug + Float {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

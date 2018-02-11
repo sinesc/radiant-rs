@@ -67,6 +67,14 @@ impl From<Vec3<f64>> for (f64, f64, f64) {
     }
 }
 
+// default
+
+impl<T> Default for Vec3<T> where T: Float {
+    fn default() -> Self {
+        Vec3(T::zero(), T::zero(), T::zero())
+    }
+}
+
 // operators
 
 impl<T> Neg for Vec3<T> where T: Float {

@@ -133,12 +133,6 @@ impl<T> From<Point2<T>> for Vec2<T> {
     }
 }
 
-/*impl From<Point2<i32>> for Vec2<f32> {
-    fn from(source: Point2<i32>) -> Self {
-        Vec2(source.0 as f32, source.1 as f32)
-    }
-}*/
-
 impl From<Vec2<f32>> for Point2<f32> {
     fn from(source: Vec2<f32>) -> Self {
         (source.0, source.1)
@@ -148,6 +142,14 @@ impl From<Vec2<f32>> for Point2<f32> {
 impl From<Vec2<f64>> for Point2<f64> {
     fn from(source: Vec2<f64>) -> Self {
         (source.0, source.1)
+    }
+}
+
+// Default
+
+impl<T> Default for Vec2<T> where T: Float {
+    fn default() -> Self {
+        Vec2(T::zero(), T::zero())
     }
 }
 
