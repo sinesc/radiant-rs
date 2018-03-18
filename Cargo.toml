@@ -1,13 +1,14 @@
 [package]
 name = "radiant-rs"
 version = "0.11.2"
-authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
+authors = [ "Dennis Möhlmann <dmo479@gmail.com>" ]
 description = "Thread-safe Rust sprite rendering engine with a friendly API and custom shader support"
 documentation = "https://docs.rs/radiant-rs/"
 repository = "https://github.com/sinesc/radiant-rs.git"
 license = "MIT"
 readme = "README.md"
-keywords = ["sprite", "sprites", "glium"]
+keywords = [ "sprite", "sprites", "glium" ]
+categories = [ "rendering::engine", "game-engines" ]
 
 [features]
 default = [ "backend-glium" ]
