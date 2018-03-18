@@ -287,7 +287,7 @@ impl Input {
         }
     }
 
-    /// Returns true if given key was just pressed or repeated due to still being held down (if report_repeats is true).
+    /// Returns true if given key was just pressed or repeated due to still being held down (if `report_repeats` is true).
     pub fn pressed(self: &Self, key: InputId, report_repeats: bool) -> bool {
         let id = key as usize;
         let data = self.get();

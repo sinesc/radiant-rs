@@ -265,10 +265,15 @@ pub enum SpriteLayout {
 /// Sprite parameters describe how individual sprites are positioned on a sprite sheet.
 #[derive(Debug, Copy, Clone)]
 pub struct SpriteParameters {
+    /// Dimensions of the sprite sheet.
     pub dimensions  : Point2<u32>,
+    /// Number of frames per line and row.
     pub num_frames  : Point2<u32>,
+    /// Number of sprite-components in the sheet.
     pub components  : u32,
+    /// Margin around each frame.
     pub inner_margin: u32,
+    /// Layout of sprites within the sheet.
     pub layout      : SpriteLayout
 }
 
