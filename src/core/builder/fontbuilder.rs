@@ -59,7 +59,7 @@ impl<'a> FontBuilder<'a> {
         if let Some(file) = self.file {
             Font::from_file(self.context, file)
         } else {
-            Ok(Font::from_info(self.context, self.info))
+            Font::from_info(self.context, self.info)
         }
     }
     // Creates a new FontBuilder instance.

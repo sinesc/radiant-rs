@@ -56,6 +56,7 @@ pub enum Error {
     ShaderError(String),
     IoError(io::Error),
     FullscreenError(String),
+    FontError(String),
     Failed,
 }
 

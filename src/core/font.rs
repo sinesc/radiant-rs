@@ -106,9 +106,13 @@ impl Font {
     }
 
     /// Creates a new font instance from given FontInfo struct.
-    pub(crate) fn from_info(context: &RenderContext, info: FontInfo) -> Font {
-        let (font_data, _) = system_fonts::get(&Self::build_property(&info)).unwrap();
-        Self::create(context, font_data, info.size)
+    pub(crate) fn from_info(context: &RenderContext, info: FontInfo) -> core::Result<Font> {
+
+        if let Some((font_data, _)) = system_fonts::get(&Self::build_property(&info)) {
+            Ok(Self::create(context, font_data, info.size))
+        } else {
+            Err(core::Error::FontError("Failed to get system font".to_string()))
+        }
     }
 
     /// Creates a new unique font
