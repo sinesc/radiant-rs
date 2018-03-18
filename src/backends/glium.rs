@@ -99,6 +99,47 @@ pub mod public {
 }
 
 // --------------
+// Error
+// --------------
+
+#[derive(Debug)]
+pub enum Error {
+    OsError(String),
+    Incompatible(String),
+    NotAvailable(String),
+    WindowCreation(String),
+    Unknown,
+}
+
+impl From<glium::backend::glutin::DisplayCreationError> for core::Error {
+    /// Converts image error to radiant error
+    fn from(error: glium::backend::glutin::DisplayCreationError) -> core::Error {
+        use self::glium::backend::glutin::DisplayCreationError as DCE;
+        use self::glium::glutin::CreationError as CE;
+        use self::glium::glutin::WindowCreationError as WCE;
+        #[allow(unreachable_patterns)]
+        let backend_error = match error {
+            DCE::GlutinCreationError(creation_error) => match creation_error {
+                CE::OsError(message) => Error::OsError(message),
+                CE::NotSupported => Error::Incompatible("Not supported".to_string()),
+                CE::NoBackendAvailable(message) => Error::NotAvailable(message.to_string()),
+                CE::RobustnessNotSupported => Error::Incompatible("Robustness not supported".to_string()),
+                CE::OpenGlVersionNotSupported => Error::Incompatible("OpenGL version not supported".to_string()),
+                CE::NoAvailablePixelFormat => Error::Incompatible("No available pixel format".to_string()),
+                CE::PlatformSpecific(message) => Error::Incompatible(format!("Platform error: {}", message)),
+                CE::Window(win_error) => match win_error {
+                    WCE::OsError(message) => Error::WindowCreation(message),
+                    WCE::NotSupported => Error::WindowCreation("Not supported".to_string()),
+                }
+            },
+            DCE::IncompatibleOpenGl(message) => { Error::Incompatible(message.0) }
+            _ => { Error::Unknown }
+        };
+        core::Error::BackendError(backend_error)
+    }
+}
+
+// --------------
 // Display
 // --------------
 
@@ -133,19 +174,19 @@ impl Display {
         glium::glutin::ContextBuilder::new()
                     .with_vsync(descriptor.vsync)
     }
-    pub fn new(descriptor: core::DisplayInfo) -> Display {
+    pub fn new(descriptor: core::DisplayInfo) -> core::Result<Display> {
         let events_loop = glutin::EventsLoop::new();
         let display = {
             let window = Self::build_window(&descriptor);
             let context = Self::build_context(&descriptor);
-            glium::Display::new(window, context, &events_loop).unwrap()
+            glium::Display::new(window, context, &events_loop)?
         };
-        Display(Rc::new(DisplayInner { 
-            inner       : display, 
+        Ok(Display(Rc::new(DisplayInner {
+            inner       : display,
             events_loop : Some(RefCell::new(events_loop)),
             descriptor  : Some(RefCell::new(descriptor)),
             was_rebuilt : RefCell::new(false),
-        }))
+        })))
     }
     pub fn draw(self: &Self) -> Frame {
         Frame(self.inner.draw())

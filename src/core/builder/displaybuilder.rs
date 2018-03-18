@@ -66,7 +66,7 @@ impl DisplayBuilder {
     }
     /// Returns the constructed display instance.
     pub fn build(self: Self) -> Display {
-        Display::new(self.info)
+        Display::new(self.info).unwrap() // TODO: return result, breaking change
     }
     /// Creates a new DisplayBuilder instance.
     pub(crate) fn new() -> Self {

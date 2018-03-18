@@ -17,6 +17,15 @@ pub mod public {
 }
 
 // --------------
+// Error
+// --------------
+
+#[derive(Debug)]
+pub enum Error {
+    Failed,
+}
+
+// --------------
 // Display
 // --------------
 
@@ -24,8 +33,8 @@ pub mod public {
 pub struct Display();
 
 impl Display {
-    pub fn new(descriptor: core::DisplayInfo) -> Display {
-        Display()
+    pub fn new(descriptor: core::DisplayInfo) -> core::Result<Display> {
+        Ok(Display())
     }
     pub fn draw(self: &Self) -> Frame {
         Frame()

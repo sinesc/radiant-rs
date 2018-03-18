@@ -233,12 +233,12 @@ impl Display {
     }
 
     /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
-    pub(crate) fn new(descriptor: DisplayInfo) -> Display {
-        Display {
-            handle: backend::Display::new(descriptor),
+    pub(crate) fn new(descriptor: DisplayInfo) -> Result<Display> {
+        Ok(Display {
+            handle: backend::Display::new(descriptor)?,
             frame: Rc::new(RefCell::new(None)),
             input_data: Arc::new(RwLock::new(InputData::new())),
-        }
+        })
     }
 
     /// Provides a mutable reference to the backend frame to the given function.

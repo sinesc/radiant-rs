@@ -35,6 +35,7 @@ pub use self::rendertarget::*;
 pub use self::math::*;
 use image;
 use prelude::*;
+use backends::backend;
 
 /// A vertex.
 #[derive(Copy, Clone, Default)]
@@ -57,6 +58,7 @@ pub enum Error {
     IoError(io::Error),
     FullscreenError(String),
     FontError(String),
+    BackendError(backend::Error),
     Failed,
 }
 
@@ -64,6 +66,12 @@ impl From<io::Error> for Error {
     /// Converts io error to radiant error
     fn from(error: io::Error) -> Error {
         Error::IoError(error)
+    }
+}
+
+impl From<backend::Error> for Error {
+    fn from(error: backend::Error) -> Error {
+        Error::BackendError(error)
     }
 }
 
