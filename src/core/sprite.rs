@@ -209,8 +209,8 @@ impl<'a> Sprite {
                 let num_frames = if frame_count == 0 {
                     let num_x = dimensions.0 as f32 / (frame_width + inner_margin) as f32 + (inner_margin as f32 / (frame_width + inner_margin) as f32);
                     let num_y = dimensions.1 as f32 / (frame_height + inner_margin) as f32 + (inner_margin as f32 / (frame_height + inner_margin) as f32);
-                    assert!(num_x.fract() <= f32::EPSILON);
-                    assert!(num_y.fract() <= f32::EPSILON);
+                    assert!(num_x.fract() <= f32::EPSILON, "bad sprite geometry: slicing image horizontally into frames resulted in non-integer frame-count");
+                    assert!(num_y.fract() <= f32::EPSILON, "bad sprite geometry: slicing image vertically into frames resulted in non-integer frame-count");
                     (num_x as u32, num_y as u32)
                 } else if frame_layout == SpriteLayout::HORIZONTAL {
                     (frame_count, 1)
