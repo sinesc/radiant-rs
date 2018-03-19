@@ -38,7 +38,7 @@ These methods can be combined/nested as shown here:
 
 ```
 # use radiant_rs::*;
-# let display = Display::builder().build();
+# let display = Display::builder().build().unwrap();
 # let renderer = Renderer::new(&display).unwrap();
 # let layer = Layer::new((1.0, 1.0));
 # let surface = Texture::new(&renderer.context(), 1, 1);

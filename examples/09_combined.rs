@@ -7,7 +7,7 @@ use ru::Matrix;
 mod bloom;
 
 pub fn main() {
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Draw to texture and postprocess example").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Draw to texture and postprocess example").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
     let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.));

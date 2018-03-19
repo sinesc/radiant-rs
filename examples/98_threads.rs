@@ -5,7 +5,7 @@ use std::thread;
 use std::sync::{Arc, Barrier};
 
 pub fn main() {
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Threads example").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Threads example").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
 
     // Create a layer and a font, wrapped in Arcs

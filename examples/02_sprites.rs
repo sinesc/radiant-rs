@@ -3,7 +3,7 @@ extern crate radiant_utils as ru;
 use radiant_rs::{Display, Renderer, Layer, Sprite, Color, blendmodes};
 
 pub fn main() {
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Sprites example").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Sprites example").build().unwrap();
 
     // Create a renderer. It is used to draw to a rendertarget (usually a frame).
     let renderer = Renderer::new(&display).unwrap();

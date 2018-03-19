@@ -5,7 +5,7 @@ use radiant_rs::{Display, Color};
 pub fn main() {
 
     // Create a display to render to
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Empty window example").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Empty window example").build().unwrap();
 
     // A simple mainloop helper (just an optional utility function)
     ru::renderloop(|_| {

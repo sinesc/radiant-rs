@@ -88,7 +88,7 @@ impl Renderer {
     ///
     /// ```rust
     /// # use radiant_rs::*;
-    /// # let display = Display::builder().hidden().build();
+    /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let tex = Texture::new(&renderer.context(), 1, 1);
     /// # display.prepare_frame();
@@ -107,7 +107,7 @@ impl Renderer {
     ///
     /// ```rust
     /// # use radiant_rs::*;
-    /// # let display = Display::builder().hidden().build();
+    /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let tex = Texture::new(&renderer.context(), 1, 1);
     /// # display.prepare_frame();
@@ -124,7 +124,7 @@ impl Renderer {
     ///
     /// ```rust
     /// # use radiant_rs::*;
-    /// # let display = Display::builder().hidden().build();
+    /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let some_layer = Layer::new((1.0, 1.0));
     /// # let some_texture = Texture::new(&renderer.context(), 1, 1);
@@ -155,7 +155,7 @@ impl Renderer {
     ///
     /// ```rust
     /// # use radiant_rs::*;
-    /// # let display = Display::builder().hidden().build();
+    /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let some_layer = Layer::new((1.0, 1.0));
     /// # let some_texture = Texture::new(&renderer.context(), 1, 1);

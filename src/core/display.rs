@@ -19,7 +19,7 @@ impl Display {
     ///
     /// ```rust
     /// # use radiant_rs::*;
-    /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
+    /// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build().unwrap();
     /// ```
     pub fn builder() -> DisplayBuilder {
         DisplayBuilder::new()

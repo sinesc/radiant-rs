@@ -6,7 +6,7 @@ use radiant_rs::*;
 mod bloom;
 
 pub fn main() {
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Glare effect demo").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Glare effect demo").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
     let input = Input::new(&display);
     let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();

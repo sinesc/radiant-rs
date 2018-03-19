@@ -4,7 +4,7 @@ use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Program};
 use ru::Matrix;
 
 pub fn main() {
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Custom program example").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Custom program example").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
     let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
 

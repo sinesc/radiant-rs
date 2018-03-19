@@ -8,7 +8,7 @@ mod bloom;
 
 pub fn main() {
     // Setup input/display.
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Swirling blobs demo").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Swirling blobs demo").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
     let input = Input::new(&display);
 

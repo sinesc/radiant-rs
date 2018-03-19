@@ -1,4 +1,4 @@
-use core::{Display, DisplayInfo, Monitor, Point2};
+use core::{Display, DisplayInfo, Monitor, Point2, Result};
 
 /// A display builder.
 ///
@@ -8,7 +8,7 @@ use core::{Display, DisplayInfo, Monitor, Point2};
 ///
 /// ```rust
 /// # use radiant_rs::*;
-/// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build();
+/// let display = Display::builder().dimensions((640, 480)).vsync().title("Window!").build().unwrap();
 /// ```
 #[must_use]
 #[derive(Clone)]
@@ -50,6 +50,7 @@ impl DisplayBuilder {
         self
     }
     /// Sets the monitor to create the display on.
+    /// note: currently monitor cannot be aquired prior to display construction due to changes in the glium backend
     pub fn monitor(mut self: Self, monitor: Monitor) -> Self {
         self.info.monitor = Some(monitor);
         self
@@ -65,8 +66,8 @@ impl DisplayBuilder {
         self
     }
     /// Returns the constructed display instance.
-    pub fn build(self: Self) -> Display {
-        Display::new(self.info).unwrap() // TODO: return result, breaking change
+    pub fn build(self: Self) -> Result<Display> {
+        Display::new(self.info)
     }
     /// Creates a new DisplayBuilder instance.
     pub(crate) fn new() -> Self {

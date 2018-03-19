@@ -12,7 +12,7 @@ use ru::Matrix;
 // using the image library which appears to be a bit sedate in debug mode.
 
 pub fn main() {
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Tiles example").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Tiles example").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
 
     // Load tile-sheet as sprite, each frame will be a tile.

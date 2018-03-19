@@ -3,7 +3,7 @@ extern crate radiant_utils as ru;
 use radiant_rs::{Display, Renderer, Layer, Font, Color};
 
 pub fn main() {
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Text example").build();
+    let display = Display::builder().dimensions((640, 480)).vsync().title("Text example").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
     let layer = Layer::new((640., 480.));
 

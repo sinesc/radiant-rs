@@ -10,7 +10,7 @@ use core::{Texture, Renderer, RenderContext, Program, BlendMode, Postprocessor, 
 ///
 /// ```rust
 /// # use radiant_rs::*;
-/// # let display = Display::builder().hidden().build();
+/// # let display = Display::builder().hidden().build().unwrap();
 /// # let renderer = Renderer::new(&display).unwrap();
 /// # let rendercontext = renderer.context();
 /// # let my_layer = Layer::new((1.0, 1.0));
