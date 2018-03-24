@@ -1,6 +1,6 @@
 [package]
 name = "radiant-utils"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Dennis Möhlmann <dmo479@gmail.com>"]
 description = "Radiant example code support library"
 documentation = "https://docs.rs/radiant-utils/"
@@ -8,5 +8,5 @@ repository = "https://github.com/sinesc/radiant-utils.git"
 license = "MIT"
 
 [dependencies]
-radiant-rs = "0.11"
+radiant-rs = "0.12"
 num-traits = "0.1"
