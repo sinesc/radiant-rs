@@ -58,7 +58,7 @@ fn main() {
 
         println!("Writing file {}...", &fullname);
         let format = extension_map.get(extension.to_str().unwrap()).unwrap_or_else(|| error("Output file type not supported", INVALID_ARGUMENT));
-        dest.save(&mut file, *format).unwrap_or_else(|_| error("Failed to encode image", IMAGE_ERROR));
+        dest.write_to(&mut file, *format).unwrap_or_else(|_| error("Failed to encode image", IMAGE_ERROR));
     }
 
     // write list of files

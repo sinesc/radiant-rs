@@ -129,7 +129,7 @@ impl Font {
     fn write_paragraph(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
 
         // !todo probably expensive, but rusttype is completely opaque. would be nice to be able to store Font::info outside of a "may or may not own" container
-        let rt_font = rusttype::FontCollection::from_bytes(&self.data[..]).into_font().unwrap();
+        let rt_font = rusttype::FontCollection::from_bytes(&self.data[..]).unwrap().into_font().unwrap();
 
         let bucket_id = 0;
         let glyphs = Self::layout_paragraph(&rt_font, rusttype::Scale::uniform(self.size), max_width, &text);
@@ -174,11 +174,7 @@ impl Font {
                 continue;
             }
 
-            let base_glyph = if let Some(glyph) = font.glyph(c) {
-                glyph
-            } else {
-                continue;
-            };
+            let base_glyph = font.glyph(c);
 
             if let Some(id) = last_glyph_id.take() {
                 caret.x += font.pair_kerning(scale, id, base_glyph.id());
@@ -225,7 +221,7 @@ impl Font {
 
 /// A wrapper around rusttype's font cache.
 pub struct FontCache {
-    cache   : Mutex<rusttype::gpu_cache::Cache>,
+    cache   : Mutex<rusttype::gpu_cache::Cache<'static>>,
     queue   : Mutex<Vec<(Rect<u32>, Vec<u8>)>>,
     dirty   : AtomicBool,
 }
@@ -249,7 +245,7 @@ impl FontCache {
         let mut dirties = false;
 
         for glyph in glyphs {
-            cache.queue_glyph(font_id, glyph.clone());
+            cache.queue_glyph(font_id, glyph.standalone());
         }
 
         cache.cache_queued(|rect, data| {
