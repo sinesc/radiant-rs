@@ -24,7 +24,7 @@ pub mod maths {
 
 pub mod util {
     //! Everything else.
-    pub use super::misc::{Rng, Periodic};
+    pub use super::misc::{Rng, Periodic, ARng};
 }
 
 pub use misc::renderloop;
