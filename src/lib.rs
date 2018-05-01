@@ -114,12 +114,16 @@ void main() {
 
 # Drawing from multiple threads
 
+Start with steps 1-5 from the *Basic rendering* list. Then...
+
 1. Wrap fonts, sprites, and layers in `Arc`s.
 2. Clone the `Arc`s for each thread that needs their contents. The rendercontext can be cloned directly.
 3. Move the clones into the thread.
 4. Draw onto your layers, load sprites etc. from any thread(s). Layers are non-blocking for drawing operations,
 blocking for other manipulations (e.g. matrix modification).
-5. Perform steps 7-10 from the above list in the thread that created the `Renderer`; both it and `Display` do not implement `Send`.
+
+Complete rendering with steps 7-9 from the *Basic rendering* list in the thread that created the `Renderer`; both it
+and `Display` do not implement `Send`.
 
 # Integrating with existing glium projects (or any supported backend)
 
