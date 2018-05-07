@@ -13,28 +13,29 @@ impl FontQueryBuilder {
         self.info.family = family.to_string();
         self
     }
-    /// Flags the Fonts to be italic.
+    /// Requires the fonts to support italic.
     pub fn italic(mut self: Self) -> Self {
         self.info.italic = true;
         self
     }
-    /// Flags the Fonts to be oblique.
+    /// Requires the fonts to support oblique.
     pub fn oblique(mut self: Self) -> Self {
         self.info.oblique = true;
         self
     }
-    /// Flags the Fonts to be monospace.
+    /// Requires the fonts to support monospace.
     pub fn monospace(mut self: Self) -> Self {
         self.info.monospace = true;
         self
     }
+    /// Requires the fonts to support bold.
+    pub fn bold(mut self: Self) -> Self {
+        self.info.bold = true;
+        self
+    }
     /// Returns a vector of matching font families.
     pub fn fetch(self: Self) -> Vec<String> {
-        /*if let Some(file) = self.file {
-            Font::from_file(self.context, file)
-        } else {*/
-            Font::query_specific(self.info)
-        //}
+        Font::query_specific(self.info)
     }
     /// Creates a new FontQueryBuilder instance.
     pub(crate) fn new() -> FontQueryBuilder {

@@ -22,7 +22,7 @@ pub struct FontBuilder<'a> {
 }
 
 impl<'a> FontBuilder<'a> {
-    /// Sets a family for the Font. The font will be retrieved from the operating system.
+    /// Sets a family for the font. The font will be retrieved from the operating system.
     /// Mutually exclusive with file().
     pub fn family(mut self: Self, family: &str) -> Self {
         self.info.family = family.to_string();
@@ -34,19 +34,24 @@ impl<'a> FontBuilder<'a> {
         self.file = Some(file);
         self
     }
-    /// Flags the Font to be italic.
+    /// Flags the font to be italic.
     pub fn italic(mut self: Self) -> Self {
         self.info.italic = true;
         self
     }
-    /// Flags the Font to be oblique.
+    /// Flags the font to be oblique.
     pub fn oblique(mut self: Self) -> Self {
         self.info.oblique = true;
         self
     }
-    /// Flags the Font to be monospace.
+    /// Flags the font to be monospace.
     pub fn monospace(mut self: Self) -> Self {
         self.info.monospace = true;
+        self
+    }
+    /// Flags the font to be bold.
+    pub fn bold(mut self: Self) -> Self {
+        self.info.bold = true;
         self
     }
     /// Sets the fontsize.
@@ -54,7 +59,7 @@ impl<'a> FontBuilder<'a> {
         self.info.size = size;
         self
     }
-    /// Returns the constructed Font instance.
+    /// Returns the constructed font instance.
     pub fn build(self: Self) -> Result<Font> {
         if let Some(file) = self.file {
             Font::from_file(self.context, file)
