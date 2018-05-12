@@ -29,6 +29,8 @@ mod bloom;
 
 pub mod postprocessors {
     //! A set of predefined postprocessors for use with `Renderer::postprocess()`.
+    //!
+    //! Implement [`Postprocessor`](../trait.Postprocessor.html) to define your own postprocessors.
     pub use super::basic::*;
     pub use super::bloom::*;
 }

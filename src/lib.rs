@@ -14,7 +14,7 @@ The examples folder contains multiple small examples. They can be run via `cargo
 Radiant provides an optional [Display](struct.Display.html) struct to create windows and handle events. Alternatively you can provide Radiant
 with a Glium Display (or Display and EventsLoop) instead. See further down below for details. Otherwise, these are the steps to produce output:
 
-1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen. 
+1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen.
 2. Create a [renderer](struct.Renderer.html) with `Renderer::new()`. It is used to draw to rendertargets like the display.
 3. Grab a context from the renderer using the `context()` method. It is required for resource loading.
 4. Load [sprites](struct.Sprite.html) or [fonts](struct.Font.html) using e.g. `Font::from_file()` or `Sprite::from_file()`.
@@ -130,11 +130,16 @@ and `Display` do not implement `Send`.
 Radiant can be used with supported backends using the APIs provided in the [backend](backend/index.html) module. The `10_glium_less` and `11_glium_more`
 examples show two different approaches on how to do this.
 
-Approach "more": Skip creating a Radiant Display and use [`backend::create_renderer()`](backend/fn.create_renderer.html) to create a renderer from a Glium Display. 
+Approach "more": Skip creating a Radiant Display and use [`backend::create_renderer()`](backend/fn.create_renderer.html) to create a renderer from a Glium Display.
 Then use [`backend::target_frame`](backend/fn.target_frame.html) to direct the renderer to target the given Glium Frame instead.
 
 Approach "less": Use [`backend::create_display()`](backend/fn.create_display.html) to create a Radiant Display from a Glium Display *and* EventsLoop. Then use
 [`backend::take_frame()`](backend/fn.take_frame.html) to "borrow" a Glium Frame from Radiant. This approach let's you keep Radiant's window/event handling.
+
+# Found and issue? Missing a feature?
+
+Please file a bug report if you encounter any issues with this library. In particular, it has only been tested on a limited number of graphics cards
+so I would expect issues regarding untested hardware.
 */
 
 #[macro_use] extern crate enum_primitive;

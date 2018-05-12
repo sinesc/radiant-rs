@@ -1,7 +1,7 @@
 
 //! A set of predefined blendmodes for use with `Layer::set_blendmode()`.
 //!
-//! [WIP] These are mostly placeholders for now.
+//! See [`BlendMode`](../struct.BlendMode.html) to define your own blendmodes.
 
 use super::*;
 use core::{Color};
