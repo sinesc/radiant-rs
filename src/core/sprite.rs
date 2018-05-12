@@ -198,11 +198,11 @@ impl<'a> Sprite {
 
         match captures {
             Some(captures) => {
-                let frame_width = captures.at(1).unwrap().parse::<u32>().unwrap();
-                let frame_height = captures.at(2).unwrap().parse::<u32>().unwrap();
-                let frame_count = captures.at(3).unwrap_or("0").parse::<u32>().unwrap();
-                let frame_channels = captures.at(4).unwrap_or("1").parse::<u32>().unwrap();
-                let inner_margin = captures.at(5).unwrap_or("0").parse::<u32>().unwrap();
+                let frame_width = captures.get(1).unwrap().as_str().parse::<u32>().unwrap();
+                let frame_height = captures.get(2).unwrap().as_str().parse::<u32>().unwrap();
+                let frame_count = captures.get(3).map_or("0", |m| m.as_str()).parse::<u32>().unwrap();
+                let frame_channels = captures.get(4).map_or("1", |m| m.as_str()).parse::<u32>().unwrap();
+                let inner_margin = captures.get(5).map_or("0", |m| m.as_str()).parse::<u32>().unwrap();
                 let frame_layout = if frame_height == dimensions.1 || frame_count == 0 { SpriteLayout::HORIZONTAL } else { SpriteLayout::VERTICAL };
 
                 // calculate frame counts if not provided
