@@ -7,6 +7,7 @@ use core::{Uniform, AsUniform};
 /// Various drawing methods accept color instances to be used as multiplicators in the drawing
 /// process, e.g. [`Sprite::draw()`](struct.Sprite.html#method.draw) allows multiplying the sprite-
 /// texture's color channels by given color.
+#[cfg_attr(feature = "serialize-serde", derive(Deserialize, Serialize))]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 

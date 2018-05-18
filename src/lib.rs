@@ -151,6 +151,10 @@ extern crate unicode_normalization;
 extern crate font_loader;
 extern crate avec;
 extern crate palette;
+#[cfg(feature = "serialize-serde")]
+extern crate serde;
+#[cfg(feature = "serialize-serde")]
+#[macro_use] extern crate serde_derive;
 
 mod prelude;
 mod backends;

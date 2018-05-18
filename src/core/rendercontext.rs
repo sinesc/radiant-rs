@@ -203,7 +203,7 @@ impl RenderContextData {
             channels: 1,
         };
 
-        let texture = backend::Texture2d::new(display, size, size, core::TextureFormat::U8, Some(data));
+        let texture = backend::Texture2d::new(display, 0, 0, core::TextureFormat::U8, Some(data));
 
         Ok(RenderContextData {
             backend_context     : backend::Context::new(display, initial_capacity),
