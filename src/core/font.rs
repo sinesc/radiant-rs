@@ -25,11 +25,11 @@ pub struct Font {
 
 impl Debug for Font {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Font {{ data_len: {:?}, font_id: {:?}, size: {:?} }}",
-            self.data.len(), self.font_id, self.size
-        )
+        f.debug_struct("Font")
+            .field("data_len", &self.data.len())
+            .field("font_id", &self.font_id)
+            .field("size", &self.size)
+            .finish()
     }
 }
 

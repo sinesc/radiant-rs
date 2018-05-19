@@ -21,11 +21,9 @@ pub struct Program {
 
 impl Debug for Program {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Program {{ uniforms: {:?} }}",
-            self.uniforms
-        )
+        f.debug_struct("Program")
+            .field("uniforms", &self.uniforms)
+            .finish()
     }
 }
 

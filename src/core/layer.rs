@@ -49,11 +49,12 @@ struct LayerContents {
 
 impl Debug for LayerContents {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "LayerContents {{ num_sprites: {:?}, dirty: {:?}, generation: {:?}, layer_id: {:?} }}",
-            self.vertex_data.len() / 4, self.dirty, self.generation, self.layer_id
-        )
+        f.debug_struct("LayerContents")
+            .field("num_sprites", &(self.vertex_data.len() / 4))
+            .field("dirty", &self.dirty)
+            .field("generation", &self.generation)
+            .field("layer_id", &self.layer_id)
+            .finish()
     }
 }
 

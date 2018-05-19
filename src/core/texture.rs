@@ -20,11 +20,12 @@ pub struct Texture {
 
 impl Debug for Texture {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Texture {{ minify: {:?}, magnify: {:?}, wrap: {:?}, dimensions: {:?} }}",
-            self.minify, self.magnify, self.wrap, self.dimensions
-        )
+        f.debug_struct("Texture")
+            .field("minify", &self.minify)
+            .field("magnify", &self.magnify)
+            .field("wrap", &self.wrap)
+            .field("dimensions", &self.dimensions)
+            .finish()
     }
 }
 

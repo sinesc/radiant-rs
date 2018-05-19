@@ -8,7 +8,7 @@ use core::{Uniform, AsUniform};
 /// process, e.g. [`Sprite::draw()`](struct.Sprite.html#method.draw) allows multiplying the sprite-
 /// texture's color channels by given color.
 #[cfg_attr(feature = "serialize-serde", derive(Deserialize, Serialize))]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
 impl Color {
@@ -222,11 +222,5 @@ impl<'a> From<&'a Color> for (f32, f32, f32, f32) {
 impl AsUniform for Color {
     fn as_uniform(self: &Self) -> Uniform {
         Uniform::Vec4([ self.0, self.1, self.2, self.3 ])
-    }
-}
-
-impl fmt::Debug for Color {
-    fn fmt(self: &Self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Color({}, {}, {}, {})", self.0, self.1, self.2, self.3)
     }
 }
