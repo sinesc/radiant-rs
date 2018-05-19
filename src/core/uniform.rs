@@ -6,7 +6,7 @@ use core::texture::Texture;
 /// Uniforms are values that can be passed to [`Programs`](struct.Program.html).
 /// Various types also implement the [`AsUniform`](trait.AsUniform.html) trait
 /// and can be directly used with [`Program::set_uniform()`](struct.Program.html#method.set_uniform).
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Uniform {
     Bool(bool),
     SignedInt(i32),
@@ -30,7 +30,7 @@ pub trait AsUniform {
 }
 
 /// Multiple uniforms held by a program.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UniformList (pub (crate) HashMap<String, Uniform>);
 
 impl UniformList {

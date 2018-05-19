@@ -11,6 +11,12 @@ pub struct Display {
     pub(crate) input_data: Arc<RwLock<InputData>>,
 }
 
+impl Debug for Display {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Display")
+    }
+}
+
 impl Display {
 
     /// Returns a [display builder](support/struct.DisplayBuilder.html) for display construction.

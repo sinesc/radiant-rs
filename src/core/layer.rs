@@ -18,6 +18,7 @@ static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 ///
 /// Drawing to a layer is a wait-free atomic operation that can be safely performed from multiple threads at
 /// the same time. Modifying layer properties like the matrices may cause other threads to wait.
+#[derive(Debug)]
 pub struct Layer {
     view_matrix     : Mutex<Mat4Stack<f32>>,
     model_matrix    : Mutex<Mat4Stack<f32>>,
@@ -44,6 +45,16 @@ struct LayerContents {
     dirty           : AtomicBool,
     generation      : AtomicUsize,
     layer_id        : usize,
+}
+
+impl Debug for LayerContents {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "LayerContents {{ num_sprites: {:?}, dirty: {:?}, generation: {:?}, layer_id: {:?} }}",
+            self.vertex_data.len() / 4, self.dirty, self.generation, self.layer_id
+        )
+    }
 }
 
 impl Layer {

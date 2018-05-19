@@ -23,6 +23,16 @@ pub struct Font {
     context : RenderContext,
 }
 
+impl Debug for Font {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Font {{ data_len: {:?}, font_id: {:?}, size: {:?} }}",
+            self.data.len(), self.font_id, self.size
+        )
+    }
+}
+
 impl Font {
 
     /// Returns a [font builder](support/struct.FontBuilder.html) for font construction.
@@ -216,7 +226,7 @@ impl Font {
             property = property.monospace();
         }
         property.build()
-    } 
+    }
 }
 
 /// A wrapper around rusttype's font cache.

@@ -25,7 +25,7 @@ impl Mat4Trait<f32> for Mat4<f32> {
             [ 0., -2. / height, 0., 0. ],
             [ 0., 0., 1., 0. ],
             [ -1., 1., 0., 1. ],
-        ] 
+        ]
     }
     fn set(self: &mut Self, other: &Mat4<f32>) {
         *self = *other;
@@ -57,6 +57,7 @@ impl AsUniform for Mat4<f64> {
 }
 
 /// A stack of 4x4 matrices.
+#[derive(Debug)]
 pub struct Mat4Stack<T = f32> (Vec<Mat4<T>>);
 
 impl<T> Mat4Stack<T> where T: Copy {

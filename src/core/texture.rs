@@ -18,6 +18,16 @@ pub struct Texture {
     dimensions          : Point2<u32>,
 }
 
+impl Debug for Texture {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Texture {{ minify: {:?}, magnify: {:?}, wrap: {:?}, dimensions: {:?} }}",
+            self.minify, self.magnify, self.wrap, self.dimensions
+        )
+    }
+}
+
 impl Texture {
     /// Returns a texture builder for texture construction.
     ///
@@ -121,7 +131,7 @@ impl AsUniform for Texture {
 }
 
 /// Texture minify- or magnify filtering function.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TextureFilter {
     /// All nearby texels will be loaded and their values will be merged.
     Linear,
@@ -130,7 +140,7 @@ pub enum TextureFilter {
 }
 
 /// Texture wrapping function.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TextureWrap {
     /// Samples at coord x + 1 map to coord x.
     Repeat,
@@ -145,7 +155,7 @@ pub enum TextureWrap {
 /// Internal texture format. Note that the shader will always see a floating
 /// point representation. U[n]* will have their minimum value mapped to 0.0 and
 /// their maximum to 1.0.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TextureFormat {
     U8,
     U16,

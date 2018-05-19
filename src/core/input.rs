@@ -249,6 +249,12 @@ pub struct Input {
     input_data: Arc<RwLock<InputData>>,
 }
 
+impl Debug for Input {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Input")
+    }
+}
+
 impl Input {
 
     /// Creates a new instance.

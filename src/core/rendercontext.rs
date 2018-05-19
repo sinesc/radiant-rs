@@ -17,8 +17,15 @@ static GENERATION: AtomicUsize = ATOMIC_USIZE_INIT;
 /// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
 #[derive(Clone)]
 pub struct RenderContext (Arc<Mutex<RenderContextData>>);
+
 unsafe impl Send for RenderContext { }
 unsafe impl Sync for RenderContext { }
+
+impl Debug for RenderContext {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RenderContext")
+    }
+}
 
 impl RenderContext {
     /// Prunes no longer used textures. Requires all layers to be cleared before

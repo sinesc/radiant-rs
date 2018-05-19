@@ -35,12 +35,23 @@ impl AsRenderTarget for RenderTarget {
     }
 }
 
+impl Debug for RenderTarget {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let inner = match &self.0 {
+            RenderTargetInner::None => "None".to_string(),
+            RenderTargetInner::Frame(_) => "Frame".to_string(),
+            RenderTargetInner::Texture(texture) => format!("{:?}", texture)
+        };
+        write!(f, "RenderTarget {{ {:?} }}", inner)
+    }
+}
+
 /// An enum of render target type instances.
 #[derive(Clone)]
 pub enum RenderTargetInner {
     None,
-    Frame(Rc<RefCell<Option<backend::Frame>>>),  
-    Texture(Texture),                            
+    Frame(Rc<RefCell<Option<backend::Frame>>>),
+    Texture(Texture),
 }
 
 impl RenderTargetInner {

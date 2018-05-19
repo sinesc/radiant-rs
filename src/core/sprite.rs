@@ -10,7 +10,7 @@ use regex::Regex;
 /// Sprites are created from spritesheets containing one or more frames. To determine frame
 /// dimensions, [`Sprite::from_file()`](#method.from_file) expects sprite sheet file names to
 /// follow a specific pattern. (Future versions will add more configurable means to load sprites.)
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Sprite {
     anchor  : Point2<f32>,
     data    : Arc<SpriteData>,
@@ -243,6 +243,7 @@ impl<'a> Sprite {
 }
 
 /// Internal sprite data. (Multiple) sprites can hold a reference to this.
+#[derive(Debug)]
 pub struct SpriteData {
     width           : u16,
     height          : u16,

@@ -38,7 +38,7 @@ use prelude::*;
 use backends::backend;
 
 /// A vertex.
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Vertex {
     pub position    : [f32; 2],
     pub offset      : [f32; 2],

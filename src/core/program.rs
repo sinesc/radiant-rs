@@ -19,6 +19,16 @@ pub struct Program {
     pub(crate) texture_program: Arc<backend::Program>,
 }
 
+impl Debug for Program {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Program {{ uniforms: {:?} }}",
+            self.uniforms
+        )
+    }
+}
+
 impl Program {
     /// Creates a program from a fragment shader file.
     pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Self> {

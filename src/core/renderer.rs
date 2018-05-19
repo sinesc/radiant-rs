@@ -30,6 +30,12 @@ pub struct Renderer {
     pub(crate) empty_texture   : Texture,
 }
 
+impl Debug for Renderer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Renderer")
+    }
+}
+
 impl Renderer {
 
     /// Returns a new renderer instance.
