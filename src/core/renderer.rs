@@ -254,9 +254,9 @@ impl Renderer {
     /// Returns the appropriate bucket_id and padded texture size for the given texture size
     pub(crate) fn bucket_info(width: u32, height: u32) -> (u32, u32) {
         let ln2 = (cmp::max(width, height) as f32).log2().ceil() as u32;
-        let size = 2u32.pow(ln2);
         // skip first five sizes 1x1 to 16x16, use id 0 for font-cache
-        let bucket_id = cmp::max(0, ln2 - 4 + 1);
+        let bucket_id = cmp::max(1, ln2 as i32 - 4 + 1) as u32;
+        let size = 2u32.pow(bucket_id + 4 - 1);
         assert!(bucket_id < rendercontext::NUM_BUCKETS as u32, "texture size exceeded configured maximum");
         (bucket_id, size)
     }
