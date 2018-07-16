@@ -1,6 +1,6 @@
 [package]
 name = "radiant-rs"
-version = "0.12.6"
+version = "0.13.0"
 authors = [ "Dennis Möhlmann <dmo479@gmail.com>" ]
 description = "Thread-safe Rust sprite rendering engine with a friendly API and custom shader support"
 documentation = "https://docs.rs/radiant-rs/"
@@ -33,7 +33,7 @@ serde_derive = { version = "1.0", optional = true }
 [dev-dependencies]
 tiled = "0.4"
 glium = "0.22"
-radiant-utils = "0.1"
+radiant-utils = { version = "0.2" }
 
 [lib]
 name = "radiant_rs"
