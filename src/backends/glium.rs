@@ -7,7 +7,7 @@ use core;
 use core::math::*;
 
 // --------------
-// Public interface provided to Radiant-API-user in radiant_rs::backend 
+// Public interface provided to Radiant-API-user in radiant_rs::backend
 // --------------
 
 pub mod public {
@@ -17,14 +17,14 @@ pub mod public {
     use std::rc::Rc;
     use std::sync::{Arc, RwLock};
     use std::mem;
-    
+
     /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop.
-    /// 
+    ///
     /// As an alternative to [`backend::create_renderer()`](fn.create_renderer.html), this allows for glium rendering but keeps radiant display handling.
     pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
         core::Display {
-            handle: super::Display(Rc::new(super::DisplayInner { 
-                inner       : display.clone(), 
+            handle: super::Display(Rc::new(super::DisplayInner {
+                inner       : display.clone(),
                 events_loop : Some(RefCell::new(events_loop)),
                 descriptor  : None,
                 was_rebuilt : RefCell::new(false),
@@ -35,15 +35,15 @@ pub mod public {
     }
 
     /// Creates a new radiant_rs::Renderer from given glium::Display.
-    /// 
+    ///
     /// As an alternative to [`backend::create_display()`](fn.create_display.html), this allows for glium rendering and display handling while radiant only handles 2d rendering.
     /// Note that this renderer does not have a default target. Use `Renderer::render_to()` to specify one or `backend::target_frame()` to target
     /// a glium::Frame.
     // TODO: add helpful panic message if user tries to use this renderer without targeting a texture or glium::Frame first
     pub fn create_renderer(display: &glium::Display) -> core::Result<core::Renderer> {
-        
-        let display = super::Display(Rc::new(super::DisplayInner { 
-            inner       : display.clone(), 
+
+        let display = super::Display(Rc::new(super::DisplayInner {
+            inner       : display.clone(),
             events_loop : None,
             descriptor  : None,
             was_rebuilt : RefCell::new(false),
@@ -63,7 +63,7 @@ pub mod public {
     }
 
     /// Causes given renderer to render to the given glium::Frame within the closure.
-    /// 
+    ///
     /// Renderers default to rendering to the current frame, unless they were created by `backend::create_renderer()`, in which case control of the
     /// frame/display remains outside of Radiant. This method allows such Renderers to output to Glium frames.
     pub fn target_frame<F>(renderer: &core::Renderer, frame: &mut glium::Frame, draw_func: F) where F: FnMut() {
@@ -121,7 +121,7 @@ impl From<glium::backend::glutin::DisplayCreationError> for core::Error {
         let backend_error = match error {
             DCE::GlutinCreationError(creation_error) => match creation_error {
                 CE::OsError(message) => Error::OsError(message),
-                CE::NotSupported => Error::Incompatible("Not supported".to_string()),
+                CE::NotSupported(message) => Error::Incompatible(format!("Not supported: {}", message)),
                 CE::NoBackendAvailable(message) => Error::NotAvailable(message.to_string()),
                 CE::RobustnessNotSupported => Error::Incompatible("Robustness not supported".to_string()),
                 CE::OpenGlVersionNotSupported => Error::Incompatible("OpenGL version not supported".to_string()),
@@ -163,7 +163,7 @@ impl Deref for Display {
 impl Display {
     fn build_window(descriptor: &core::DisplayInfo) -> glium::glutin::WindowBuilder {
         glium::glutin::WindowBuilder::new()
-                    .with_dimensions(descriptor.width, descriptor.height)
+                    .with_dimensions((descriptor.width, descriptor.height).into())
                     .with_title(descriptor.title.clone())
                     .with_transparency(descriptor.transparent)
                     .with_decorations(descriptor.decorations)
@@ -195,23 +195,23 @@ impl Display {
         self.inner.get_framebuffer_dimensions().into()
     }
     pub fn window_dimensions(self: &Self) -> Point2<u32> {
-        self.inner.gl_window().get_inner_size().unwrap_or((0, 0)).into()
+        self.inner.gl_window().get_inner_size().map_or((0, 0), |l|  l.into())
     }
     pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
-        self.inner.gl_window().set_cursor_position(position.0, position.1).unwrap();
+        self.inner.gl_window().set_cursor_position((position.0, position.1).into()).unwrap();
     }
     pub fn set_cursor_state(self: &Self, state: core::CursorState) {
         use core::CursorState as CS;
-        self.inner.gl_window().set_cursor_state(match state {
-            CS::Normal => glium::glutin::CursorState::Normal,
-            CS::Hide => glium::glutin::CursorState::Hide,
-            CS::Grab => glium::glutin::CursorState::Grab,
-        }).unwrap();
+        match state {
+            CS::Normal => self.inner.gl_window().grab_cursor(false).unwrap(), // todo: handle grab vs hide now that glium doesn't anymore
+            CS::Hide => self.inner.gl_window().hide_cursor(true),
+            CS::Grab => self.inner.gl_window().grab_cursor(true).unwrap(),
+        };
     }
     pub fn set_fullscreen(self: &Self, monitor: Option<core::Monitor>) -> bool {
         // glium set_fullscreen NYI as of 0.20.0
         /*if let Some(monitor) = monitor {
-            self.0.gl_window().set_fullscreen(Some(monitor.inner.0.clone())); 
+            self.0.gl_window().set_fullscreen(Some(monitor.inner.0.clone()));
         } else {
             self.0.gl_window().set_fullscreen(None);
         }*/
@@ -225,7 +225,7 @@ impl Display {
         let window = Self::build_window(descriptor.deref());
         let context = Self::build_context(descriptor.deref());
         *self.was_rebuilt.borrow_mut() = true;
-        self.inner.rebuild(window, context, &events_loop).is_ok()  
+        self.inner.rebuild(window, context, &events_loop).is_ok()
     }
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
         self.events_loop.as_ref().unwrap().borrow_mut().poll_events(|glutin_event| {
@@ -265,10 +265,10 @@ impl Display {
                     WindowEvent::Focused(false) => {
                         Some(core::Event::Blur)
                     }
-                    WindowEvent::Closed => {
+                    WindowEvent::CloseRequested => {
                         Some(core::Event::Close)
                     }
-                    WindowEvent::CursorMoved { position: (x, y), .. } => {
+                    WindowEvent::CursorMoved { position: glutin::dpi::LogicalPosition { x, y }, .. } => {
                         Some(core::Event::MousePosition(x as i32, y as i32))
                     }
                     WindowEvent::KeyboardInput { input: KeyboardInput { state, virtual_keycode: Some(virtual_code), .. }, .. } => {
@@ -300,7 +300,7 @@ impl Display {
             }
             _ => None
         }
-    }    
+    }
     fn map_key_code(key: glium::glutin::VirtualKeyCode) -> core::InputId {
         use self::glutin::VirtualKeyCode as VK;
         use core::InputId as IID;
@@ -408,7 +408,6 @@ impl Display {
             VK::LAlt          => IID::LAlt,
             VK::LBracket      => IID::LBracket,
             VK::LControl      => IID::LControl,
-            VK::LMenu         => IID::LMenu,
             VK::LShift        => IID::LShift,
             VK::LWin          => IID::LWin,
             VK::Mail          => IID::Mail,
@@ -431,7 +430,6 @@ impl Display {
             VK::RAlt          => IID::RAlt,
             VK::RBracket      => IID::RBracket,
             VK::RControl      => IID::RControl,
-            VK::RMenu         => IID::RMenu,
             VK::RShift        => IID::RShift,
             VK::RWin          => IID::RWin,
             VK::Semicolon     => IID::Semicolon,
@@ -459,7 +457,7 @@ impl Display {
             VK::NavigateBackward => IID::NavigateBackward,
             _                 => IID::Unsupported
         }
-    }    
+    }
 }
 
 // --------------
