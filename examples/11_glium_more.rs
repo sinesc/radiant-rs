@@ -14,7 +14,7 @@ pub fn main() {
     // Set up glium display. Much of the glium code in this example was taken from
     // https://github.com/glium/glium/blob/master/examples/triangle.rs
     let window = glium::glutin::WindowBuilder::new()
-        .with_dimensions(640, 480)
+        .with_dimensions((640, 480).into())
         .with_title("Glium example 2: Glium with a little Radiant");
 
     let context = glium::glutin::ContextBuilder::new()
@@ -28,7 +28,7 @@ pub fn main() {
     let index_buffer = glium_utils::build_index_buffer(&glium_display);
     let program = glium_utils::build_program(&glium_display);
     let uniforms = glium_utils::build_uniforms();
-    
+
     // Create a Radiant Renderer from an existing glium Display
     let renderer = backend::create_renderer(&glium_display).unwrap();
 
@@ -51,9 +51,9 @@ pub fn main() {
         let mut target = glium_display.draw();
         target.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        // Draw to to the glium frame using Glium        
+        // Draw to to the glium frame using Glium
         target.draw(&vertex_buffer, &index_buffer, &program, &uniforms, &Default::default()).unwrap();
-        
+
         // Draw the sprites layer on top of the glium triangle
         backend::target_frame(&renderer, &mut target, || {
             renderer.draw_layer(&layer, 0);

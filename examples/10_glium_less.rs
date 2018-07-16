@@ -14,7 +14,7 @@ pub fn main() {
     // Set up glium display. Much of the glium code in this example was taken from
     // https://github.com/glium/glium/blob/master/examples/triangle.rs
     let window = glium::glutin::WindowBuilder::new()
-        .with_dimensions(640, 480)
+        .with_dimensions((640, 480).into())
         .with_title("Glium example 1: Radiant with a little Glium");
 
     let context = glium::glutin::ContextBuilder::new()
@@ -28,7 +28,7 @@ pub fn main() {
     let index_buffer = glium_utils::build_index_buffer(&glium_display);
     let program = glium_utils::build_program(&glium_display);
     let uniforms = glium_utils::build_uniforms();
-    
+
     // Create a Radiant Display from an existing glium Display and glutin EventsLoop.
     let display = backend::create_display(&glium_display, events_loop);
 
@@ -61,7 +61,7 @@ pub fn main() {
 
         // Finish the frame and swap
         display.swap_frame();
-        
+
         // Handle window close event
         !display.poll_events().was_closed()
     });

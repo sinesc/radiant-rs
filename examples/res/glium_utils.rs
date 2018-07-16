@@ -66,11 +66,11 @@ pub fn was_closed(events_loop: &mut glium::glutin::EventsLoop) -> bool {
 
     let mut was_closed = false;
 
-    events_loop.poll_events(|event| {            
+    events_loop.poll_events(|event| {
         match event {
             glutin::Event::WindowEvent { event, .. } => match event {
                 // Break from the main loop when the window is closed.
-                glutin::WindowEvent::Closed => { was_closed = true; },
+                glutin::WindowEvent::CloseRequested => { was_closed = true; },
                 _ => (),
             },
             _ => (),
