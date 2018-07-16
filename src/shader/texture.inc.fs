@@ -1,7 +1,7 @@
 uniform sampler2D _rd_tex;
 uniform bool _rd_has_tex;
 
-vec2 sheetSize() {
+ivec2 sheetSize() {
     return textureSize(_rd_tex, 0).xy;
 }
 
@@ -24,7 +24,7 @@ vec4 sheetComponent(in vec2 texture_coords, in uint component) {
         return vec4(0.0, 0.0, 0.0, 0.0);
     }
 }
-
+/*
 vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset) {
     if (_rd_has_tex) {
         return textureOffset(_rd_tex, texture_coords, offset);
@@ -32,3 +32,4 @@ vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset) {
         return vec4(1.0, 1.0, 1.0, 1.0);
     }
 }
+*/

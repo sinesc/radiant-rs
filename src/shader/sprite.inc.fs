@@ -10,7 +10,7 @@ flat in uint _rd_v_texture_id;
 flat in uint _rd_v_bucket_id;
 flat in uint _rd_v_components;
 
-vec2 sheetSize() {
+ivec2 sheetSize() {
     if (_rd_v_bucket_id == 0u) {
         return textureSize(_rd_tex, 0);
     } else if (_rd_v_bucket_id == 1u) {
@@ -47,7 +47,7 @@ vec4 sheetComponent(in vec2 texture_coords, in uint component) {
 vec4 sheet(in vec2 texture_coords) {
     return sheetComponent(texture_coords, _rd_comp);
 }
-
+/*
 vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset) {
     if (_rd_v_bucket_id == 0u) {
         return textureOffset(_rd_tex, texture_coords, offset).rrrr;
@@ -61,7 +61,8 @@ vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset) {
         return textureOffset(_rd_tex3, vec3(texture_coords, float(_rd_v_texture_id + _rd_comp)), offset);
     } else if (_rd_v_bucket_id == 4u) {
         return textureOffset(_rd_tex4, vec3(texture_coords, float(_rd_v_texture_id + _rd_comp)), offset);
-    } else /*if (_rd_v_bucket_id == 5u)*/ {
+    } else {
         return textureOffset(_rd_tex5, vec3(texture_coords, float(_rd_v_texture_id + _rd_comp)), offset);
     }
 }
+*/
