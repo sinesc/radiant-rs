@@ -11,3 +11,15 @@ To compile the examples, use e.g. `cargo run --release --example demo_glare`. Se
 ![examples/05_tiles.rs](https://sinesc.github.io/images/radiant/tiles2.png "examples/05_tiles.rs")
 ![examples/demo_blobs.rs](https://sinesc.github.io/images/radiant/bloom.png "examples/demo_blobs.rs")
 ![examples/07_to_texture.rs](https://sinesc.github.io/images/radiant/to_texture.png "examples/07_to_texture.rs")
+
+## Installation
+
+## Linux
+
+On Linux the font loader depends on servo-fontconfig-sys which may require manual installation of cmake, freetype6, expat and fontconfig e.g.
+
+`sudo apt install cmake libfreetype6-dev libexpat-dev libfontconfig1`
+
+## Windows
+
+Should just work.
