@@ -240,8 +240,15 @@ impl FontCache {
 
     /// Creates a new fontcache instant.
     pub fn new(width: u32, height: u32, scale_tolerance: f32, position_tolerance: f32) -> FontCache {
+        let cache = rusttype::gpu_cache::CacheBuilder {
+            width,
+            height,
+            scale_tolerance,
+            position_tolerance,
+            pad_glyphs: true,
+        }.build();
         FontCache {
-            cache: Mutex::new(rusttype::gpu_cache::Cache::new(width, height, scale_tolerance, position_tolerance)),
+            cache: Mutex::new(cache),
             queue: Mutex::new(Vec::new()),
             dirty: AtomicBool::new(false),
         }
