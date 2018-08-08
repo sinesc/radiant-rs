@@ -48,7 +48,7 @@ impl Display {
 
     /// Switches to fullscreen mode on the primary monitor.
     pub fn set_fullscreen(self: &Self) -> Result<()> {
-        if let Some(backend_monitor) = backend::MonitorIterator::new(self).next() {
+        if let Some(backend_monitor) = backend::MonitorIterator::new().next() {
             let monitor = Monitor::new(backend_monitor);
             self.set_fullscreen_on(monitor)
         } else {
@@ -135,8 +135,8 @@ impl Display {
     }
 
     /// Returns a vector of available monitors.
-    pub fn monitors(self: &Self) -> Vec<Monitor> {
-        let iter = backend::MonitorIterator::new(self);
+    pub fn monitors() -> Vec<Monitor> {
+        let iter = backend::MonitorIterator::new();
         let mut result = Vec::<Monitor>::new();
         for monitor in iter {
             result.push(Monitor::new(monitor));
@@ -291,6 +291,7 @@ pub struct DisplayInfo {
     pub monitor     : Option<Monitor>,
     pub vsync       : bool,
     pub visible     : bool,
+    pub context     : Option<RenderContext>,
 }
 
 impl Default for DisplayInfo {
@@ -304,6 +305,7 @@ impl Default for DisplayInfo {
             monitor     : None,
             vsync       : false,
             visible     : true,
+            context     : None,
         }
    }
 }

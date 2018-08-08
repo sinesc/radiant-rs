@@ -20,7 +20,7 @@ pub fn main() {
 
     // Use a default Basic postprocessor with the given program. It simply draws the input
     // using the given program, but there is a trait to implement custom postprocessors.
-    let ripple_effect = postprocessors::Basic::new(&renderer.context(), program);
+    let ripple_effect = postprocessors::Basic::new(&renderer.context(), program, (640, 480));
 
     ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);

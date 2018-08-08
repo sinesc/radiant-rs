@@ -4,7 +4,7 @@ use std::mem::swap;
 use std::cmp::{min, max};
 
 /// A simple bloom postprocessor.
-/// 
+///
 /// This effect internally uses textures of decreasing dimensions to amplify an initially small blur effect
 /// via linear interpolation performed by the gpu when scaling texture contents.
 pub struct Bloom {
@@ -107,14 +107,15 @@ impl Postprocessor for Bloom {
 }
 
 impl Bloom {
-    /// Creates a new Bloom effect instance. 
-    /// Initial texture size is computed from frame dimensions divided by `base_divider`. For each additional texture
-    /// `base_divider` is multiplied by `divider_factor`.
-    pub fn new(context: &RenderContext, base_divider: u32, divider_factor: u32) -> Self {
-        
+    /// Creates a new Bloom effect instance.
+    /// The base texture for this effect uses the given dimensions. For each additional texture
+    /// the dimensions are divided by `divider_factor`.
+    pub fn new<T>(context: &RenderContext, dimensions: T, divider_factor: u32) -> Self where Point2<u32>: From<T> {
+
+        let dimensions = Point2::<u32>::from(dimensions);
         let blur_program = Program::from_string(&context, include_str!("../../shader/postprocess/blur.fs")).unwrap();
         let mut combine_program = Program::from_string(&context, include_str!("../../shader/postprocess/combine.fs")).unwrap();
-        let targets = Self::create_targets(context, base_divider, divider_factor);
+        let targets = Self::create_targets(context, dimensions, divider_factor);
         let max_ops = targets[0].len();
 
         combine_program.set_uniform("sample0", &targets[0][0]);
@@ -137,11 +138,9 @@ impl Bloom {
         }
     }
 
-    /// Rebuilds internal textures to current frame size.
-    /// Initial texture size is computed from frame dimensions divided by `base_divider`. For each additional texture
-    /// `base_divider` is multiplied by `divider_factor`.
-    pub fn rebuild(self: &mut Self, context: &RenderContext, base_divider: u32, divider_factor: u32) {
-        let targets = Self::create_targets(context, base_divider, divider_factor);
+    /// Rebuilds internal textures to given dimensions.
+    pub fn rebuild<T>(self: &mut Self, context: &RenderContext, dimensions: T, divider_factor: u32) where Point2<u32>: From<T> {
+        let targets = Self::create_targets(context, Point2::<u32>::from(dimensions), divider_factor);
         self.combine_program.set_uniform("sample0", &targets[0][0]);
         self.combine_program.set_uniform("sample1", &targets[0][1]);
         self.combine_program.set_uniform("sample2", &targets[0][2]);
@@ -151,13 +150,11 @@ impl Bloom {
     }
 
     /// Create scaling textures.
-    fn create_targets(context: &RenderContext, base_divider: u32, divider_factor: u32) -> [[Texture; 5]; 2] {
+    fn create_targets(context: &RenderContext, (width, height): Point2<u32>, divider_factor: u32) -> [[Texture; 5]; 2] {
 
-        let display = context.display();
-        let (width, height) = display.framebuffer_dimensions();
         let builder = Texture::builder(context).format(TextureFormat::F16F16F16F16);
 
-        let f0 = base_divider;
+        let f0 = 1;
         let f1 = f0 * divider_factor;
         let f2 = f1 * divider_factor;
         let f3 = f2 * divider_factor;

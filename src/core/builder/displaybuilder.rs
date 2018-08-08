@@ -1,4 +1,4 @@
-use core::{Display, DisplayInfo, Monitor, Point2, Result};
+use core::{Display, DisplayInfo, Monitor, Point2, RenderContext, Result};
 
 /// A display builder.
 ///
@@ -58,6 +58,11 @@ impl DisplayBuilder {
     /// Flags the display to use vsync.
     pub fn vsync(mut self: Self) -> Self {
         self.info.vsync = true;
+        self
+    }
+    /// Use an existing context with this display.
+    pub fn context(mut self: Self, context: RenderContext) -> Self {
+        self.info.context = Some(context);
         self
     }
     /// Flags the display to be initialially hidden.

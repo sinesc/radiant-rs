@@ -33,10 +33,10 @@ impl RenderContext {
     pub fn prune(self: &Self) {
         self.lock().prune();
     }
-    /// Retrieves the display associated with this rendercontext.
+    /* /// Retrieves the display associated with this rendercontext.
     pub(crate) fn display(self: &Self) -> backend::Display {
         self.lock().display.clone()
-    }
+    }*/
     /// Creates a new RenderContext
     pub(crate) fn new(data: RenderContextData) -> RenderContext {
         RenderContext(Arc::new(Mutex::new(data)))
@@ -87,10 +87,10 @@ pub struct RawFrameArray {
 }
 
 impl RawFrameArray {
-    fn new(display: &backend::Display) -> Self {
+    fn new(context: &backend::Context) -> Self {
         RawFrameArray {
             dirty   : false,
-            data    : Rc::new(backend::Texture2dArray::new(display, &Vec::new())), // !todo why rc?
+            data    : Rc::new(backend::Texture2dArray::new(context, &Vec::new())), // !todo why rc?
             raw     : Vec::new(),
             sprites : Vec::new(),
         }
@@ -109,10 +109,10 @@ impl RawFrameArray {
         self.sprites.push(SpriteBackRef::new(sprite_data));
     }
     /// Updates texture array in video memory.
-    fn update(self: &mut Self, display: &backend::Display) {
+    fn update(self: &mut Self, context: &backend::Context) {
         if self.dirty {
             self.dirty = false;
-            self.data = Rc::new(backend::Texture2dArray::new(display, &self.raw));
+            self.data = Rc::new(backend::Texture2dArray::new(context, &self.raw));
         }
     }
     /// Returns a list of tuples containing current sprite texture_id and required negative offset.
@@ -157,12 +157,12 @@ impl RawFrameArray {
         }
     }
     /// Prunes no longer used textures from the array and update sprite texture ids and generations.
-    fn prune(self: &mut Self, display: &backend::Display, generation: usize) {
+    fn prune(self: &mut Self, context: &backend::Context, generation: usize) {
         if let Some(mapping) = self.create_prune_map() {
             // Remove unused textures from raw data.
             let destination_map = self.prune_raw_textures(&mapping);
             self.dirty = true;
-            self.update(display);
+            self.update(context);
             // Update sprite texture ids and generation.
             self.prune_sprites(|sprite| {
                 let texture_id = sprite.texture_id.load(Ordering::Relaxed);
@@ -184,7 +184,6 @@ impl RawFrameArray {
 pub struct RenderContextData {
     pub backend_context     : backend::Context,
     pub tex_arrays          : Vec<RawFrameArray>,
-    pub display             : backend::Display,
     pub font_cache          : font::FontCache,
     pub font_texture        : Rc<backend::Texture2d>,
     pub single_rect         : [core::Vertex; 4],
@@ -199,8 +198,10 @@ impl RenderContextData {
         let size = 512;
         let mut tex_arrays = Vec::new();
 
+        let backend_context = backend::Context::new(display, initial_capacity);
+
         for _ in 0..NUM_BUCKETS {
-            tex_arrays.push(RawFrameArray::new(display));
+            tex_arrays.push(RawFrameArray::new(&backend_context));
         }
 
         let data = core::RawFrame {
@@ -210,12 +211,11 @@ impl RenderContextData {
             channels: 1,
         };
 
-        let texture = backend::Texture2d::new(display, 0, 0, core::TextureFormat::U8, Some(data));
+        let texture = backend::Texture2d::new(&backend_context, 0, 0, core::TextureFormat::U8, Some(data));
 
         Ok(RenderContextData {
-            backend_context     : backend::Context::new(display, initial_capacity),
+            backend_context     : backend_context,
             tex_arrays          : tex_arrays,
-            display             : display.clone(),
             font_cache          : font::FontCache::new(size, size, 0.01, 0.01),
             font_texture        : Rc::new(texture),
             single_rect         : Self::create_single_rect(),
@@ -236,7 +236,7 @@ impl RenderContextData {
     /// Update texture arrays from registered textures
     pub fn update_tex_array(self: &mut Self) {
         for ref mut array in self.tex_arrays.iter_mut() {
-            array.update(&self.display);
+            array.update(&self.backend_context);
         }
     }
 
@@ -254,7 +254,7 @@ impl RenderContextData {
     fn prune(self: &mut Self) {
         self.generation = Self::create_generation();
         for array in self.tex_arrays.iter_mut() {
-            array.prune(&self.display, self.generation);
+            array.prune(&self.backend_context, self.generation);
         }
     }
 

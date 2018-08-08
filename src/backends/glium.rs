@@ -6,6 +6,19 @@ use self::glium::{glutin, Surface};
 use core;
 use core::math::*;
 
+// glutin's global events loop handling. Can only have one of these.
+
+static mut EVENTS_LOOP: Option<glutin::EventsLoop> = None;
+
+fn init_events_loop<T>(else_fn: T) -> &'static mut glutin::EventsLoop where T: FnOnce() -> glutin::EventsLoop {
+    unsafe {
+        if EVENTS_LOOP.is_none() {
+            EVENTS_LOOP = Some(else_fn());
+        }
+        EVENTS_LOOP.as_mut().unwrap()
+    }
+}
+
 // --------------
 // Public interface provided to Radiant-API-user in radiant_rs::backend
 // --------------
@@ -22,10 +35,14 @@ pub mod public {
     ///
     /// As an alternative to [`backend::create_renderer()`](fn.create_renderer.html), this allows for glium rendering but keeps radiant display handling.
     pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
+        let mut accepted = false;
+        super::init_events_loop(|| { accepted = true; events_loop });
+        if !accepted {
+            panic!("Failed to use given events loop. Another events loop was already created.");
+        }
         core::Display {
             handle: super::Display(Rc::new(super::DisplayInner {
                 inner       : display.clone(),
-                events_loop : Some(RefCell::new(events_loop)),
                 descriptor  : None,
                 was_rebuilt : RefCell::new(false),
             })),
@@ -44,7 +61,6 @@ pub mod public {
 
         let display = super::Display(Rc::new(super::DisplayInner {
             inner       : display.clone(),
-            events_loop : None,
             descriptor  : None,
             was_rebuilt : RefCell::new(false),
         }));
@@ -56,8 +72,8 @@ pub mod public {
 
         Ok(core::Renderer {
             empty_texture   : identity_texture,
+            program         : Rc::new(core::Program::new(&context, core::DEFAULT_FS)?),
             context         : context,
-            program         : Rc::new(core::Program::new(&display, core::DEFAULT_FS)?),
             target          : Rc::new(RefCell::new(target)),
         })
     }
@@ -145,7 +161,6 @@ impl From<glium::backend::glutin::DisplayCreationError> for core::Error {
 
 pub struct DisplayInner {
     inner       : glium::Display,
-    events_loop : Option<RefCell<glutin::EventsLoop>>,
     descriptor  : Option<RefCell<core::DisplayInfo>>,
     was_rebuilt : RefCell<bool>,
 }
@@ -161,9 +176,18 @@ impl Deref for Display {
 }
 
 impl Display {
+    fn events_loop() -> &'static mut glutin::EventsLoop {
+        init_events_loop(|| glutin::EventsLoop::new())
+    }
     fn build_window(descriptor: &core::DisplayInfo) -> glium::glutin::WindowBuilder {
+        use self::glium::glutin::dpi::LogicalSize;
+        let monitor = if let Some(ref monitor) = descriptor.monitor {
+            monitor.inner.0.clone()
+        } else {
+            Self::events_loop().get_primary_monitor()
+        };
         glium::glutin::WindowBuilder::new()
-                    .with_dimensions((descriptor.width, descriptor.height).into())
+                    .with_dimensions(LogicalSize::from_physical((descriptor.width, descriptor.height), monitor.get_hidpi_factor()))
                     .with_title(descriptor.title.clone())
                     .with_transparency(descriptor.transparent)
                     .with_decorations(descriptor.decorations)
@@ -175,7 +199,7 @@ impl Display {
                     .with_vsync(descriptor.vsync)
     }
     pub fn new(descriptor: core::DisplayInfo) -> core::Result<Display> {
-        let events_loop = glutin::EventsLoop::new();
+        let events_loop = Self::events_loop();
         let display = {
             let window = Self::build_window(&descriptor);
             let context = Self::build_context(&descriptor);
@@ -183,7 +207,6 @@ impl Display {
         };
         Ok(Display(Rc::new(DisplayInner {
             inner       : display,
-            events_loop : Some(RefCell::new(events_loop)),
             descriptor  : Some(RefCell::new(descriptor)),
             was_rebuilt : RefCell::new(false),
         })))
@@ -217,7 +240,7 @@ impl Display {
         }*/
 
         // add/remove fullscreen from descriptor (only kept around because set_fullscreen is NYI)
-        let events_loop = self.events_loop.as_ref().unwrap().borrow();
+        let events_loop = Self::events_loop();
         let mut descriptor = self.descriptor.as_ref().unwrap().borrow_mut();
         descriptor.monitor = monitor;
 
@@ -225,10 +248,10 @@ impl Display {
         let window = Self::build_window(descriptor.deref());
         let context = Self::build_context(descriptor.deref());
         *self.was_rebuilt.borrow_mut() = true;
-        self.inner.rebuild(window, context, &events_loop).is_ok()
+        self.inner.rebuild(window, context, events_loop).is_ok()
     }
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
-        self.events_loop.as_ref().unwrap().borrow_mut().poll_events(|glutin_event| {
+        Self::events_loop().poll_events(|glutin_event| {
             if let Some(event) = Self::map_event(glutin_event) {
                 // suppress close event when going to fullscreen
                 if event == core::Event::Close && *self.was_rebuilt.borrow() {
@@ -518,10 +541,11 @@ pub struct Program(glium::Program);
 
 impl Program {
     /// Creates a shader program from given vertex- and fragment-shader sources.
-    pub fn new(display: &Display, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
+    pub fn new(context: &core::RenderContext, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
         use self::glium::program::ProgramCreationError;
         use core::Error;
-        match glium::Program::from_source(&display.inner, vertex_shader, fragment_shader, None) {
+        let display = &context.lock().backend_context.display;
+        match glium::Program::from_source(display, vertex_shader, fragment_shader, None) {
             Err(ProgramCreationError::CompilationError(message)) => { Err(Error::ShaderError(format!("Shader compilation failed with: {}", message))) }
             Err(ProgramCreationError::LinkingError(message))     => { Err(Error::ShaderError(format!("Shader linking failed with: {}", message))) }
             Err(_)                                               => { Err(Error::ShaderError("No shader support found".to_string())) }
@@ -555,8 +579,8 @@ pub struct MonitorIterator(glium::glutin::AvailableMonitorsIter);
 impl MonitorIterator {
 
     /// Returns an inter
-    pub fn new(display: &core::Display) -> Self {
-        MonitorIterator(display.handle.events_loop.as_ref().unwrap().borrow().get_available_monitors())
+    pub fn new() -> Self {
+        MonitorIterator(Display::events_loop().get_available_monitors())
     }
 }
 
@@ -578,17 +602,17 @@ impl Iterator for MonitorIterator {
 pub struct Texture2d(glium::texture::Texture2d);
 
 impl Texture2d {
-    pub fn new(display: &Display, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Self {
+    pub fn new(context: &Context, width: u32, height: u32, format: core::TextureFormat, data: Option<core::RawFrame>) -> Self {
         let texture = if let Some(rawdata) = data {
             glium::texture::Texture2d::with_format(
-                &display.inner,
+                &context.display,
                 RawFrame(rawdata),
                 Self::convert_format(format),
                 glium::texture::MipmapsOption::NoMipmap
             ).unwrap()
         } else {
             let texture = glium::texture::Texture2d::empty_with_format(
-                &display.inner,
+                &context.display,
                 Self::convert_format(format),
                 glium::texture::MipmapsOption::NoMipmap,
                 width,
@@ -696,7 +720,7 @@ pub struct Texture2dArray(glium::texture::Texture2dArray);
 
 impl Texture2dArray {
     /// Generates glium texture array from given vector of textures
-    pub fn new(display: &Display, raw: &Vec<core::RawFrame>) -> Self {
+    pub fn new(context: &Context, raw: &Vec<core::RawFrame>) -> Self {
 
         use self::glium::texture;
         use std::mem::transmute;
@@ -705,9 +729,9 @@ impl Texture2dArray {
 
         Texture2dArray(
             if raw_wrapped.len() > 0 {
-                texture::Texture2dArray::with_format(&display.inner, raw_wrapped, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
+                texture::Texture2dArray::with_format(&context.display, raw_wrapped, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
             } else {
-                texture::Texture2dArray::empty_with_format(&display.inner, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
+                texture::Texture2dArray::empty_with_format(&context.display, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
             }
         )
     }
@@ -1066,6 +1090,10 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
 
     context.backend_context.draw(target, unsafe { transmute(vertices) }, false, 0, &program.texture_program, &glium_uniforms, &blend);
 }
+
+//use glium::backend::Facade;
+
+//impl Facade for
 
 // --------------
 // Misc

@@ -44,13 +44,14 @@ impl Renderer {
         let context_data = RenderContextData::new(&display.handle, rendercontext::INITIAL_CAPACITY)?;
         let context = RenderContext::new(context_data);
         let target = vec![ RenderTarget(RenderTargetInner::Frame(display.frame.clone())) ];
+        let default_program = Program::new(&context, DEFAULT_FS)?;
         let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::WHITE);
 
         Ok(Renderer {
             empty_texture   : identity_texture,
             context         : context,
-            program         : Rc::new(Program::new(&display.handle, DEFAULT_FS)?),
+            program         : Rc::new(default_program),
             target          : Rc::new(RefCell::new(target)),
         })
     }
@@ -238,8 +239,11 @@ impl Renderer {
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
             DrawRectInfoViewSource::Display => {
+/* TODO handle this somehow
                 let dim = context.display.framebuffer_dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
+*/
+                Mat4::viewport(1.0, 1.0)
             }
             DrawRectInfoViewSource::Source => {
                 let dim = texture.dimensions();

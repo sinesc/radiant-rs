@@ -1,6 +1,6 @@
 [package]
 name = "radiant-rs"
-version = "0.13.1"
+version = "0.14.0"
 authors = [ "Dennis Möhlmann <dmo479@gmail.com>" ]
 description = "Thread-safe Rust sprite rendering engine with a friendly API and custom shader support"
 documentation = "https://docs.rs/radiant-rs/"
@@ -33,7 +33,7 @@ serde_derive = { version = "1.0", optional = true }
 [dev-dependencies]
 tiled = "0.4"
 glium = "0.22"
-radiant-utils = { version = "0.3" }
+radiant-utils = { version = "0.4" }
 
 [lib]
 name = "radiant_rs"
@@ -81,16 +81,20 @@ name = "09_combined"
 path = "examples/09_combined.rs"
 
 [[example]]
-name = "10_glium_less"
-path = "examples/10_glium_less.rs"
-
-[[example]]
-name = "11_glium_more"
-path = "examples/11_glium_more.rs"
+name = "10_multi_window"
+path = "examples/10_multi_window.rs"
 
 [[example]]
 name = "98_threads"
 path = "examples/98_threads.rs"
+
+[[example]]
+name = "glium_less"
+path = "examples/glium_less.rs"
+
+[[example]]
+name = "glium_more"
+path = "examples/glium_more.rs"
 
 [[example]]
 name = "demo_blobs"
