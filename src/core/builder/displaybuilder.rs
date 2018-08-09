@@ -1,4 +1,4 @@
-use core::{Display, DisplayInfo, Monitor, Point2, RenderContext, Result};
+use core::{Display, DisplayInfo, Monitor, Point2, Context, Result};
 
 /// A display builder.
 ///
@@ -61,8 +61,8 @@ impl DisplayBuilder {
         self
     }
     /// Use an existing context with this display.
-    pub fn context(mut self: Self, context: RenderContext) -> Self {
-        self.info.context = Some(context);
+    pub fn context(mut self: Self, context: &Context) -> Self {
+        self.info.context = Some(context.clone());
         self
     }
     /// Flags the display to be initialially hidden.

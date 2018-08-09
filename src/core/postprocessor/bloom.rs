@@ -110,7 +110,7 @@ impl Bloom {
     /// Creates a new Bloom effect instance.
     /// The base texture for this effect uses the given dimensions. For each additional texture
     /// the dimensions are divided by `divider_factor`.
-    pub fn new<T>(context: &RenderContext, dimensions: T, divider_factor: u32) -> Self where Point2<u32>: From<T> {
+    pub fn new<T>(context: &Context, dimensions: T, divider_factor: u32) -> Self where Point2<u32>: From<T> {
 
         let dimensions = Point2::<u32>::from(dimensions);
         let blur_program = Program::from_string(&context, include_str!("../../shader/postprocess/blur.fs")).unwrap();
@@ -139,7 +139,7 @@ impl Bloom {
     }
 
     /// Rebuilds internal textures to given dimensions.
-    pub fn rebuild<T>(self: &mut Self, context: &RenderContext, dimensions: T, divider_factor: u32) where Point2<u32>: From<T> {
+    pub fn rebuild<T>(self: &mut Self, context: &Context, dimensions: T, divider_factor: u32) where Point2<u32>: From<T> {
         let targets = Self::create_targets(context, Point2::<u32>::from(dimensions), divider_factor);
         self.combine_program.set_uniform("sample0", &targets[0][0]);
         self.combine_program.set_uniform("sample1", &targets[0][1]);
@@ -150,7 +150,7 @@ impl Bloom {
     }
 
     /// Create scaling textures.
-    fn create_targets(context: &RenderContext, (width, height): Point2<u32>, divider_factor: u32) -> [[Texture; 5]; 2] {
+    fn create_targets(context: &Context, (width, height): Point2<u32>, divider_factor: u32) -> [[Texture; 5]; 2] {
 
         let builder = Texture::builder(context).format(TextureFormat::F16F16F16F16);
 

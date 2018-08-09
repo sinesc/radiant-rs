@@ -5,7 +5,7 @@ use core::*;
 #[derive(Clone)]
 pub struct TextureBuilder<'a> {
     info    : TextureInfo<'a>,
-    context : &'a RenderContext,
+    context : &'a Context,
     //file    : Option<&'a str>,
 }
 
@@ -55,7 +55,7 @@ impl<'a> TextureBuilder<'a> {
     pub fn build(self: Self) -> Result<Texture> {
         Texture::from_info(self.context, self.info)
     }
-    pub(crate) fn new<'b>(context: &'b RenderContext) -> TextureBuilder {
+    pub(crate) fn new<'b>(context: &'b Context) -> TextureBuilder {
         TextureBuilder {
             context : context,
             info    : TextureInfo { ..TextureInfo::default() },

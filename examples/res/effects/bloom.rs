@@ -62,7 +62,7 @@ impl Postprocessor for Bloom {
 }
 
 impl Bloom {
-    pub fn new(context: &RenderContext, dimensions: (u32, u32), iterations: u32, spread: u8, brightness: f32) -> Self {
+    pub fn new(context: &Context, dimensions: (u32, u32), iterations: u32, spread: u8, brightness: f32) -> Self {
         use std::cmp::min;
 
         let blur_program = Program::from_string(&context, include_str!("blur.fs")).unwrap();

@@ -35,19 +35,27 @@ pub mod public {
     ///
     /// As an alternative to [`backend::create_renderer()`](fn.create_renderer.html), this allows for glium rendering but keeps radiant display handling.
     pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
+
         let mut accepted = false;
         super::init_events_loop(|| { accepted = true; events_loop });
         if !accepted {
             panic!("Failed to use given events loop. Another events loop was already created.");
         }
+
+        let display = super::Display(Rc::new(super::DisplayInner {
+            inner       : display.clone(),
+            //descriptor  : None,
+            //was_rebuilt : RefCell::new(false),
+        }));
+
+        let context = core::Context::new();
+        context.set_primary_display(&display);
+
         core::Display {
-            handle: super::Display(Rc::new(super::DisplayInner {
-                inner       : display.clone(),
-                descriptor  : None,
-                was_rebuilt : RefCell::new(false),
-            })),
-            frame: Rc::new(RefCell::new(None)),
-            input_data: Arc::new(RwLock::new(core::InputData::new())),
+            handle      : display,
+            context     : context,
+            frame       : Rc::new(RefCell::new(None)),
+            input_data  : Arc::new(RwLock::new(core::InputData::new())),
         }
     }
 
@@ -61,12 +69,13 @@ pub mod public {
 
         let display = super::Display(Rc::new(super::DisplayInner {
             inner       : display.clone(),
-            descriptor  : None,
-            was_rebuilt : RefCell::new(false),
+            //descriptor  : None,
+            //was_rebuilt : RefCell::new(false),
         }));
-        let context_data = core::RenderContextData::new(&display, core::INITIAL_CAPACITY)?;
-        let context = core::RenderContext::new(context_data);
-        let target = vec![ /*RenderTarget::Display(display.clone())*/ ];
+
+        let context = core::Context::new();
+        context.set_primary_display(&display);
+
         let identity_texture = core::Texture::builder(&context).format(core::TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(core::Color::WHITE);
 
@@ -74,7 +83,7 @@ pub mod public {
             empty_texture   : identity_texture,
             program         : Rc::new(core::Program::new(&context, core::DEFAULT_FS)?),
             context         : context,
-            target          : Rc::new(RefCell::new(target)),
+            target          : Rc::new(RefCell::new(Vec::new())),
         })
     }
 
@@ -161,8 +170,8 @@ impl From<glium::backend::glutin::DisplayCreationError> for core::Error {
 
 pub struct DisplayInner {
     inner       : glium::Display,
-    descriptor  : Option<RefCell<core::DisplayInfo>>,
-    was_rebuilt : RefCell<bool>,
+    //descriptor  : Option<RefCell<core::DisplayInfo>>,
+    //was_rebuilt : RefCell<bool>,
 }
 
 #[derive(Clone)]
@@ -194,21 +203,39 @@ impl Display {
                     .with_visibility(descriptor.visible)
                     .with_fullscreen(if let Some(ref monitor) = descriptor.monitor { Some(monitor.inner.0.clone()) } else { None })
     }
-    fn build_context(descriptor: &core::DisplayInfo) -> glium::glutin::ContextBuilder {
-        glium::glutin::ContextBuilder::new()
-                    .with_vsync(descriptor.vsync)
-    }
+    /*fn build_context(descriptor: &core::DisplayInfo) -> glium::glutin::ContextBuilder {
+        //use backends::glium::glium::backend::Facade;
+
+
+
+        context
+    }*/
     pub fn new(descriptor: core::DisplayInfo) -> core::Result<Display> {
         let events_loop = Self::events_loop();
         let display = {
             let window = Self::build_window(&descriptor);
-            let context = Self::build_context(&descriptor);
+
+            //let context = Self::build_context(&descriptor);
+
+            let parent_display;
+            let gl_window;
+            let mut context = glium::glutin::ContextBuilder::new()
+                        .with_vsync(descriptor.vsync);
+
+            if let Some(ref parent_context) = descriptor.context {
+                if parent_context.has_primary_display() {
+                    parent_display = parent_context.lock().backend_context.as_ref().unwrap().display.clone();
+                    gl_window = parent_display.gl_window();
+                    context = context.with_shared_lists(gl_window.context());
+                }
+            }
+
             glium::Display::new(window, context, &events_loop)?
         };
         Ok(Display(Rc::new(DisplayInner {
             inner       : display,
-            descriptor  : Some(RefCell::new(descriptor)),
-            was_rebuilt : RefCell::new(false),
+            //descriptor  : Some(RefCell::new(descriptor)),
+            //was_rebuilt : RefCell::new(false),
         })))
     }
     pub fn draw(self: &Self) -> Frame {
@@ -232,33 +259,22 @@ impl Display {
         };
     }
     pub fn set_fullscreen(self: &Self, monitor: Option<core::Monitor>) -> bool {
-        // glium set_fullscreen NYI as of 0.20.0
-        /*if let Some(monitor) = monitor {
-            self.0.gl_window().set_fullscreen(Some(monitor.inner.0.clone()));
+        if let Some(monitor) = monitor {
+            self.inner.gl_window().set_fullscreen(Some(monitor.inner.0.clone()));
         } else {
-            self.0.gl_window().set_fullscreen(None);
-        }*/
-
-        // add/remove fullscreen from descriptor (only kept around because set_fullscreen is NYI)
-        let events_loop = Self::events_loop();
-        let mut descriptor = self.descriptor.as_ref().unwrap().borrow_mut();
-        descriptor.monitor = monitor;
-
-        // rebuild display with changed fullscreen setting
-        let window = Self::build_window(descriptor.deref());
-        let context = Self::build_context(descriptor.deref());
-        *self.was_rebuilt.borrow_mut() = true;
-        self.inner.rebuild(window, context, events_loop).is_ok()
+            self.inner.gl_window().set_fullscreen(None);
+        }
+        true
     }
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
         Self::events_loop().poll_events(|glutin_event| {
             if let Some(event) = Self::map_event(glutin_event) {
                 // suppress close event when going to fullscreen
-                if event == core::Event::Close && *self.was_rebuilt.borrow() {
-                    *self.was_rebuilt.borrow_mut() = false;
-                } else {
+                //if event == core::Event::Close && *self.was_rebuilt.borrow() {
+                //    *self.was_rebuilt.borrow_mut() = false;
+                //} else {
                     callback(event);
-                }
+                //}
             }
         });
     }
@@ -541,11 +557,10 @@ pub struct Program(glium::Program);
 
 impl Program {
     /// Creates a shader program from given vertex- and fragment-shader sources.
-    pub fn new(context: &core::RenderContext, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
+    pub fn new(context: &Context, vertex_shader: &str, fragment_shader: &str) -> core::Result<Program> {
         use self::glium::program::ProgramCreationError;
         use core::Error;
-        let display = &context.lock().backend_context.display;
-        match glium::Program::from_source(display, vertex_shader, fragment_shader, None) {
+        match glium::Program::from_source(&context.display, vertex_shader, fragment_shader, None) {
             Err(ProgramCreationError::CompilationError(message)) => { Err(Error::ShaderError(format!("Shader compilation failed with: {}", message))) }
             Err(ProgramCreationError::LinkingError(message))     => { Err(Error::ShaderError(format!("Shader linking failed with: {}", message))) }
             Err(_)                                               => { Err(Error::ShaderError("No shader support found".to_string())) }
@@ -1045,7 +1060,7 @@ implement_wrapped_vertex!(Vertex, position, offset, rotation, color, bucket_id, 
 // Drawing
 // --------------
 
-pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, layer: &core::Layer, component: u32) {
+pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, layer: &core::Layer, component: u32) {
 
     use self::glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
     use std::mem::transmute;
@@ -1055,21 +1070,21 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
         .add("u_view", GliumUniform::Mat4(*layer.view_matrix().deref().deref()))
         .add("u_model", GliumUniform::Mat4(*layer.model_matrix().deref().deref()))
         .add("_rd_color", GliumUniform::Vec4(layer.color().deref().into()))
-        .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.0.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
+        .add("_rd_tex", GliumUniform::Sampled2d(context.font_texture.as_ref().unwrap().0.sampled().magnify_filter(MagnifySamplerFilter::Nearest).wrap_function(SamplerWrapFunction::Clamp)))
         .add("_rd_comp", GliumUniform::UnsignedInt(component))
-        .add("_rd_tex1", GliumUniform::Texture2dArray(&context.tex_arrays[1].data.deref().0))
-        .add("_rd_tex2", GliumUniform::Texture2dArray(&context.tex_arrays[2].data.deref().0))
-        .add("_rd_tex3", GliumUniform::Texture2dArray(&context.tex_arrays[3].data.deref().0))
-        .add("_rd_tex4", GliumUniform::Texture2dArray(&context.tex_arrays[4].data.deref().0))
-        .add("_rd_tex5", GliumUniform::Texture2dArray(&context.tex_arrays[5].data.deref().0));
+        .add("_rd_tex1", GliumUniform::Texture2dArray(&context.tex_arrays[1].data.0))
+        .add("_rd_tex2", GliumUniform::Texture2dArray(&context.tex_arrays[2].data.0))
+        .add("_rd_tex3", GliumUniform::Texture2dArray(&context.tex_arrays[3].data.0))
+        .add("_rd_tex4", GliumUniform::Texture2dArray(&context.tex_arrays[4].data.0))
+        .add("_rd_tex5", GliumUniform::Texture2dArray(&context.tex_arrays[5].data.0));
 
     let vertices = layer.vertices();
     let vertices = vertices.deref();
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
+    context.backend_context.as_mut().unwrap().draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
 }
 
-pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
+pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
 
     use std::mem::transmute;
 
@@ -1088,7 +1103,7 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
     let vertices = &context.single_rect;
     let vertices = &vertices[..];
 
-    context.backend_context.draw(target, unsafe { transmute(vertices) }, false, 0, &program.texture_program, &glium_uniforms, &blend);
+    context.backend_context.as_mut().unwrap().draw(target, unsafe { transmute(vertices) }, false, 0, &program.texture_program, &glium_uniforms, &blend);
 }
 
 //use glium::backend::Facade;

@@ -1,8 +1,8 @@
 use prelude::*;
 use core::{
-    self, rendercontext,
+    self, context,
     Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
-    RenderContext, RenderContextData, AsRenderTarget, RenderTarget, RenderTargetInner,
+    Context, AsRenderTarget, RenderTarget, RenderTargetInner,
     blendmodes, TextureFormat
 };
 use core::math::*;
@@ -24,7 +24,7 @@ lazy_static! {
 /// drawing.
 #[derive(Clone)]
 pub struct Renderer {
-    pub(crate) context         : RenderContext,
+    pub(crate) context         : Context,
     pub(crate) program         : Rc<Program>,
     pub(crate) target          : Rc<RefCell<Vec<RenderTarget>>>,
     pub(crate) empty_texture   : Texture,
@@ -41,9 +41,8 @@ impl Renderer {
     /// Returns a new renderer instance.
     pub fn new(display: &Display) -> core::Result<Self> {
 
-        let context_data = RenderContextData::new(&display.handle, rendercontext::INITIAL_CAPACITY)?;
-        let context = RenderContext::new(context_data);
         let target = vec![ RenderTarget(RenderTargetInner::Frame(display.frame.clone())) ];
+        let context = display.context().clone();
         let default_program = Program::new(&context, DEFAULT_FS)?;
         let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::WHITE);
@@ -56,10 +55,10 @@ impl Renderer {
         })
     }
 
-    /// Returns a reference to the renderers' context. The [`RenderContext`](struct.RenderContext.html)
+    /// Returns a reference to the renderers' context. The [`Context`](struct.Context.html)
     /// implements send+sync and is required by [`Font`](struct.Font.html), [`Sprite`](struct.Sprite.html)
     /// and [`Texture`](struct.Texture.html) to create new instances.
-    pub fn context(self: &Self) -> RenderContext {
+    pub fn context(self: &Self) -> Context {
         self.context.clone()
     }
 
@@ -173,7 +172,7 @@ impl Renderer {
     /// let my_program = Program::from_string(&rendercontext, &program_source).unwrap();
     ///
     /// // Create the postprocessor with the program.
-    /// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program);
+    /// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program, display.dimensions());
     ///
     /// // ... in your renderloop...
     /// # display.prepare_frame();
@@ -261,7 +260,7 @@ impl Renderer {
         // skip first five sizes 1x1 to 16x16, use id 0 for font-cache
         let bucket_id = cmp::max(1, ln2 as i32 - 4 + 1) as u32;
         let size = 2u32.pow(bucket_id + 4 - 1);
-        assert!(bucket_id < rendercontext::NUM_BUCKETS as u32, "texture size exceeded configured maximum");
+        assert!(bucket_id < context::NUM_BUCKETS as u32, "texture size exceeded configured maximum");
         (bucket_id, size)
     }
 

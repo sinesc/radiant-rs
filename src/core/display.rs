@@ -7,6 +7,7 @@ use backends::backend;
 #[derive(Clone)]
 pub struct Display {
     pub(crate) handle: backend::Display,
+    pub(crate) context: Context,
     pub(crate) frame: Rc<RefCell<Option<backend::Frame>>>,
     pub(crate) input_data: Arc<RwLock<InputData>>,
 }
@@ -238,12 +239,38 @@ impl Display {
         result
     }
 
+    // Returns the context associated with this display.
+    pub fn context(self: &Self) -> &Context {
+        &self.context
+    }
+
     /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
     pub(crate) fn new(descriptor: DisplayInfo) -> Result<Display> {
+
+        // Reuse existing context or create new one
+
+        let context = if let Some(existing_context) = descriptor.context.clone() {
+            existing_context
+        } else {
+            Context::new()
+        };
+
+        // Create a new display for use with this context
+
+        let display = backend::Display::new(descriptor)?;
+
+        // Set primary context display to first created display
+        // (this has no relevance to radiant but is to satisfy backend requirements)
+
+        if !context.has_primary_display() {
+            context.set_primary_display(&display);
+        }
+
         Ok(Display {
-            handle: backend::Display::new(descriptor)?,
-            frame: Rc::new(RefCell::new(None)),
-            input_data: Arc::new(RwLock::new(InputData::new())),
+            handle      : display,
+            context     : context,
+            frame       : Rc::new(RefCell::new(None)),
+            input_data  : Arc::new(RwLock::new(InputData::new())),
         })
     }
 
@@ -291,7 +318,7 @@ pub struct DisplayInfo {
     pub monitor     : Option<Monitor>,
     pub vsync       : bool,
     pub visible     : bool,
-    pub context     : Option<RenderContext>,
+    pub context     : Option<Context>,
 }
 
 impl Default for DisplayInfo {

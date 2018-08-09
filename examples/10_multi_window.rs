@@ -8,33 +8,31 @@ mod bloom;
 
 pub fn main() {
 
-    // Setup input/display.
-    let display = Display::builder().dimensions((640, 480)).vsync().title("Swirling blobs demo").build().unwrap();
-    let renderer = Renderer::new(&display).unwrap();
-    let input = Input::new(&display);
+    // Set up shared context
+    let context = Context::new();
 
-    let display2 = Display::builder().dimensions((640, 480)).vsync().title("Multi-Window example").build().unwrap();
-    let renderer2 = Renderer::new(&display2).unwrap();
-    
+    // Create three displays using the shared context.
+    let display1 = Display::builder().dimensions((640, 480)).vsync().title("Window 1").context(&context).build().unwrap();
+    let display2 = Display::builder().dimensions((640, 480)).vsync().title("Window 2").context(&context).build().unwrap();
+    let display3 = Display::builder().dimensions((640, 480)).vsync().title("Window 3").context(&context).build().unwrap();
+
+    // Setup renderer defaulting to window 1.
+    let renderer = Renderer::new(&display1).unwrap();
+    let input = Input::new(&display1);
+
     // Create two layers to draw to.
     let text_layer = Layer::new((640., 480.));
     let spark_layer = Layer::new((640., 480.));
     spark_layer.set_blendmode(blendmodes::LIGHTEN);
     spark_layer.model_matrix().scale(4.0);
 
-    let spark_layer2 = Layer::new((640., 480.));
-    spark_layer2.set_blendmode(blendmodes::LIGHTEN);
-    spark_layer2.model_matrix().scale(4.0);
-
     // This is a userdefined postprocessor to add a bloom effect.
-    let bloom_effect = bloom::Bloom::new(&renderer.context(), display.dimensions(), 2, 5, 4.0);
+    let bloom_effect = bloom::Bloom::new(&context, display1.dimensions(), 2, 5, 4.0);
 
     // Load sprite and fonts.
-    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
-    let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
+    let sprite = Sprite::from_file(&context, r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
+    let font = Font::builder(&context).family("Arial").size(12.0).build().unwrap();
     let big_font = font.clone_with_size(24.0);
-
-    let sprite2 = Sprite::from_file(&renderer2.context(), r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
 
     // Draw the sprite three times, tinted red, green and blue. No need to do this each frame since we're
     // only going to manipulate the matrices. Also write some text.
@@ -44,50 +42,54 @@ pub fn main() {
     big_font.write(&text_layer, "blobs.rs", (355., 330.), Color::RED);
     font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.), Color::WHITE);
 
-    sprite2.draw(&spark_layer2, 0, (320., 180.), *Color::RED.scale(1.5));
-    sprite2.draw(&spark_layer2, 0, (300., 200.), *Color::GREEN.scale(1.5));
-    sprite2.draw(&spark_layer2, 0, (340., 200.), *Color::BLUE.scale(1.5));
-
     // Clone a couple of layer matrices to play around with
     let mut view1 = spark_layer.view_matrix().clone();
     let mut view2 = spark_layer.view_matrix().clone();
     let mut view3 = spark_layer.view_matrix().clone();
 
     ru::renderloop(|frame| {
-        display.clear_frame(Color::BLACK);
+        display1.clear_frame(Color::BLACK);
         display2.clear_frame(Color::BLACK);
+        display3.clear_frame(Color::BLACK);
 
         // Rotate the model matrix.
         spark_layer.model_matrix().rotate(-frame.delta_f32 * 4.0);
 
-        // Rotate the three viewmatrix clones at different rates.
         view1.rotate_at((320., 200.), frame.delta_f32 * 1.0);
         view2.rotate_at((320., 200.), frame.delta_f32 * 1.5);
         view3.rotate_at((320., 200.), frame.delta_f32 * 2.0);
 
-        // Draw the spark layer three times with different matrices and alpha levels.
         renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
             renderer.fill().color(Color(0.0, 0.0, 0.0, 0.02)).draw();
             renderer.draw_layer(spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
             renderer.draw_layer(spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
             renderer.draw_layer(spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
         });
-
-
-        //renderer.render_to(&display2, || {
-            //renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
-                renderer2.fill().color(Color(0.0, 0.0, 0.0, 0.02)).draw();
-                renderer2.draw_layer(spark_layer2.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
-                renderer2.draw_layer(spark_layer2.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
-                renderer2.draw_layer(spark_layer2.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
-            //});
-        //});
-
-        // Draw the text layer.
         renderer.draw_layer(&text_layer, 0);
 
-        display.swap_frame();
+        renderer.render_to(&display2, || {
+            renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
+                renderer.fill().color(Color(0.0, 0.0, 0.0, 0.02)).draw();
+                renderer.draw_layer(spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
+                renderer.draw_layer(spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
+                renderer.draw_layer(spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
+            });
+            renderer.draw_layer(&text_layer, 0);
+        });
+
+        renderer.render_to(&display3, || {
+            renderer.postprocess(&bloom_effect, &blendmodes::COPY, || {
+                renderer.fill().color(Color(0.0, 0.0, 0.0, 0.02)).draw();
+                renderer.draw_layer(spark_layer.set_color(Color::alpha(0.125)).set_view_matrix(view1), 0);
+                renderer.draw_layer(spark_layer.set_color(Color::alpha(0.5)).set_view_matrix(view2), 0);
+                renderer.draw_layer(spark_layer.set_color(Color::alpha(1.0)).set_view_matrix(view3), 0);
+            });
+            renderer.draw_layer(&text_layer, 0);
+        });
+
+        display1.swap_frame();
         display2.swap_frame();
-        !display.poll_events().was_closed() && !input.down(InputId::Escape)
+        display3.swap_frame();
+        !display1.poll_events().was_closed() && !input.down(InputId::Escape)
     });
 }

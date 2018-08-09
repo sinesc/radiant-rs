@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, RenderContext, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget, Point2};
+use core::{self, Context, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget, Point2};
 use core::builder::*;
 use image::{self, GenericImage};
 use backends::backend;
@@ -46,12 +46,12 @@ impl Texture {
     ///                     .build()
     ///                     .unwrap();
     /// ```
-    pub fn builder(context: &RenderContext) -> TextureBuilder {
+    pub fn builder(context: &Context) -> TextureBuilder {
         TextureBuilder::new(context)
     }
     /// Creates a new texture with given dimensions. The texture will use linear interpolation
     /// for magnification or minification and internally use the `F16F16F16F16` format.
-    pub fn new(context: &RenderContext, width: u32, height: u32) -> Self {
+    pub fn new(context: &Context, width: u32, height: u32) -> Self {
         Self::from_info(context, TextureInfo {
             width: width,
             height: height,
@@ -59,14 +59,14 @@ impl Texture {
         }).unwrap()
     }
     /// Creates a new texture from given file.
-    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Self> {
+    pub fn from_file(context: &Context, file: &str) -> core::Result<Self> {
         Self::from_info(context, TextureInfo {
             file: Some(file),
             ..TextureInfo::default()
         })
     }
     /// Creates a new texture with given dimensions and filters. It will internally use the `F16F16F16F16` format.
-    pub fn filtered(context: &RenderContext, width: u32, height: u32, minify: TextureFilter, magnify: TextureFilter) -> Self {
+    pub fn filtered(context: &Context, width: u32, height: u32, minify: TextureFilter, magnify: TextureFilter) -> Self {
         Self::from_info(context, TextureInfo {
             width: width,
             height: height,
@@ -94,7 +94,7 @@ impl Texture {
         self.dimensions
     }
     /// Creates a new texture from given TextureInfo struct.
-    pub(crate) fn from_info(context: &RenderContext, mut info: TextureInfo) -> core::Result<Self> {
+    pub(crate) fn from_info(context: &Context, mut info: TextureInfo) -> core::Result<Self> {
         let mut context = context.lock();
         let context = context.deref_mut();
         if let Some(filename) = info.file {
@@ -108,7 +108,7 @@ impl Texture {
                 channels: 4,
             });
         }
-        let texture = backend::Texture2d::new(&context.backend_context, info.width, info.height, info.format, info.data);
+        let texture = backend::Texture2d::new(context.backend_context.as_ref().unwrap(), info.width, info.height, info.format, info.data);
         Ok(Texture {
             handle      : Rc::new(texture),
             minify      : info.minify,

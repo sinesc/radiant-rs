@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, RenderContext, AsUniform, UniformList, Color};
+use core::{self, Context, AsUniform, UniformList, Color};
 use core::math::*;
 use backends::backend;
 
@@ -29,7 +29,7 @@ impl Debug for Program {
 
 impl Program {
     /// Creates a program from a fragment shader file.
-    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Self> {
+    pub fn from_file(context: &Context, file: &str) -> core::Result<Self> {
         use std::io::Read;
         let mut source = String::new();
         let mut f = File::open(file)?;
@@ -37,7 +37,7 @@ impl Program {
         Self::from_string(context, &source)
     }
     /// Creates a program from a fragment shader string.
-    pub fn from_string(context: &RenderContext, source: &str) -> core::Result<Self> {
+    pub fn from_string(context: &Context, source: &str) -> core::Result<Self> {
         Self::new(context, source)
     }
     /// Sets a uniform value by name.
@@ -49,17 +49,19 @@ impl Program {
         self.uniforms.remove(name)
     }
     /// Creates a new program. Used in rendercontext creation when the full context is not yet available.
-    pub(crate) fn new(context: &RenderContext, source: &str) -> core::Result<Program> {
+    pub(crate) fn new(context: &Context, source: &str) -> core::Result<Program> {
         let sprite_fs = Self::insert_template(source, SPRITE_INC);
         let texture_fs = Self::insert_template(source, TEXTURE_INC);
         let mut uniforms = UniformList::new();
         uniforms.insert("u_view", Mat4::viewport(1.0, 1.0).as_uniform());
         uniforms.insert("u_model", Mat4::<f32>::identity().as_uniform());
         uniforms.insert("_rd_color", Color::WHITE.as_uniform());
+        let context = context.lock();
+        let backend_context = context.backend_context.as_ref().unwrap();
         Ok(Program {
             uniforms: uniforms,
-            sprite_program: Arc::new(backend::Program::new(context, SPRITE_VS, &sprite_fs)?),
-            texture_program: Arc::new(backend::Program::new(context, TEXTURE_VS, &texture_fs)?),
+            sprite_program: Arc::new(backend::Program::new(backend_context, SPRITE_VS, &sprite_fs)?),
+            texture_program: Arc::new(backend::Program::new(backend_context, TEXTURE_VS, &texture_fs)?),
         })
     }
     /// Inserts program boilterplate code into the shader source.

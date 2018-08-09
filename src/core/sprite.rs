@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, Renderer, Layer, RenderContext, RawFrame};
+use core::{self, Renderer, Layer, Context, RawFrame};
 use core::math::*;
 use Color;
 use image::{self, GenericImage};
@@ -20,7 +20,7 @@ impl<'a> Sprite {
 
     /// Creates a new sprite texture. Given filename is expected to end
     /// on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
-    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Self> {
+    pub fn from_file(context: &Context, file: &str) -> core::Result<Self> {
         let path = Path::new(file);
         let mut image = image::open(&path)?;
         let parameters = Self::parse_parameters(image.dimensions(), path);
@@ -29,7 +29,7 @@ impl<'a> Sprite {
     }
 
     /// Creates a new sprite texture.
-    pub fn from_data(context: &RenderContext, data: &[u8], parameters: &SpriteParameters) -> core::Result<Self> {
+    pub fn from_data(context: &Context, data: &[u8], parameters: &SpriteParameters) -> core::Result<Self> {
         let mut image = image::load_from_memory(data)?;
         let descriptor = Self::build_raw_frames(&mut image, parameters);
         Result::Ok(Self::new(context, descriptor))
@@ -87,7 +87,7 @@ impl<'a> Sprite {
     }
 
     /// Creates a sprite from given descriptor.
-    fn new(context: &RenderContext, descriptor: SpriteRawInfo) -> Self {
+    fn new(context: &Context, descriptor: SpriteRawInfo) -> Self {
 
         let SpriteRawInfo { bucket_id, texture_size, frame_width, frame_height, components, raw_frames } = descriptor;
         let num_frames = (raw_frames.len() as u32 / components) as u32;

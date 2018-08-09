@@ -1,5 +1,5 @@
 use prelude::*;
-use core::{self, Layer, RenderContext, Color, Point2, Rect};
+use core::{self, Layer, Context, Color, Point2, Rect};
 use core::builder::*;
 use rusttype;
 use backends::backend;
@@ -20,7 +20,7 @@ pub struct Font {
     data    : Vec<u8>,
     font_id : usize,
     size    : f32,
-    context : RenderContext,
+    context : Context,
 }
 
 impl Debug for Font {
@@ -46,12 +46,12 @@ impl Font {
     /// # let rendercontext = renderer.context();
     /// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
     /// ```
-    pub fn builder(context: &RenderContext) -> FontBuilder {
+    pub fn builder(context: &Context) -> FontBuilder {
         FontBuilder::new(context)
     }
 
     /// Creates a font instance from a file.
-    pub fn from_file(context: &RenderContext, file: &str) -> core::Result<Font> {
+    pub fn from_file(context: &Context, file: &str) -> core::Result<Font> {
         use std::io::Read;
         let mut f = File::open(Path::new(file))?;
         let mut font_data = Vec::new();
@@ -116,7 +116,7 @@ impl Font {
     }
 
     /// Creates a new font instance from given FontInfo struct.
-    pub(crate) fn from_info(context: &RenderContext, info: FontInfo) -> core::Result<Font> {
+    pub(crate) fn from_info(context: &Context, info: FontInfo) -> core::Result<Font> {
 
         if let Some((font_data, _)) = system_fonts::get(&Self::build_property(&info)) {
             Ok(Self::create(context, font_data, info.size))
@@ -126,7 +126,7 @@ impl Font {
     }
 
     /// Creates a new unique font
-    fn create(context: &RenderContext, font_data: Vec<u8>, size: f32) -> Font {
+    fn create(context: &Context, font_data: Vec<u8>, size: f32) -> Font {
         Font {
             data    : font_data,
             font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),

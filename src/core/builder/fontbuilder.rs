@@ -1,4 +1,4 @@
-use core::{Result, Font, FontInfo, RenderContext};
+use core::{Result, Font, FontInfo, Context};
 
 /// A font builder.
 ///
@@ -17,7 +17,7 @@ use core::{Result, Font, FontInfo, RenderContext};
 #[derive(Clone)]
 pub struct FontBuilder<'a> {
     info    : FontInfo,
-    context : &'a RenderContext,
+    context : &'a Context,
     file    : Option<&'a str>,
 }
 
@@ -68,7 +68,7 @@ impl<'a> FontBuilder<'a> {
         }
     }
     // Creates a new FontBuilder instance.
-    pub(crate) fn new<'b>(context: &'b RenderContext) -> FontBuilder {
+    pub(crate) fn new<'b>(context: &'b Context) -> FontBuilder {
         FontBuilder {
             context : context,
             info    : FontInfo { ..FontInfo::default() },

@@ -9,7 +9,7 @@ use core;
 use core::math::*;
 
 // --------------
-// Public interface provided to Radiant-API-user in radiant_rs::backend 
+// Public interface provided to Radiant-API-user in radiant_rs::backend
 // --------------
 
 pub mod public {
@@ -48,7 +48,7 @@ impl Display {
     pub fn set_fullscreen(self: &Self, monitor: Option<core::Monitor>) -> bool {
         false
     }
-    pub fn set_cursor_position(self: &Self, position: Point2<i32>) {        
+    pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
     }
     pub fn set_cursor_state(self: &Self, state: core::CursorState) {
     }
@@ -179,8 +179,8 @@ impl Context {
 // Drawing
 // --------------
 
-pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, layer: &core::Layer, component: u32) {
+pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, layer: &core::Layer, component: u32) {
 }
 
-pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::RenderContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
+pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
 }

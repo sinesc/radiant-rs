@@ -1,4 +1,4 @@
-use core::{Texture, Renderer, RenderContext, Program, BlendMode, Postprocessor, Color, Point2};
+use core::{Texture, Renderer, Context, Program, BlendMode, Postprocessor, Color, Point2};
 
 /// A basic postprocessor that applies a Program to the given input once.
 ///
@@ -19,7 +19,7 @@ use core::{Texture, Renderer, RenderContext, Program, BlendMode, Postprocessor, 
 /// let my_program = Program::from_string(&rendercontext, &program_source).unwrap();
 ///
 /// // Create the postprocessor with the program.
-/// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program);
+/// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program, display.dimensions());
 ///
 /// // ... in your renderloop...
 /// # display.prepare_frame();
@@ -47,7 +47,7 @@ impl Postprocessor for Basic {
 
 impl Basic {
     /// Creates a new instance. The shader can use `sheet*()` to access the input texture.
-    pub fn new<T>(context: &RenderContext, program: Program, dimensions: T) -> Self where Point2<u32>: From<T> {
+    pub fn new<T>(context: &Context, program: Program, dimensions: T) -> Self where Point2<u32>: From<T> {
 
         let (width, height) = Point2::<u32>::from(dimensions);
 

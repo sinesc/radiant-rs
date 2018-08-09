@@ -1,6 +1,6 @@
 use prelude::*;
 use avec;
-use core::{blendmodes, BlendMode, rendercontext, Color, Program, Vertex};
+use core::{blendmodes, BlendMode, context, Color, Program, Vertex};
 use core::math::*;
 
 static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -166,7 +166,7 @@ impl Layer {
 
         self.set_dirty(true);
         if generation.is_some() && !self.set_generation(generation.unwrap()) {
-            panic!("Layer contains garbage data. Note: Layers need to be cleared after performing a RenderContext::prune().");
+            panic!("Layer contains garbage data. Note: Layers need to be cleared after performing a Context::prune().");
         }
 
         // corner positions relative to x/y
@@ -257,7 +257,7 @@ impl Layer {
             blend           : Mutex::new(blendmodes::ALPHA),
             color           : Mutex::new(Color::WHITE),
             contents        : Arc::new(LayerContents {
-                vertex_data     : avec::AVec::new(rendercontext::INITIAL_CAPACITY * 4),
+                vertex_data     : avec::AVec::new(context::INITIAL_CAPACITY * 4),
                 dirty           : AtomicBool::new(true),
                 generation      : AtomicUsize::new(0),
                 layer_id        : 1 + LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),

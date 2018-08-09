@@ -1,7 +1,7 @@
 pub use core::{
     BlendMode, BlendingFunction, LinearBlendingFactor, blendmodes,
     Display, Monitor,
-    Renderer, RenderTarget, RenderContext, AsRenderTarget,
+    Renderer, RenderTarget, Context, AsRenderTarget,
     Layer, Sprite, Font, Color,
     Texture, TextureFormat, TextureFilter, TextureWrap,
     Program, Uniform, AsUniform,

@@ -16,33 +16,38 @@ static GENERATION: AtomicUsize = ATOMIC_USIZE_INIT;
 ///
 /// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
 #[derive(Clone)]
-pub struct RenderContext (Arc<Mutex<RenderContextData>>);
+pub struct Context (Arc<Mutex<ContextData>>);
 
-unsafe impl Send for RenderContext { }
-unsafe impl Sync for RenderContext { }
+unsafe impl Send for Context { }
+unsafe impl Sync for Context { }
 
-impl Debug for RenderContext {
+impl Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RenderContext")
+        write!(f, "Context")
     }
 }
 
-impl RenderContext {
+impl Context {
+    /// Creates a new context.
+    pub fn new() -> Context {
+        let context_data = ContextData::new();
+        Context(Arc::new(Mutex::new(context_data)))
+    }
     /// Prunes no longer used textures. Requires all layers to be cleared before
     /// adding new sprites or rendering the layer.
     pub fn prune(self: &Self) {
         self.lock().prune();
     }
-    /* /// Retrieves the display associated with this rendercontext.
-    pub(crate) fn display(self: &Self) -> backend::Display {
-        self.lock().display.clone()
-    }*/
-    /// Creates a new RenderContext
-    pub(crate) fn new(data: RenderContextData) -> RenderContext {
-        RenderContext(Arc::new(Mutex::new(data)))
+    /// Returns whether the context has already been associated with a display as required by some backends.
+    pub(crate) fn has_primary_display(self: &Self) -> bool {
+        self.lock().backend_context.is_some()
+    }
+    /// Associates the context with a display as required by some backends.
+    pub(crate) fn set_primary_display(self: &Self, display: &backend::Display) {
+        self.lock().init_backend(&display);
     }
     /// Mutex-locks the instance and returns the MutexGuard
-    pub(crate) fn lock<'a>(self: &'a Self) -> MutexGuard<'a, RenderContextData> {
+    pub(crate) fn lock<'a>(self: &'a Self) -> MutexGuard<'a, ContextData> {
         self.0.lock().unwrap()
     }
 }
@@ -81,7 +86,7 @@ impl SpriteBackRef {
 /// Texture data for a single texture array.
 pub struct RawFrameArray {
     pub dirty   : bool,
-    pub data    : Rc<backend::Texture2dArray>,
+    pub data    : backend::Texture2dArray,
     pub raw     : Vec<RawFrame>,
     sprites     : Vec<SpriteBackRef>,
 }
@@ -90,7 +95,7 @@ impl RawFrameArray {
     fn new(context: &backend::Context) -> Self {
         RawFrameArray {
             dirty   : false,
-            data    : Rc::new(backend::Texture2dArray::new(context, &Vec::new())), // !todo why rc?
+            data    : backend::Texture2dArray::new(context, &Vec::new()),
             raw     : Vec::new(),
             sprites : Vec::new(),
         }
@@ -112,7 +117,7 @@ impl RawFrameArray {
     fn update(self: &mut Self, context: &backend::Context) {
         if self.dirty {
             self.dirty = false;
-            self.data = Rc::new(backend::Texture2dArray::new(context, &self.raw));
+            self.data = backend::Texture2dArray::new(context, &self.raw);
         }
     }
     /// Returns a list of tuples containing current sprite texture_id and required negative offset.
@@ -180,47 +185,58 @@ impl RawFrameArray {
     }
 }
 
-/// Internal data of a RenderContext
-pub struct RenderContextData {
-    pub backend_context     : backend::Context,
+/// Internal data of a Context
+pub struct ContextData {
+    pub backend_context     : Option<backend::Context>,
     pub tex_arrays          : Vec<RawFrameArray>,
+    pub font_cache_dimensions: u32,
     pub font_cache          : font::FontCache,
-    pub font_texture        : Rc<backend::Texture2d>,
+    pub font_texture        : Option<backend::Texture2d>,
     pub single_rect         : [core::Vertex; 4],
     generation              : usize,
 }
 
-impl RenderContextData {
+impl ContextData {
 
-    /// Create a new instance
-    pub fn new(display: &backend::Display, initial_capacity: usize) -> core::Result<Self> {
+    fn init_backend(self: &mut Self, display: &backend::Display) {
 
-        let size = 512;
-        let mut tex_arrays = Vec::new();
+        let backend_context = backend::Context::new(display, INITIAL_CAPACITY);
 
-        let backend_context = backend::Context::new(display, initial_capacity);
+        // sprite texture arrays
 
         for _ in 0..NUM_BUCKETS {
-            tex_arrays.push(RawFrameArray::new(&backend_context));
+            self.tex_arrays.push(RawFrameArray::new(&backend_context));
         }
 
+        // font cache texture
+
         let data = core::RawFrame {
-            width   : size,
-            height  : size,
-            data    : vec![0u8; size as usize * size as usize],
+            width   : self.font_cache_dimensions,
+            height  : self.font_cache_dimensions,
+            data    : vec![0u8; self.font_cache_dimensions as usize * self.font_cache_dimensions as usize],
             channels: 1,
         };
 
         let texture = backend::Texture2d::new(&backend_context, 0, 0, core::TextureFormat::U8, Some(data));
 
-        Ok(RenderContextData {
-            backend_context     : backend_context,
-            tex_arrays          : tex_arrays,
-            font_cache          : font::FontCache::new(size, size, 0.01, 0.01),
-            font_texture        : Rc::new(texture),
+        self.font_texture = Some(texture);
+        self.backend_context = Some(backend_context);
+    }
+
+    /// Create a new instance
+    fn new() -> Self {
+
+        let font_cache_dimensions = 512;
+
+        ContextData {
+            backend_context     : None,
+            tex_arrays          : Vec::new(),
+            font_cache          : font::FontCache::new(font_cache_dimensions, font_cache_dimensions, 0.01, 0.01),
+            font_texture        : None,
+            font_cache_dimensions,
             single_rect         : Self::create_single_rect(),
             generation          : Self::create_generation(),
-        })
+        }
     }
 
     /// Returns the context's generation.
@@ -230,13 +246,13 @@ impl RenderContextData {
 
     /// Update font-texture from cache
     pub fn update_font_cache(self: &Self) {
-        self.font_cache.update(&self.font_texture);
+        self.font_cache.update(self.font_texture.as_ref().unwrap());
     }
 
     /// Update texture arrays from registered textures
     pub fn update_tex_array(self: &mut Self) {
         for ref mut array in self.tex_arrays.iter_mut() {
-            array.update(&self.backend_context);
+            array.update(self.backend_context.as_ref().unwrap());
         }
     }
 
@@ -254,7 +270,7 @@ impl RenderContextData {
     fn prune(self: &mut Self) {
         self.generation = Self::create_generation();
         for array in self.tex_arrays.iter_mut() {
-            array.prune(&self.backend_context, self.generation);
+            array.prune(self.backend_context.as_ref().unwrap(), self.generation);
         }
     }
 

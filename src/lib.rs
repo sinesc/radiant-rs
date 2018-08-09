@@ -44,8 +44,8 @@ These methods can be combined/nested as shown here:
 # let surface = Texture::new(&renderer.context(), 1, 1);
 # let program = Program::from_string(&renderer.context(), "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }").unwrap();
 # let p2 = program.clone();
-# let effect1 = postprocessors::Basic::new(&renderer.context(), program);
-# let effect2 = postprocessors::Basic::new(&renderer.context(), p2);
+# let effect1 = postprocessors::Basic::new(&renderer.context(), program, display.dimensions());
+# let effect2 = postprocessors::Basic::new(&renderer.context(), p2, display.dimensions());
 # let effect1_arguments = blendmodes::ALPHA;
 # let effect2_arguments = blendmodes::ALPHA;
 renderer.render_to(&surface, || {
