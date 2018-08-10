@@ -52,28 +52,15 @@ impl Texture {
     /// Creates a new texture with given dimensions. The texture will use linear interpolation
     /// for magnification or minification and internally use the `F16F16F16F16` format.
     pub fn new(context: &Context, width: u32, height: u32) -> Self {
-        Self::from_info(context, TextureInfo {
-            width: width,
-            height: height,
-            ..TextureInfo::default()
-        }).unwrap()
+        Self::builder(context).width(width).height(height).build().unwrap()
     }
     /// Creates a new texture from given file.
     pub fn from_file(context: &Context, file: &str) -> core::Result<Self> {
-        Self::from_info(context, TextureInfo {
-            file: Some(file),
-            ..TextureInfo::default()
-        })
+        Self::builder(context).file(file).build()
     }
     /// Creates a new texture with given dimensions and filters. It will internally use the `F16F16F16F16` format.
     pub fn filtered(context: &Context, width: u32, height: u32, minify: TextureFilter, magnify: TextureFilter) -> Self {
-        Self::from_info(context, TextureInfo {
-            width: width,
-            height: height,
-            minify: minify,
-            magnify: magnify,
-            ..TextureInfo::default()
-        }).unwrap()
+        Self::builder(context).width(width).height(height).minify(minify).magnify(magnify).build().unwrap()
     }
     /// Clones texture with new filters and wrapping function. Both source and clone reference the same texture data.
     pub fn clone_with_options(self: &Self, minify: TextureFilter, magnify: TextureFilter, wrap: TextureWrap) -> Self {
@@ -93,28 +80,28 @@ impl Texture {
     pub fn dimensions(self: &Self) -> Point2<u32> {
         self.dimensions
     }
-    /// Creates a new texture from given TextureInfo struct.
-    pub(crate) fn from_info(context: &Context, mut info: TextureInfo) -> core::Result<Self> {
-        let mut context = context.lock();
+    /// Creates a new texture from given TextureBuilder.
+    pub(crate) fn from_builder(mut builder: TextureBuilder) -> core::Result<Self> {
+        let mut context = builder.context.lock();
         let context = context.deref_mut();
-        if let Some(filename) = info.file {
+        if let Some(filename) = builder.file {
             let image = image::open(filename)?;
-            info.width = image.dimensions().0;
-            info.height = image.dimensions().1;
-            info.data = Some(core::RawFrame {
+            builder.width = image.dimensions().0;
+            builder.height = image.dimensions().1;
+            builder.data = Some(core::RawFrame {
                 data: core::convert_color(image.to_rgba()).into_raw(),
-                width: info.width,
-                height: info.height,
+                width: builder.width,
+                height: builder.height,
                 channels: 4,
             });
         }
-        let texture = backend::Texture2d::new(context.backend_context.as_ref().unwrap(), info.width, info.height, info.format, info.data);
+        let texture = backend::Texture2d::new(context.backend_context.as_ref().unwrap(), builder.width, builder.height, builder.format, builder.data);
         Ok(Texture {
             handle      : Rc::new(texture),
-            minify      : info.minify,
-            magnify     : info.magnify,
-            wrap        : info.wrap,
-            dimensions  : (info.width, info.height),
+            minify      : builder.minify,
+            magnify     : builder.magnify,
+            wrap        : builder.wrap,
+            dimensions  : (builder.width, builder.height),
         })
     }
 }
@@ -180,32 +167,4 @@ pub enum TextureFormat {
     F32F32,
     F32F32F32F32,
     F11F11F10,
-}
-
-/// A struct used to describe a [`Texture`](struct.Texture.html) to be created via [`Texture::from_info()`](struct.Texture.html#method.from_info).
-#[derive(Clone)]
-pub struct TextureInfo<'a> {
-    pub minify  : TextureFilter,
-    pub magnify : TextureFilter,
-    pub wrap    : TextureWrap,
-    pub format  : TextureFormat,
-    pub width   : u32,
-    pub height  : u32,
-    pub file    : Option<&'a str>,
-    pub data    : Option<core::RawFrame>,
-}
-
-impl<'a> Default for TextureInfo<'a> {
-    fn default() -> TextureInfo<'a> {
-        TextureInfo {
-            minify  : TextureFilter::Linear,
-            magnify : TextureFilter::Linear,
-            wrap    : TextureWrap::Clamp,
-            format  : TextureFormat::F16F16F16F16,
-            width   : 1,
-            height  : 1,
-            file    : None,
-            data    : None,
-        }
-   }
 }
