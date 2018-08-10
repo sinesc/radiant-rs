@@ -11,10 +11,8 @@ The examples folder contains multiple small examples. They can be run via `cargo
 
 # Basic rendering
 
-Radiant provides an optional [Display](struct.Display.html) struct to create windows and handle events. Alternatively you can provide Radiant
-with a Glium Display (or Display and EventsLoop) instead. See further down below for details. Otherwise, these are the steps to produce output:
-
-1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen.
+1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen. **Note:** It is also
+possible to use backend window/event handling instead. See further below.
 2. Create a [renderer](struct.Renderer.html) with `Renderer::new()`. It is used to draw to rendertargets like the display.
 3. Grab a [context](struct.Context.html) from the display using the `context()` method. It is required for resource loading.
 4. Load [sprites](struct.Sprite.html) or [fonts](struct.Font.html) using e.g. `Font::from_file()` or `Sprite::from_file()`.
