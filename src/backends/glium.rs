@@ -1078,7 +1078,7 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
     context.backend_context.as_mut().unwrap().draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
 }
 
-pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawRectInfo, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
+pub fn draw_rect<T>(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawBuilder<T>, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
 
     use std::mem::transmute;
 
@@ -1099,10 +1099,6 @@ pub fn draw_rect(target: &core::RenderTarget, program: &core::Program, context: 
 
     context.backend_context.as_mut().unwrap().draw(target, unsafe { transmute(vertices) }, false, 0, &program.texture_program, &glium_uniforms, &blend);
 }
-
-//use glium::backend::Facade;
-
-//impl Facade for
 
 // --------------
 // Misc

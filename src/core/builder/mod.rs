@@ -8,4 +8,4 @@ pub use self::displaybuilder::DisplayBuilder;
 pub use self::fontbuilder::FontBuilder;
 pub use self::fontquerybuilder::FontQueryBuilder;
 pub use self::texturebuilder::TextureBuilder;
-pub use self::drawbuilder::{DrawBuilder, DrawBuilderFill, DrawBuilderRect};
+pub use self::drawbuilder::{DrawBuilder, DrawBuilderFill, DrawBuilderRect, DrawBuilderViewSource};

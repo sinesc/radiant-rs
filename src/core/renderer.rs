@@ -1,7 +1,7 @@
 use prelude::*;
 use core::{
     self, context,
-    Display, Layer, Texture, TextureFilter, BlendMode, Color, Program, Postprocessor,
+    Display, Layer, Texture, TextureFilter, Color, Program, Postprocessor,
     Context, AsRenderTarget, RenderTarget, RenderTargetInner,
     blendmodes, TextureFormat
 };
@@ -218,7 +218,7 @@ impl Renderer {
     }
 
     /// Draws the rectangle described info to the current target.
-    pub(crate) fn draw_rect(self: &Self, target: DrawRectInfo) -> &Self {
+    pub(crate) fn draw_rect<T>(self: &Self, target: DrawBuilder<T>) -> &Self {
 
         // open context
         let mut context = self.context.lock();
@@ -231,20 +231,17 @@ impl Renderer {
         let blendmode = target.blendmode.unwrap_or(blendmodes::ALPHA);
         let model_matrix = target.model_matrix.unwrap_or(Mat4::identity());
         let view_matrix = match target.view_matrix {
-            DrawRectInfoViewSource::Matrix(matrix) => matrix,
-            DrawRectInfoViewSource::One => *VIEWPORT_ONE,
-            DrawRectInfoViewSource::Target => {
+            DrawBuilderViewSource::Matrix(matrix) => matrix,
+            DrawBuilderViewSource::One => *VIEWPORT_ONE,
+            DrawBuilderViewSource::Target => {
                 let dim = self.target.borrow().last().unwrap().0.dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
-            DrawRectInfoViewSource::Display => {
-/* TODO handle this somehow
-                let dim = context.display.framebuffer_dimensions();
+            DrawBuilderViewSource::Display(display) => {
+                let dim = display.dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
-*/
-                Mat4::viewport(1.0, 1.0)
             }
-            DrawRectInfoViewSource::Source => {
+            DrawBuilderViewSource::Source => {
                 let dim = texture.dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
@@ -273,26 +270,4 @@ impl Renderer {
     fn pop_target(self: &Self) {
         self.target.borrow_mut().pop();
     }
-}
-
-/// A struct used to describe a rectangle for Renderer::rect
-#[derive(Clone)]
-pub struct DrawRectInfo<'a> {
-    pub rect        : Rect,
-    pub color       : Option<Color>,
-    pub texture     : Option<&'a Texture>,
-    pub blendmode   : Option<BlendMode>,
-    pub view_matrix : DrawRectInfoViewSource,
-    pub model_matrix: Option<Mat4>,
-    pub program     : Option<&'a Program>,
-}
-
-/// The view matrix used when drawing a rectangle.
-#[derive(Clone)]
-pub enum DrawRectInfoViewSource {
-    Display,
-    Target,
-    Source,
-    One,
-    Matrix(Mat4)
 }
