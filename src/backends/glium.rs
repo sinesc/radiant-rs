@@ -173,7 +173,7 @@ impl From<glium::backend::glutin::DisplayCreationError> for core::Error {
 
 pub struct DisplayInner {
     inner       : glium::Display,
-    //descriptor  : Option<RefCell<core::DisplayInfo>>,
+    //descriptor  : Option<RefCell<core::DisplayBuilder>>,
     //was_rebuilt : RefCell<bool>,
 }
 
@@ -191,7 +191,7 @@ impl Display {
     fn events_loop() -> &'static mut glutin::EventsLoop {
         init_events_loop(|| glutin::EventsLoop::new())
     }
-    fn build_window(descriptor: &core::DisplayInfo) -> glium::glutin::WindowBuilder {
+    fn build_window(descriptor: &core::DisplayBuilder) -> glium::glutin::WindowBuilder {
         use self::glium::glutin::dpi::LogicalSize;
         let monitor = if let Some(ref monitor) = descriptor.monitor {
             monitor.inner.0.clone()
@@ -206,7 +206,7 @@ impl Display {
                     .with_visibility(descriptor.visible)
                     .with_fullscreen(if let Some(ref monitor) = descriptor.monitor { Some(monitor.inner.0.clone()) } else { None })
     }
-    pub fn new(descriptor: core::DisplayInfo) -> core::Result<Display> {
+    pub fn new(descriptor: core::DisplayBuilder) -> core::Result<Display> {
         let events_loop = Self::events_loop();
         let display = {
             let window = Self::build_window(&descriptor);

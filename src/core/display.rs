@@ -256,8 +256,8 @@ impl Display {
         &self.context
     }
 
-    /// Creates a new instance from given [`DisplayInfo`](support/struct.DisplayInfo.html).
-    pub(crate) fn new(descriptor: DisplayInfo) -> Result<Display> {
+    /// Creates a new instance from given [`DisplayBuilder`](support/struct.DisplayBuilder.html).
+    pub(crate) fn new(descriptor: DisplayBuilder) -> Result<Display> {
 
         // Reuse existing context or create new one
 
@@ -319,34 +319,4 @@ pub enum Event {
     Focus,
     Blur,
     Close,
-}
-
-/// A struct describing a [`Display`](struct.Display.html) to be created.
-#[derive(Clone, Debug)]
-pub struct DisplayInfo {
-    pub width       : u32,
-    pub height      : u32,
-    pub title       : String,
-    pub transparent : bool,
-    pub decorations : bool,
-    pub monitor     : Option<Monitor>,
-    pub vsync       : bool,
-    pub visible     : bool,
-    pub context     : Option<Context>,
-}
-
-impl Default for DisplayInfo {
-    fn default() -> DisplayInfo {
-        DisplayInfo {
-            width       : 640,
-            height      : 480,
-            title       : "".to_string(),
-            transparent : false,
-            decorations : true,
-            monitor     : None,
-            vsync       : false,
-            visible     : true,
-            context     : None,
-        }
-   }
 }
