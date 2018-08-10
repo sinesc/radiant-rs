@@ -19,11 +19,11 @@ pub fn main() {
     spark_layer.model_matrix().scale(4.0);
 
     // This is a userdefined postprocessor to add a bloom effect.
-    let bloom_effect = bloom::Bloom::new(&renderer.context(), display.dimensions(), 2, 5, 4.0);
+    let bloom_effect = bloom::Bloom::new(display.context(), display.dimensions(), 2, 5, 4.0);
 
     // Load sprite and fonts.
-    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
-    let font = Font::builder(&renderer.context()).family("Arial").size(12.0).build().unwrap();
+    let sprite = Sprite::from_file(display.context(), r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
+    let font = Font::builder(display.context()).family("Arial").size(12.0).build().unwrap();
     let big_font = font.clone_with_size(24.0);
 
     // Draw the sprite three times, tinted red, green and blue. No need to do this each frame since we're

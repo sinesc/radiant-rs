@@ -14,7 +14,7 @@ static GENERATION: AtomicUsize = ATOMIC_USIZE_INIT;
 
 /// A thread-safe render-context.
 ///
-/// Required to load fonts or sprites and aquired from [`Renderer::context()`](struct.Renderer.html#method.context).
+/// Contains data relating to one or more windows and associated resources.
 #[derive(Clone)]
 pub struct Context (Arc<Mutex<ContextData>>);
 
@@ -28,7 +28,8 @@ impl Debug for Context {
 }
 
 impl Context {
-    /// Creates a new context.
+    /// Creates a new context for use with multiple displays. For a single display use cases, simply create the display and obtain
+    /// its context via `Display::context()`
     pub fn new() -> Context {
         let context_data = ContextData::new();
         Context(Arc::new(Mutex::new(context_data)))

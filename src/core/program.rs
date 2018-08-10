@@ -48,7 +48,7 @@ impl Program {
     pub fn remove_uniform<T>(self: &mut Self, name: &str) -> bool {
         self.uniforms.remove(name)
     }
-    /// Creates a new program. Used in rendercontext creation when the full context is not yet available.
+    /// Creates a new program. Used in context creation when the full context is not yet available.
     pub(crate) fn new(context: &Context, source: &str) -> core::Result<Program> {
         let sprite_fs = Self::insert_template(source, SPRITE_INC);
         let texture_fs = Self::insert_template(source, TEXTURE_INC);

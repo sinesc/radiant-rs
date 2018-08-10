@@ -9,7 +9,7 @@ mod bloom;
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Draw to texture and postprocess example").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles_64x64x1.png").unwrap();
+    let sprite = Sprite::from_file(display.context(), r"examples/res/sprites/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::SCREEN);
 
@@ -21,10 +21,10 @@ pub fn main() {
     // A custom example bloom effect postprocessor. The arguments define
     // bloom quality, bloom spread and brightness.
     // note: Radiant now also includes a predefined Bloom postprocessor. This example uses a similar implementation.
-    let bloom_effect = bloom::Bloom::new(&renderer.context(), display.dimensions(), 2, 5, 10.0);
+    let bloom_effect = bloom::Bloom::new(display.context(), display.dimensions(), 2, 5, 10.0);
 
-    let surface = Texture::new(&renderer.context(), 640, 480);
-    let thumbnail = Texture::new(&renderer.context(), 640, 480);
+    let surface = Texture::new(display.context(), 640, 480);
+    let thumbnail = Texture::new(display.context(), 640, 480);
 
     ru::renderloop(|frame| {
         display.prepare_frame();

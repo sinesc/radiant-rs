@@ -12,14 +12,14 @@ use core::{Texture, Renderer, Context, Program, BlendMode, Postprocessor, Color,
 /// # use radiant_rs::*;
 /// # let display = Display::builder().hidden().build().unwrap();
 /// # let renderer = Renderer::new(&display).unwrap();
-/// # let rendercontext = renderer.context();
+/// # let context = display.context();
 /// # let my_layer = Layer::new((1.0, 1.0));
 /// # let program_source = "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }";
 /// // Load a shader progam.
-/// let my_program = Program::from_string(&rendercontext, &program_source).unwrap();
+/// let my_program = Program::from_string(&context, &program_source).unwrap();
 ///
 /// // Create the postprocessor with the program.
-/// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program, display.dimensions());
+/// let my_postprocessor = postprocessors::Basic::new(&context, my_program, display.dimensions());
 ///
 /// // ... in your renderloop...
 /// # display.prepare_frame();

@@ -38,18 +38,27 @@ impl Debug for Renderer {
 
 impl Renderer {
 
-    /// Returns a new renderer instance.
+    /// Returns a new renderer instance that renders to given display by default.
     pub fn new(display: &Display) -> core::Result<Self> {
-
         let target = vec![ RenderTarget(RenderTargetInner::Frame(display.frame.clone())) ];
-        let context = display.context().clone();
-        let default_program = Program::new(&context, DEFAULT_FS)?;
-        let identity_texture = Texture::builder(&context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
+        Self::create(display.context(), target)
+    }
+
+    /// Returns a new renderer instance.
+    pub fn headless(context: &Context) -> core::Result<Self> {
+        Self::create(context, Vec::new())
+    }
+
+    /// Returns a new renderer instance.
+    pub fn create(context: &Context, target: Vec<RenderTarget>) -> core::Result<Self> {
+
+        let default_program = Program::new(context, DEFAULT_FS)?;
+        let identity_texture = Texture::builder(context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::WHITE);
 
         Ok(Renderer {
             empty_texture   : identity_texture,
-            context         : context,
+            context         : context.clone(),
             program         : Rc::new(default_program),
             target          : Rc::new(RefCell::new(target)),
         })
@@ -58,6 +67,7 @@ impl Renderer {
     /// Returns a reference to the renderers' context. The [`Context`](struct.Context.html)
     /// implements send+sync and is required by [`Font`](struct.Font.html), [`Sprite`](struct.Sprite.html)
     /// and [`Texture`](struct.Texture.html) to create new instances.
+    #[deprecated(since="0.14.0", note="Use `Display::context()` instead")]
     pub fn context(self: &Self) -> Context {
         self.context.clone()
     }
@@ -96,7 +106,7 @@ impl Renderer {
     /// # use radiant_rs::*;
     /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
-    /// # let tex = Texture::new(&renderer.context(), 1, 1);
+    /// # let tex = Texture::new(&display.context(), 1, 1);
     /// # display.prepare_frame();
     /// renderer.rect(((0., 0.), (640., 480.))).blendmode(blendmodes::ALPHA).texture(&tex).draw();
     /// # display.swap_frame();
@@ -115,7 +125,7 @@ impl Renderer {
     /// # use radiant_rs::*;
     /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
-    /// # let tex = Texture::new(&renderer.context(), 1, 1);
+    /// # let tex = Texture::new(&display.context(), 1, 1);
     /// # display.prepare_frame();
     /// renderer.fill().blendmode(blendmodes::ALPHA).texture(&tex).draw();
     /// # display.swap_frame();
@@ -133,10 +143,10 @@ impl Renderer {
     /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let some_layer = Layer::new((1.0, 1.0));
-    /// # let some_texture = Texture::new(&renderer.context(), 1, 1);
-    /// # let rendercontext = renderer.context();
+    /// # let some_texture = Texture::new(&display.context(), 1, 1);
+    /// # let context = display.context();
     /// // Create a texture to render to.
-    /// let surface = Texture::new(&rendercontext, 640, 480);
+    /// let surface = Texture::new(&context, 640, 480);
     ///
     /// // Render something to it.
     /// # display.prepare_frame();
@@ -164,15 +174,15 @@ impl Renderer {
     /// # let display = Display::builder().hidden().build().unwrap();
     /// # let renderer = Renderer::new(&display).unwrap();
     /// # let some_layer = Layer::new((1.0, 1.0));
-    /// # let some_texture = Texture::new(&renderer.context(), 1, 1);
-    /// # let rendercontext = renderer.context();
+    /// # let some_texture = Texture::new(&display.context(), 1, 1);
+    /// # let context = display.context();
     /// # let program_source = "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }";
     /// # let my_layer = Layer::new((1.0, 1.0));
     /// // Load a shader progam.
-    /// let my_program = Program::from_string(&rendercontext, &program_source).unwrap();
+    /// let my_program = Program::from_string(&context, &program_source).unwrap();
     ///
     /// // Create the postprocessor with the program.
-    /// let my_postprocessor = postprocessors::Basic::new(&rendercontext, my_program, display.dimensions());
+    /// let my_postprocessor = postprocessors::Basic::new(&context, my_program, display.dimensions());
     ///
     /// // ... in your renderloop...
     /// # display.prepare_frame();

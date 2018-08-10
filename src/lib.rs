@@ -16,13 +16,22 @@ with a Glium Display (or Display and EventsLoop) instead. See further down below
 
 1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen.
 2. Create a [renderer](struct.Renderer.html) with `Renderer::new()`. It is used to draw to rendertargets like the display.
-3. Grab a context from the renderer using the `context()` method. It is required for resource loading.
+3. Grab a [context](struct.Context.html) from the display using the `context()` method. It is required for resource loading.
 4. Load [sprites](struct.Sprite.html) or [fonts](struct.Font.html) using e.g. `Font::from_file()` or `Sprite::from_file()`.
 5. Create as many drawing [layers](struct.Layer.html) as you need using `Layer::new()`.
 6. Draw to the layer using the `Font::write()` or `Sprite::draw()` methods.
 7. Prepare a new frame and clear it using `Display::clear_frame()`. (If you don't want to clear, use `Display::prepare_frame()` instead.)
 8. Draw the contents of your layers to the display using `Renderer::draw_layer()`.
 9. Make the frame visible via `Display::swap_frame()`.
+
+# Multiple windows, shared context
+
+1. Create a [context](struct.Context.html) with `Context::new()`.
+2. Create as many displays as are needed using `Display::builder()` while using the `context()` method to specify the previously created context.
+3. Either...
+    1. Create a single headless renderer using `Renderer::headless()` and use `Renderer::render_to()` to render to a specific window or
+    2. Create a renderer for each `Display`.
+4. Continue with step 4. from above.
 
 # Draw to texture/postprocess
 
@@ -41,11 +50,11 @@ These methods can be combined/nested as shown here:
 # let display = Display::builder().build().unwrap();
 # let renderer = Renderer::new(&display).unwrap();
 # let layer = Layer::new((1.0, 1.0));
-# let surface = Texture::new(&renderer.context(), 1, 1);
-# let program = Program::from_string(&renderer.context(), "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }").unwrap();
+# let surface = Texture::new(&display.context(), 1, 1);
+# let program = Program::from_string(&display.context(), "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }").unwrap();
 # let p2 = program.clone();
-# let effect1 = postprocessors::Basic::new(&renderer.context(), program, display.dimensions());
-# let effect2 = postprocessors::Basic::new(&renderer.context(), p2, display.dimensions());
+# let effect1 = postprocessors::Basic::new(&display.context(), program, display.dimensions());
+# let effect2 = postprocessors::Basic::new(&display.context(), p2, display.dimensions());
 # let effect1_arguments = blendmodes::ALPHA;
 # let effect2_arguments = blendmodes::ALPHA;
 renderer.render_to(&surface, || {
@@ -95,7 +104,6 @@ To access the default sampler, the following wrappers are provided:
 - `vec4 sheet(in vec2 texture_coords)` Retrieves texels from the texture.
 - `vec4 sheetComponent(in vec2 texture_coords, in uint component)` Samples a specific sprite
 component instead of the default one set by `Renderer::draw_layer()`.
-- `vec4 sheetOffset(in vec2 texture_coords, in ivec2 offset)` Like textureOffset().
 
 Example: (This is the default shader used by radiant.)
 
@@ -117,7 +125,7 @@ void main() {
 Start with steps 1-5 from the *Basic rendering* list. Then...
 
 1. Wrap fonts, sprites, and layers in `Arc`s.
-2. Clone the `Arc`s for each thread that needs their contents. The rendercontext can be cloned directly.
+2. Clone the `Arc`s for each thread that needs their contents. The context can be cloned directly.
 3. Move the clones into the thread.
 4. Draw onto your layers, load sprites etc. from any thread(s). Layers are non-blocking for drawing operations,
 blocking for other manipulations (e.g. matrix modification).

@@ -8,9 +8,9 @@ pub fn main() {
     let layer = Layer::new((640., 480.));
 
     // A few fonts (here from a known systemfont, could also come from a file)
-    let small = Font::builder(&renderer.context()).family("Arial").size(16.0).build().unwrap();
+    let small = Font::builder(display.context()).family("Arial").size(16.0).build().unwrap();
     let large = small.clone_with_size(48.0);
-    let tiny_it = Font::builder(&renderer.context()).family("Arial").italic().size(12.0).build().unwrap();
+    let tiny_it = Font::builder(display.context()).family("Arial").italic().size(12.0).build().unwrap();
 
     ru::renderloop(|frame| {
         layer.clear();

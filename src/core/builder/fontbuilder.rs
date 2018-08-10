@@ -10,8 +10,8 @@ use core::{Result, Font, FontInfo, Context};
 /// # use radiant_rs::*;
 /// # let display = Display::builder().hidden().build().unwrap();
 /// # let renderer = Renderer::new(&display).unwrap();
-/// # let rendercontext = renderer.context();
-/// let my_font = Font::builder(&rendercontext).family("Arial").size(16.0).build().unwrap();
+/// # let context = display.context();
+/// let my_font = Font::builder(&context).family("Arial").size(16.0).build().unwrap();
 /// ```
 #[must_use]
 #[derive(Clone)]

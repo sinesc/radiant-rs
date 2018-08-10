@@ -6,7 +6,7 @@ use ru::Matrix;
 pub fn main() {
     let display = Display::builder().dimensions((640, 480)).vsync().title("Drawing to textures example").build().unwrap();
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/sparkles_64x64x1.png").unwrap();
+    let sprite = Sprite::from_file(display.context(), r"examples/res/sprites/sparkles_64x64x1.png").unwrap();
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 
@@ -17,7 +17,7 @@ pub fn main() {
 
     // A texture. Each frame we'll draw the sprites to "surface", then blended with
     // a low opacity black to make old contents slowly disappear.
-    let surface = Texture::new(&renderer.context(), 640, 480);
+    let surface = Texture::new(display.context(), 640, 480);
 
     ru::renderloop(|frame| {
         display.clear_frame(Color::BLACK);

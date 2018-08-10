@@ -34,7 +34,7 @@ pub fn main() {
 
     // Create the renderer, a sprite and a layer
     let renderer = Renderer::new(&display).unwrap();
-    let sprite = Sprite::from_file(&renderer.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
+    let sprite = Sprite::from_file(display.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
     let layer = Layer::new((320., 240.));
     layer.set_blendmode(blendmodes::LIGHTEN);
 

@@ -11,7 +11,7 @@ pub fn main() {
     // Create a layer and a font, wrapped in Arcs
     let layer = Arc::new(Layer::new((640., 480.)));
     layer.set_blendmode(blendmodes::LIGHTEN);
-    let font = Arc::new(Font::builder(&renderer.context()).family("Arial").size(20.0).build().unwrap());
+    let font = Arc::new(Font::builder(display.context()).family("Arial").size(20.0).build().unwrap());
 
     // Even though it would be safe to draw without coordination from multiple threads
     // while continously rendering from the main thread, you still want to present

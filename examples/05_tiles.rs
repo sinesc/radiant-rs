@@ -16,7 +16,7 @@ pub fn main() {
     let renderer = Renderer::new(&display).unwrap();
 
     // Load tile-sheet as sprite, each frame will be a tile.
-    let tileset = Sprite::from_file(&renderer.context(), r"examples/res/tiles/iso_64x128.png").unwrap();
+    let tileset = Sprite::from_file(display.context(), r"examples/res/tiles/iso_64x128.png").unwrap();
 
     // Create a HashMap that maps each tile-name to a frame_id. The sheet and the textfile were generated from a folder of images using tools/spritesheet.rs
     let name_to_frame_id = include_str!(r"res/tiles/iso_64x128.txt").trim().lines().enumerate().map(|(id, line)| (line, id as u32)).collect::<HashMap<_, _>>();
