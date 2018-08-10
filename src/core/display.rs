@@ -10,6 +10,7 @@ pub struct Display {
     pub(crate) context: Context,
     pub(crate) frame: Rc<RefCell<Option<backend::Frame>>>,
     pub(crate) input_data: Arc<RwLock<InputData>>,
+    pub(crate) fullscreen: Rc<RefCell<Option<Monitor>>>,
 }
 
 impl Debug for Display {
@@ -48,21 +49,21 @@ impl Display {
     }
 
     /// Switches to fullscreen mode on the primary monitor.
-    pub fn set_fullscreen(self: &Self) -> Result<()> {
-        if let Some(backend_monitor) = backend::MonitorIterator::new().next() {
-            let monitor = Monitor::new(backend_monitor);
-            self.set_fullscreen_on(monitor)
-        } else {
-            Err(Error::FullscreenError("Failed select monitor device.".to_string()))
-        }
-    }
+    pub fn set_fullscreen(self: &Self, monitor: Option<Monitor>) -> Result<()> {
 
-    /// Switches to fullscreen mode on the given monitor.
-    pub fn set_fullscreen_on(self: &Self, monitor: Monitor) -> Result<()> {
-        if !self.handle.set_fullscreen(Some(monitor)) {
+        let target = if let Some(given_monitor) = monitor {
+            given_monitor
+        } else if let Some(default_monitor) = backend::MonitorIterator::new().next() {
+            Monitor::new(default_monitor)
+        } else {
+            return Err(Error::Failed);
+        };
+
+        if !self.handle.set_fullscreen(Some(target.clone())) {
             self.handle.set_fullscreen(None);
             Err(Error::FullscreenError("Failed to switch to fullscreen.".to_string()))
         } else {
+            *self.fullscreen.borrow_mut() = Some(target);
             Ok(())
         }
     }
@@ -70,6 +71,17 @@ impl Display {
     /// Switches to windowed mode.
     pub fn set_windowed(self: &Self) {
         self.handle.set_fullscreen(None);
+        *self.fullscreen.borrow_mut() = None;
+    }
+
+    /// Switches between fullscreen and windowed mode.
+    pub fn toggle_fullscreen(self: &Self, monitor: Option<Monitor>) -> Result<()> {
+        if self.fullscreen.borrow().is_some() {
+            self.set_windowed();
+            Ok(())
+        } else {
+            self.set_fullscreen(monitor)
+        }
     }
 
     /// Prepares a frame for rendering.
@@ -255,8 +267,9 @@ impl Display {
             Context::new()
         };
 
-        // Create a new display for use with this context
+        // Remember fullscreen state, create a new display for use with this context
 
+        let fullscreen = descriptor.monitor.clone();
         let display = backend::Display::new(descriptor)?;
 
         // Set primary context display to first created display
@@ -271,6 +284,7 @@ impl Display {
             context     : context,
             frame       : Rc::new(RefCell::new(None)),
             input_data  : Arc::new(RwLock::new(InputData::new())),
+            fullscreen  : Rc::new(RefCell::new(fullscreen)),
         })
     }
 

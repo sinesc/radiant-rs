@@ -37,7 +37,9 @@ pub mod public {
     pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
 
         let mut accepted = false;
+
         super::init_events_loop(|| { accepted = true; events_loop });
+
         if !accepted {
             panic!("Failed to use given events loop. Another events loop was already created.");
         }
@@ -56,6 +58,7 @@ pub mod public {
             context     : context,
             frame       : Rc::new(RefCell::new(None)),
             input_data  : Arc::new(RwLock::new(core::InputData::new())),
+            fullscreen  : Rc::new(RefCell::new(None)), // TODO: fullscreen state unknown, doesn't appear to be possible to retrieve from winit
         }
     }
 
@@ -203,19 +206,10 @@ impl Display {
                     .with_visibility(descriptor.visible)
                     .with_fullscreen(if let Some(ref monitor) = descriptor.monitor { Some(monitor.inner.0.clone()) } else { None })
     }
-    /*fn build_context(descriptor: &core::DisplayInfo) -> glium::glutin::ContextBuilder {
-        //use backends::glium::glium::backend::Facade;
-
-
-
-        context
-    }*/
     pub fn new(descriptor: core::DisplayInfo) -> core::Result<Display> {
         let events_loop = Self::events_loop();
         let display = {
             let window = Self::build_window(&descriptor);
-
-            //let context = Self::build_context(&descriptor);
 
             let parent_display;
             let gl_window;
