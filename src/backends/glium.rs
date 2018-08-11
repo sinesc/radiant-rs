@@ -1,10 +1,10 @@
 extern crate glium;
 use prelude::*;
-use std::borrow::Cow;
-use self::glium::uniforms::{Uniforms, AsUniformValue};
-use self::glium::{glutin, Surface};
 use core;
-use core::math::*;
+use self::glium::uniforms::Uniforms;
+use self::glium::{glutin, Surface};
+
+const MAX_BUFFERS: usize = 10;
 
 // glutin's global events loop handling. Can only have one of these.
 
@@ -166,33 +166,31 @@ impl From<glium::backend::glutin::DisplayCreationError> for core::Error {
 pub struct Display(glium::Display);
 
 impl Display {
-    fn events_loop() -> &'static mut glutin::EventsLoop {
-        init_events_loop(|| glutin::EventsLoop::new())
-    }
-    fn build_window(descriptor: &core::DisplayBuilder) -> glium::glutin::WindowBuilder {
+    pub fn new(descriptor: core::DisplayBuilder) -> core::Result<Display> {
         use self::glium::glutin::dpi::LogicalSize;
+
+        let events_loop = Self::events_loop();
+
         let monitor = if let Some(ref monitor) = descriptor.monitor {
             monitor.inner.0.clone()
         } else {
             Self::events_loop().get_primary_monitor()
         };
-        glium::glutin::WindowBuilder::new()
-                    .with_dimensions(LogicalSize::from_physical((descriptor.width, descriptor.height), monitor.get_hidpi_factor()))
-                    .with_title(descriptor.title.clone())
-                    .with_transparency(descriptor.transparent)
-                    .with_decorations(descriptor.decorations)
-                    .with_visibility(descriptor.visible)
-                    .with_fullscreen(if let Some(ref monitor) = descriptor.monitor { Some(monitor.inner.0.clone()) } else { None })
-    }
-    pub fn new(descriptor: core::DisplayBuilder) -> core::Result<Display> {
-        let events_loop = Self::events_loop();
-        let display = {
-            let window = Self::build_window(&descriptor);
 
+        let display = {
             let parent_display;
             let gl_window;
+
+            let window = glium::glutin::WindowBuilder::new()
+                .with_dimensions(LogicalSize::from_physical((descriptor.width, descriptor.height), monitor.get_hidpi_factor()))
+                .with_title(descriptor.title.clone())
+                .with_transparency(descriptor.transparent)
+                .with_decorations(descriptor.decorations)
+                .with_visibility(descriptor.visible)
+                .with_fullscreen(if let Some(ref monitor) = descriptor.monitor { Some(monitor.inner.0.clone()) } else { None });
+
             let mut context = glium::glutin::ContextBuilder::new()
-                        .with_vsync(descriptor.vsync);
+                .with_vsync(descriptor.vsync);
 
             if let Some(ref parent_context) = descriptor.context {
                 if parent_context.has_primary_display() {
@@ -209,13 +207,13 @@ impl Display {
     pub fn draw(self: &Self) -> Frame {
         Frame(self.0.draw())
     }
-    pub fn framebuffer_dimensions(self: &Self) -> Point2<u32> {
+    pub fn framebuffer_dimensions(self: &Self) -> core::Point2<u32> {
         self.0.get_framebuffer_dimensions().into()
     }
-    pub fn window_dimensions(self: &Self) -> Point2<u32> {
+    pub fn window_dimensions(self: &Self) -> core::Point2<u32> {
         self.0.gl_window().get_inner_size().map_or((0, 0), |l|  l.into())
     }
-    pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
+    pub fn set_cursor_position(self: &Self, position: core::Point2<i32>) {
         self.0.gl_window().set_cursor_position((position.0, position.1).into()).unwrap();
     }
     pub fn set_cursor_state(self: &Self, state: core::CursorState) {
@@ -249,6 +247,9 @@ impl Display {
     }
     pub fn set_title(self: &Self, title: &str) {
         self.0.gl_window().set_title(title);
+    }
+    fn events_loop() -> &'static mut glutin::EventsLoop {
+        init_events_loop(|| glutin::EventsLoop::new())
     }
     fn map_event(event: glium::glutin::Event) -> Option<core::Event> {
         use self::glutin::ElementState;
@@ -492,14 +493,14 @@ impl Frame {
     }
 
     /// Copies the source rectangle to the target rectangle on the given display.
-    pub fn copy_rect(self: &Self, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
+    pub fn copy_rect(self: &Self, source_rect: core::Rect<i32>, target_rect: core::Rect<i32>, filter: core::TextureFilter) {
         let height = self.0.get_dimensions().1;
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, height, target_rect, height);
         self.0.blit_color(&glium_src_rect, &self.0, &glium_target_rect, magnify_filter(filter));
     }
 
     /// Copies the source rectangle from the given texture to the target rectangle on the given display.
-    pub fn copy_rect_from_texture(self: &Self, source: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
+    pub fn copy_rect_from_texture(self: &Self, source: &core::Texture, source_rect: core::Rect<i32>, target_rect: core::Rect<i32>, filter: core::TextureFilter) {
         let target_height = self.0.get_dimensions().1;
         let source_height = source.handle.0.height();
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
@@ -507,7 +508,7 @@ impl Frame {
     }
 
     /// Returns the dimensions of the frame.
-    pub fn dimensions(self: &Self) -> Point2<u32> {
+    pub fn dimensions(self: &Self) -> core::Point2<u32> {
         self.0.get_dimensions().into()
     }
 }
@@ -542,7 +543,7 @@ pub struct Monitor(glium::glutin::MonitorId);
 impl Monitor {
 
     /// Returns the device dimensions
-    pub fn get_dimensions(self: &Self) -> Point2<u32> {
+    pub fn get_dimensions(self: &Self) -> core::Point2<u32> {
         self.0.get_dimensions().into()
     }
 
@@ -605,7 +606,8 @@ impl Texture2d {
         let core::Color(r, g, b, a) = color;
         self.0.as_surface().clear_color(r, g, b, a);
     }
-    pub fn write(self: &Self, rect: &Rect<u32>, data: &Vec<u8>) {
+    pub fn write(self: &Self, rect: &core::Rect<u32>, data: &Vec<u8>) {
+        use std::borrow::Cow;
         self.0.main_level().write(
             glium::Rect {
                 left: (rect.0).0,
@@ -624,7 +626,7 @@ impl Texture2d {
     pub fn copy_from(self: &Self, src_texture: &core::Texture, filter: core::TextureFilter) {
         src_texture.handle.0.as_surface().fill(&self.0.as_surface(), magnify_filter(filter))
     }
-    pub fn copy_rect_from(self: &Self, src_texture: &core::Texture, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
+    pub fn copy_rect_from(self: &Self, src_texture: &core::Texture, source_rect: core::Rect<i32>, target_rect: core::Rect<i32>, filter: core::TextureFilter) {
         let target_height = self.0.height();
         let source_height = src_texture.handle.0.height();
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
@@ -633,7 +635,7 @@ impl Texture2d {
     pub fn copy_from_frame(self: &Self, src_frame: &Frame, filter: core::TextureFilter) {
         src_frame.0.fill(&self.0.as_surface(), magnify_filter(filter));
     }
-    pub fn copy_rect_from_frame(self: &Self, src_frame: &Frame, source_rect: Rect<i32>, target_rect: Rect<i32>, filter: core::TextureFilter) {
+    pub fn copy_rect_from_frame(self: &Self, src_frame: &Frame, source_rect: core::Rect<i32>, target_rect: core::Rect<i32>, filter: core::TextureFilter) {
         let source_height = src_frame.0.get_dimensions().1;
         let target_height = self.0.height();
         let (glium_src_rect, glium_target_rect) = blit_coords(source_rect, source_height, target_rect, target_height);
@@ -681,6 +683,7 @@ struct RawFrame(core::RawFrame);
 impl<'a> glium::texture::Texture2dDataSource<'a> for RawFrame {
     type Data = u8;
     fn into_raw(self: Self) -> glium::texture::RawImage2d<'a, Self::Data> {
+        use std::borrow::Cow;
         glium::texture::RawImage2d {
             data: Cow::Owned(self.0.data),
             width: self.0.width,
@@ -720,9 +723,9 @@ impl Texture2dArray {
 // --------------
 
 struct VertexBufferCacheItem {
-    hint: usize,
-    age: usize,
-    buffer: glium::VertexBuffer<Vertex>,
+    hint    : usize,
+    age     : usize,
+    buffer  : glium::VertexBuffer<Vertex>,
 }
 
 impl VertexBufferCacheItem {
@@ -783,8 +786,6 @@ impl Context {
 
     /// Select a vertex buffer for given number of vertices.
     fn select_vertex_buffer(self: &mut Self, buffer_hint: usize, num_vertices: usize) -> (usize, bool) {
-
-        const MAX_BUFFERS: usize = 10;
 
         for buffer in self.vertex_buffers.iter_mut() {
             buffer.age += 1;
@@ -933,7 +934,7 @@ impl<'a> GliumUniformList<'a> {
 
 impl<'b> Uniforms for GliumUniformList<'b> {
     fn visit_values<'a, F>(self: &'a Self, mut output: F) where F: FnMut(&str, glium::uniforms::UniformValue<'a>) {
-        use self::glium::uniforms::UniformValue;
+        use self::glium::uniforms::{UniformValue, AsUniformValue};
         for &(name, ref uniform) in &self.0 {
             output(name, match *uniform {
                 GliumUniform::Bool(val) => { UniformValue::Bool(val) },
@@ -1047,11 +1048,10 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
     context.backend_context.as_mut().unwrap().draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
 }
 
-pub fn draw_rect<T>(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawBuilder<T>, view_matrix: Mat4, model_matrix: Mat4, color: core::Color, texture: &core::Texture) {
+pub fn draw_rect<T>(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawBuilder<T>, view_matrix: core::Mat4, model_matrix: core::Mat4, color: core::Color, texture: &core::Texture) {
 
     use std::mem::transmute;
-
-    // set up uniforms !todo FRONTEND
+    use core::Point2Trait;
 
     let mut glium_uniforms = GliumUniformList::from_uniform_list(&program.uniforms);
     glium_uniforms
@@ -1121,7 +1121,7 @@ fn glium_blendmode(blendmode: &core::BlendMode) -> glium::Blend {
 }
 
 // Converts copy/blit operations coordinate rectangles to gliums rectangle format.
-fn blit_coords(source_rect: Rect<i32>, source_height: u32, target_rect: Rect<i32>, target_height: u32) -> (glium::Rect, glium::BlitTarget) {
+fn blit_coords(source_rect: core::Rect<i32>, source_height: u32, target_rect: core::Rect<i32>, target_height: u32) -> (glium::Rect, glium::BlitTarget) {
     (glium::Rect {
         left: (source_rect.0).0 as u32,
         bottom: (source_height as i32 - (source_rect.1).1 as i32 - (source_rect.0).1 as i32) as u32,

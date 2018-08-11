@@ -50,7 +50,7 @@ impl Renderer {
     }
 
     /// Returns a new renderer instance.
-    pub fn create(context: &Context, target: Vec<RenderTarget>) -> core::Result<Self> {
+    fn create(context: &Context, target: Vec<RenderTarget>) -> core::Result<Self> {
 
         let default_program = Program::new(context, DEFAULT_FS)?;
         let identity_texture = Texture::builder(context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();

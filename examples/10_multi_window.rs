@@ -5,6 +5,9 @@ use ru::Matrix;
 
 pub fn main() {
 
+    // NOTE: if this example fails with a "not yet implemented" panic it means that glutin does not yet support context-
+    //       sharing on your platform (yet).
+
     // Set up shared context
     let context = Context::new();
 

@@ -14,7 +14,7 @@ mod uniform;
 mod postprocessor;
 mod builder;
 mod rendertarget;
-pub mod math;
+mod math;
 
 pub use self::blendmode::*;
 pub use self::input::*;
