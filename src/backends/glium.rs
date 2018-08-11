@@ -44,12 +44,7 @@ pub mod public {
             panic!("Failed to use given events loop. Another events loop was already created.");
         }
 
-        let display = super::Display(Rc::new(super::DisplayInner {
-            inner       : display.clone(),
-            //descriptor  : None,
-            //was_rebuilt : RefCell::new(false),
-        }));
-
+        let display = super::Display(display.clone());
         let context = core::Context::new();
         context.set_primary_display(&display);
 
@@ -70,11 +65,7 @@ pub mod public {
     // TODO: add helpful panic message if user tries to use this renderer without targeting a texture or glium::Frame first
     pub fn create_renderer(display: &glium::Display) -> core::Result<core::Renderer> {
 
-        let display = super::Display(Rc::new(super::DisplayInner {
-            inner       : display.clone(),
-            //descriptor  : None,
-            //was_rebuilt : RefCell::new(false),
-        }));
+        let display = super::Display(display.clone());
 
         let context = core::Context::new();
         context.set_primary_display(&display);
@@ -171,21 +162,8 @@ impl From<glium::backend::glutin::DisplayCreationError> for core::Error {
 // Display
 // --------------
 
-pub struct DisplayInner {
-    inner       : glium::Display,
-    //descriptor  : Option<RefCell<core::DisplayBuilder>>,
-    //was_rebuilt : RefCell<bool>,
-}
-
 #[derive(Clone)]
-pub struct Display(Rc<DisplayInner>);
-
-impl Deref for Display {
-    type Target = DisplayInner;
-    fn deref(self: &Self) -> &Self::Target {
-        &self.0
-    }
-}
+pub struct Display(glium::Display);
 
 impl Display {
     fn events_loop() -> &'static mut glutin::EventsLoop {
@@ -226,60 +204,51 @@ impl Display {
 
             glium::Display::new(window, context, &events_loop)?
         };
-        Ok(Display(Rc::new(DisplayInner {
-            inner       : display,
-            //descriptor  : Some(RefCell::new(descriptor)),
-            //was_rebuilt : RefCell::new(false),
-        })))
+        Ok(Display(display))
     }
     pub fn draw(self: &Self) -> Frame {
-        Frame(self.inner.draw())
+        Frame(self.0.draw())
     }
     pub fn framebuffer_dimensions(self: &Self) -> Point2<u32> {
-        self.inner.get_framebuffer_dimensions().into()
+        self.0.get_framebuffer_dimensions().into()
     }
     pub fn window_dimensions(self: &Self) -> Point2<u32> {
-        self.inner.gl_window().get_inner_size().map_or((0, 0), |l|  l.into())
+        self.0.gl_window().get_inner_size().map_or((0, 0), |l|  l.into())
     }
     pub fn set_cursor_position(self: &Self, position: Point2<i32>) {
-        self.inner.gl_window().set_cursor_position((position.0, position.1).into()).unwrap();
+        self.0.gl_window().set_cursor_position((position.0, position.1).into()).unwrap();
     }
     pub fn set_cursor_state(self: &Self, state: core::CursorState) {
         use core::CursorState as CS;
         match state {
-            CS::Normal => self.inner.gl_window().grab_cursor(false).unwrap(), // todo: handle grab vs hide now that glium doesn't anymore
-            CS::Hide => self.inner.gl_window().hide_cursor(true),
-            CS::Grab => self.inner.gl_window().grab_cursor(true).unwrap(),
+            CS::Normal => self.0.gl_window().grab_cursor(false).unwrap(), // todo: handle grab vs hide now that glium doesn't anymore
+            CS::Hide => self.0.gl_window().hide_cursor(true),
+            CS::Grab => self.0.gl_window().grab_cursor(true).unwrap(),
         };
     }
     pub fn set_fullscreen(self: &Self, monitor: Option<core::Monitor>) -> bool {
         if let Some(monitor) = monitor {
-            self.inner.gl_window().set_fullscreen(Some(monitor.inner.0.clone()));
+            self.0.gl_window().set_fullscreen(Some(monitor.inner.0.clone()));
         } else {
-            self.inner.gl_window().set_fullscreen(None);
+            self.0.gl_window().set_fullscreen(None);
         }
         true
     }
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(core::Event) -> () {
         Self::events_loop().poll_events(|glutin_event| {
             if let Some(event) = Self::map_event(glutin_event) {
-                // suppress close event when going to fullscreen
-                //if event == core::Event::Close && *self.was_rebuilt.borrow() {
-                //    *self.was_rebuilt.borrow_mut() = false;
-                //} else {
-                    callback(event);
-                //}
+                callback(event);
             }
         });
     }
     pub fn show(self: &Self) {
-        self.inner.gl_window().show();
+        self.0.gl_window().show();
     }
     pub fn hide(self: &Self) {
-        self.inner.gl_window().hide()
+        self.0.gl_window().hide()
     }
     pub fn set_title(self: &Self, title: &str) {
-        self.inner.gl_window().set_title(title);
+        self.0.gl_window().set_title(title);
     }
     fn map_event(event: glium::glutin::Event) -> Option<core::Event> {
         use self::glutin::ElementState;
@@ -781,9 +750,9 @@ impl Context {
     /// Creates a new backend context.
     pub fn new(display: &Display, initial_capacity: usize) -> Self {
         Context {
-            display: display.inner.clone(),
-            index_buffer: Self::create_index_buffer(&display.inner, initial_capacity),
-            vertex_buffers: Vec::new(),
+            display         : display.0.clone(),
+            index_buffer    : Self::create_index_buffer(&display.0, initial_capacity),
+            vertex_buffers  : Vec::new(),
         }
     }
 
