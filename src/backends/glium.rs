@@ -1,12 +1,22 @@
-extern crate glium;
 use prelude::*;
 use core;
-use self::glium::uniforms::Uniforms;
-use self::glium::{glutin, Surface};
+use glium;
+use glium::uniforms::Uniforms;
+use glium::{glutin, Surface};
 
+// maximum number of vertext buffers to use
 const MAX_BUFFERS: usize = 10;
 
+// --------------
+// implement glium vertex
+// --------------
+
+use core::Vertex;
+implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
+
+// --------------
 // glutin's global events loop handling. Can only have one of these.
+// --------------
 
 static mut EVENTS_LOOP: Option<glutin::EventsLoop> = None;
 
@@ -585,7 +595,7 @@ impl Texture2d {
         let texture = if let Some(rawdata) = data {
             glium::texture::Texture2d::with_format(
                 &context.display,
-                RawFrame(rawdata),
+                rawdata,
                 Self::convert_format(format),
                 glium::texture::MipmapsOption::NoMipmap
             ).unwrap()
@@ -677,18 +687,15 @@ impl Texture2d {
 // Texture2dArray
 // --------------
 
-#[derive(Clone)]
-struct RawFrame(core::RawFrame);
-
-impl<'a> glium::texture::Texture2dDataSource<'a> for RawFrame {
+impl<'a> glium::texture::Texture2dDataSource<'a> for core::RawFrame {
     type Data = u8;
     fn into_raw(self: Self) -> glium::texture::RawImage2d<'a, Self::Data> {
         use std::borrow::Cow;
         glium::texture::RawImage2d {
-            data: Cow::Owned(self.0.data),
-            width: self.0.width,
-            height: self.0.height,
-            format: match self.0.channels {
+            data: Cow::Owned(self.data),
+            width: self.width,
+            height: self.height,
+            format: match self.channels {
                 1 => glium::texture::ClientFormat::U8,
                 4 => glium::texture::ClientFormat::U8U8U8U8,
                 _ => glium::texture::ClientFormat::U8,  // todo: ugly, need enum
@@ -704,13 +711,10 @@ impl Texture2dArray {
     pub fn new(context: &Context, raw: &Vec<core::RawFrame>) -> Self {
 
         use self::glium::texture;
-        use std::mem::transmute;
-
-        let raw_wrapped: Vec<RawFrame> = unsafe { transmute(raw.clone()) };
 
         Texture2dArray(
-            if raw_wrapped.len() > 0 {
-                texture::Texture2dArray::with_format(&context.display, raw_wrapped, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
+            if raw.len() > 0 {
+                texture::Texture2dArray::with_format(&context.display, raw.clone(), texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap).unwrap()
             } else {
                 texture::Texture2dArray::empty_with_format(&context.display, texture::UncompressedFloatFormat::U8U8U8U8, texture::MipmapsOption::NoMipmap, 2, 2, 1).unwrap()
             }
@@ -725,7 +729,7 @@ impl Texture2dArray {
 struct VertexBufferCacheItem {
     hint    : usize,
     age     : usize,
-    buffer  : glium::VertexBuffer<Vertex>,
+    buffer  : glium::VertexBuffer<core::Vertex>,
 }
 
 impl VertexBufferCacheItem {
@@ -808,7 +812,7 @@ impl Context {
     }
 
     /// Draw given vertices.
-    fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[Vertex], dirty: bool, buffer_hint: usize, program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
+    fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[core::Vertex], dirty: bool, buffer_hint: usize, program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
 
         let num_vertices = vertices.len();
         let num_sprites = num_vertices / 4;
@@ -965,69 +969,12 @@ impl<'b> Uniforms for GliumUniformList<'b> {
 }
 
 // --------------
-// Vertex
-// --------------
-
-#[derive(Copy, Clone)]
-struct Vertex(core::Vertex);
-
-macro_rules! implement_wrapped_vertex {
-    ($struct_name:ident, $($field_name:ident),+) => (
-        impl glium::vertex::Vertex for $struct_name {
-            #[inline]
-            fn build_bindings() -> glium::vertex::VertexFormat {
-                use std::borrow::Cow;
-
-                // TODO: use a &'static [] if possible
-
-                Cow::Owned(vec![
-                    $(
-                        (
-                            Cow::Borrowed(stringify!($field_name)),
-                            {
-                                // calculate the offset of the struct fields
-                                let dummy: $struct_name = unsafe { ::std::mem::uninitialized() };
-                                let offset: usize = {
-                                    let dummy_ref = &(dummy.0);
-                                    let field_ref = &(dummy.0).$field_name;
-                                    (field_ref as *const _ as usize) - (dummy_ref as *const _ as usize)
-                                };
-                                // NOTE: `glium::vertex::Vertex` requires `$struct_name` to have `Copy` trait
-                                // `Copy` excludes `Drop`, so we don't have to `std::mem::forget(dummy)`
-                                offset
-                            },
-                            {
-                                fn attr_type_of_val<T: glium::vertex::Attribute>(_: &T)
-                                    -> glium::vertex::AttributeType
-                                {
-                                    <T as glium::vertex::Attribute>::get_type()
-                                }
-                                let dummy: &$struct_name = unsafe { ::std::mem::transmute(0usize) };
-                                attr_type_of_val(&(dummy.0).$field_name)
-                            },
-                            false
-                        )
-                    ),+
-                ])
-            }
-        }
-    );
-
-    ($struct_name:ident, $($field_name:ident),+,) => (
-        implement_wrapped_vertex!($struct_name, $($field_name),+);
-    );
-}
-
-implement_wrapped_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_id, texture_uv, components);
-
-// --------------
 // Drawing
 // --------------
 
 pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, layer: &core::Layer, component: u32) {
 
     use self::glium::uniforms::{MagnifySamplerFilter, SamplerWrapFunction};
-    use std::mem::transmute;
 
     let mut glium_uniforms = GliumUniformList::from_uniform_list(&program.uniforms);
     glium_uniforms
@@ -1045,12 +992,11 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
     let vertices = layer.vertices();
     let vertices = vertices.deref();
 
-    context.backend_context.as_mut().unwrap().draw(target, unsafe { transmute(vertices) }, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
+    context.backend_context.as_mut().unwrap().draw(target, vertices, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
 }
 
 pub fn draw_rect<T>(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawBuilder<T>, view_matrix: core::Mat4, model_matrix: core::Mat4, color: core::Color, texture: &core::Texture) {
 
-    use std::mem::transmute;
     use core::Point2Trait;
 
     let mut glium_uniforms = GliumUniformList::from_uniform_list(&program.uniforms);
@@ -1066,7 +1012,7 @@ pub fn draw_rect<T>(target: &core::RenderTarget, program: &core::Program, contex
     let vertices = &context.single_rect;
     let vertices = &vertices[..];
 
-    context.backend_context.as_mut().unwrap().draw(target, unsafe { transmute(vertices) }, false, 0, &program.texture_program, &glium_uniforms, &blend);
+    context.backend_context.as_mut().unwrap().draw(target, vertices, false, 0, &program.texture_program, &glium_uniforms, &blend);
 }
 
 // --------------

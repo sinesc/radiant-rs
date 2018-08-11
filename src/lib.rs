@@ -148,6 +148,8 @@ Please file a bug report if you encounter any issues with this library. In parti
 so I would expect issues regarding untested hardware.
 */
 
+#[cfg(feature = "glium")]
+#[macro_use] extern crate glium;
 #[macro_use] extern crate enum_primitive;
 #[macro_use] extern crate lazy_static;
 extern crate image;
