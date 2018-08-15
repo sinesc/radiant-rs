@@ -275,8 +275,11 @@ impl Display {
         // Set primary context display to first created display
         // (this has no relevance to radiant but is to satisfy backend requirements)
 
-        if !context.has_primary_display() {
-            context.set_primary_display(&display);
+        {
+            let mut context = context.lock();
+            if !context.has_primary_display() {
+                context.set_primary_display(&display);
+            }
         }
 
         Ok(Display {

@@ -39,14 +39,6 @@ impl Context {
     pub fn prune(self: &Self) {
         self.lock().prune();
     }
-    /// Returns whether the context has already been associated with a display as required by some backends.
-    pub(crate) fn has_primary_display(self: &Self) -> bool {
-        self.lock().backend_context.is_some()
-    }
-    /// Associates the context with a display as required by some backends.
-    pub(crate) fn set_primary_display(self: &Self, display: &backend::Display) {
-        self.lock().init_backend(&display);
-    }
     /// Mutex-locks the instance and returns the MutexGuard
     pub(crate) fn lock<'a>(self: &'a Self) -> MutexGuard<'a, ContextData> {
         self.0.lock().unwrap()
@@ -199,6 +191,7 @@ pub struct ContextData {
 
 impl ContextData {
 
+    /// Initializes the backend context. Happens lazily once the first window is created.
     fn init_backend(self: &mut Self, display: &backend::Display) {
 
         let backend_context = backend::Context::new(display, INITIAL_CAPACITY);
@@ -238,6 +231,16 @@ impl ContextData {
             single_rect         : Self::create_single_rect(),
             generation          : Self::create_generation(),
         }
+    }
+
+    /// Returns whether the context has already been associated with a display as required by some backends.
+    pub fn has_primary_display(self: &Self) -> bool {
+        self.backend_context.is_some()
+    }
+
+    /// Associates the context with a display as required by some backends.
+    pub fn set_primary_display(self: &mut Self, display: &backend::Display) {
+        self.init_backend(&display);
     }
 
     /// Returns the context's generation.

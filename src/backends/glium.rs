@@ -4,7 +4,7 @@ use glium;
 use glium::uniforms::Uniforms;
 use glium::{glutin, Surface};
 
-// maximum number of vertext buffers to use
+// maximum number of vertex buffers to use
 const MAX_BUFFERS: usize = 10;
 
 // --------------
@@ -56,7 +56,7 @@ pub mod public {
 
         let display = super::Display(display.clone());
         let context = core::Context::new();
-        context.set_primary_display(&display);
+        context.lock().set_primary_display(&display);
 
         core::Display {
             handle      : display,
@@ -78,7 +78,7 @@ pub mod public {
         let display = super::Display(display.clone());
 
         let context = core::Context::new();
-        context.set_primary_display(&display);
+        context.lock().set_primary_display(&display);
 
         let identity_texture = core::Texture::builder(&context).format(core::TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(core::Color::WHITE);
@@ -203,8 +203,9 @@ impl Display {
                 .with_vsync(descriptor.vsync);
 
             if let Some(ref parent_context) = descriptor.context {
+                let parent_context = parent_context.lock();
                 if parent_context.has_primary_display() {
-                    parent_display = parent_context.lock().backend_context.as_ref().unwrap().display.clone();
+                    parent_display = parent_context.backend_context.as_ref().unwrap().display.clone();
                     gl_window = parent_display.gl_window();
                     context = context.with_shared_lists(gl_window.context());
                 }
