@@ -18,14 +18,20 @@ implement_vertex!(Vertex, position, offset, rotation, color, bucket_id, texture_
 // glutin's global events loop handling. Can only have one of these.
 // --------------
 
+type EventsLoopFn = Fn() -> &'static mut glium::glutin::EventsLoop;
+static mut EVENTS_LOOP_FN: Option<Box<EventsLoopFn>> = None;
 static mut EVENTS_LOOP: Option<glutin::EventsLoop> = None;
 
 fn init_events_loop<T>(else_fn: T) -> &'static mut glutin::EventsLoop where T: FnOnce() -> glutin::EventsLoop {
     unsafe {
-        if EVENTS_LOOP.is_none() {
-            EVENTS_LOOP = Some(else_fn());
+        if let Some(ref events_loop_fn) = EVENTS_LOOP_FN {
+            events_loop_fn()
+        } else {
+            if EVENTS_LOOP.is_none() {
+                EVENTS_LOOP = Some(else_fn());
+            }
+            EVENTS_LOOP.as_mut().unwrap()
         }
-        EVENTS_LOOP.as_mut().unwrap()
     }
 }
 
@@ -41,18 +47,36 @@ pub mod public {
     use std::sync::{Arc, RwLock};
     use std::mem;
 
-    /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop.
-    ///
-    /// As an alternative to [`backend::create_renderer()`](fn.create_renderer.html), this allows for glium rendering but keeps radiant display handling.
-    pub fn create_display(display: &glium::Display, events_loop: glium::glutin::EventsLoop) -> core::Display {
+    /// Registers a function that returns a mutable EventsLoop reference for use by Radiant.
+    pub fn set_events_loop_fn(events_loop_fn: Box<super::EventsLoopFn>) {
+        unsafe {
+            if super::EVENTS_LOOP.is_some() {
+                panic!("Failed to use given events loop callback. Another events loop was already created.");
+            }
+            super::EVENTS_LOOP_FN = Some(events_loop_fn);
+        }
+    }
+
+    /// Sets given events loop for use by Radiant.
+    pub fn set_events_loop(events_loop: glium::glutin::EventsLoop) {
 
         let mut accepted = false;
-
         super::init_events_loop(|| { accepted = true; events_loop });
 
         if !accepted {
             panic!("Failed to use given events loop. Another events loop was already created.");
         }
+    }
+
+    /// Returns a mutable reference to the events loop.
+    pub fn events_loop_mut() -> &'static mut glium::glutin::EventsLoop {
+        super::init_events_loop(|| glium::glutin::EventsLoop::new())
+    }
+
+    /// Creates a new radiant_rs::Display from given glium::Display and glutin::EventsLoop.
+    ///
+    /// As an alternative to [`backend::create_renderer()`](fn.create_renderer.html), this allows for glium rendering but keeps radiant display handling.
+    pub fn create_display(display: &glium::Display) -> core::Display {
 
         let display = super::Display(display.clone());
         let context = core::Context::new();
@@ -76,15 +100,10 @@ pub mod public {
     pub fn create_renderer(display: &glium::Display) -> core::Result<core::Renderer> {
 
         let display = super::Display(display.clone());
-
         let context = core::Context::new();
         context.lock().set_primary_display(&display);
 
-        let identity_texture = core::Texture::builder(&context).format(core::TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
-        identity_texture.clear(core::Color::WHITE);
-
         Ok(core::Renderer {
-            empty_texture   : identity_texture,
             program         : Rc::new(core::Program::new(&context, core::DEFAULT_FS)?),
             context         : context,
             target          : Rc::new(RefCell::new(Vec::new())),
@@ -751,6 +770,7 @@ pub struct Context {
     display         : glium::Display,
     index_buffer    : glium::IndexBuffer<u32>,
     vertex_buffers  : Vec<VertexBufferCacheItem>,
+    //identity_texture: Texture2d,
 }
 
 impl Context {
@@ -761,6 +781,17 @@ impl Context {
             display         : display.0.clone(),
             index_buffer    : Self::create_index_buffer(&display.0, initial_capacity),
             vertex_buffers  : Vec::new(),
+            /*identity_texture: Texture2d({
+                 let texture = glium::texture::Texture2d::empty_with_format(
+                    &display.0,
+                    Texture2d::convert_format(core::TextureFormat::F16F16F16F16),
+                    glium::texture::MipmapsOption::NoMipmap,
+                    1,
+                    1,
+                ).unwrap();
+                texture.as_surface().clear_color(1.0, 1.0, 1.0, 1.0);
+                texture
+            })*/
         }
     }
 
@@ -813,7 +844,7 @@ impl Context {
     }
 
     /// Draw given vertices.
-    fn draw(self: &mut Self, target: &core::RenderTarget, vertices: &[core::Vertex], dirty: bool, buffer_hint: usize, program: &Program, uniforms: &GliumUniformList, blendmode: &core::BlendMode) {
+    fn draw<'b, 'a: 'b>(self: &'a mut Self, target: &core::RenderTarget, vertices: &[core::Vertex], dirty: bool, buffer_hint: usize, program: &Program, mut uniforms: GliumUniformList<'b>, blendmode: &core::BlendMode) {
 
         let num_vertices = vertices.len();
         let num_sprites = num_vertices / 4;
@@ -838,22 +869,29 @@ impl Context {
         let ib_slice = self.index_buffer.slice(0..num_vertices as usize / 4 * 6).unwrap();
 
         // set up draw parameters for given blend options
+
         let draw_parameters = glium::draw_parameters::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
             blend           : glium_blendmode(blendmode),
             .. Default::default()
         };
+/*
+        // add texture to uniforms if missing (TODO: seems to work fine without)
 
+        if !uniforms.has("_rd_tex") {
+            uniforms.add("_rd_tex", GliumUniform::Texture2d(&self.identity_texture.0));
+        }
+*/
         // draw
 
         match target.0 {
             core::RenderTargetInner::Frame(ref display) => {
                 let mut frame = display.borrow_mut();
                 let frame = &mut frame.as_mut().expect(core::NO_FRAME_PREPARED).0;
-                frame.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
+                frame.draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, &uniforms, &draw_parameters).unwrap();
             }
             core::RenderTargetInner::Texture(ref texture) => {
-                texture.handle.0.as_surface().draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, uniforms, &draw_parameters).unwrap();
+                texture.handle.0.as_surface().draw(&self.vertex_buffers[vb_index].buffer, &ib_slice, &program.0, &uniforms, &draw_parameters).unwrap();
             }
             core::RenderTargetInner::None => { }
         }
@@ -894,6 +932,9 @@ impl<'a> GliumUniformList<'a> {
         }
         result
     }
+    /*pub fn has(self: &Self, name: &'a str) -> bool {
+        self.0.iter().find(|&u| u.0 == name).is_some()
+    }*/
     pub fn add(self: &mut Self, name: &'a str, uniform: GliumUniform<'a>) -> &mut Self {
         self.0.push((name, uniform));
         self
@@ -993,27 +1034,32 @@ pub fn draw_layer(target: &core::RenderTarget, program: &core::Program, context:
     let vertices = layer.vertices();
     let vertices = vertices.deref();
 
-    context.backend_context.as_mut().unwrap().draw(target, vertices, layer.undirty(), layer.id(), &program.sprite_program, &glium_uniforms, &layer.blendmode());
+    context.backend_context.as_mut().unwrap().draw(target, vertices, layer.undirty(), layer.id(), &program.sprite_program, glium_uniforms, &layer.blendmode());
 }
 
-pub fn draw_rect<T>(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawBuilder<T>, view_matrix: core::Mat4, model_matrix: core::Mat4, color: core::Color, texture: &core::Texture) {
+pub fn draw_rect<T>(target: &core::RenderTarget, program: &core::Program, context: &mut core::ContextData, blend: core::BlendMode, info: core::DrawBuilder<T>, view_matrix: core::Mat4, model_matrix: core::Mat4, color: core::Color, texture: Option<&core::Texture>) {
 
     use core::Point2Trait;
+
+    let backend_context = context.backend_context.as_mut().unwrap();
 
     let mut glium_uniforms = GliumUniformList::from_uniform_list(&program.uniforms);
     glium_uniforms
         .add("u_view", GliumUniform::Mat4(view_matrix.into()))
         .add("u_model", GliumUniform::Mat4(model_matrix.into()))
         .add("_rd_color", GliumUniform::Vec4(color.into()))
-        .add("_rd_tex", GliumUniform::Texture2d(&texture.handle.0))
         .add("_rd_offset", GliumUniform::Vec2(info.rect.0.as_array()))
         .add("_rd_dimensions", GliumUniform::Vec2(info.rect.1.as_array()))
         .add("_rd_has_tex", GliumUniform::Bool(info.texture.is_some()));
 
+    if let Some(ref texture) = texture {
+        glium_uniforms.add("_rd_tex", GliumUniform::Texture2d(&texture.handle.0));
+    }
+
     let vertices = &context.single_rect;
     let vertices = &vertices[..];
 
-    context.backend_context.as_mut().unwrap().draw(target, vertices, false, 0, &program.texture_program, &glium_uniforms, &blend);
+    backend_context.draw(target, vertices, false, 0, &program.texture_program, glium_uniforms, &blend);
 }
 
 // --------------

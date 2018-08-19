@@ -30,7 +30,8 @@ pub fn main() {
     let uniforms = glium_utils::build_uniforms();
 
     // Create a Radiant Display from an existing glium Display and glutin EventsLoop.
-    let display = backend::create_display(&glium_display, events_loop);
+    backend::set_events_loop(events_loop);
+    let display = backend::create_display(&glium_display);
 
     // Create the renderer, a sprite and a layer
     let renderer = Renderer::new(&display).unwrap();

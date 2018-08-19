@@ -27,7 +27,6 @@ pub struct Renderer {
     pub(crate) context         : Context,
     pub(crate) program         : Rc<Program>,
     pub(crate) target          : Rc<RefCell<Vec<RenderTarget>>>,
-    pub(crate) empty_texture   : Texture,
 }
 
 impl Debug for Renderer {
@@ -57,7 +56,6 @@ impl Renderer {
         identity_texture.clear(Color::WHITE);
 
         Ok(Renderer {
-            empty_texture   : identity_texture,
             context         : context.clone(),
             program         : Rc::new(default_program),
             target          : Rc::new(RefCell::new(target)),
@@ -236,7 +234,7 @@ impl Renderer {
 
         // use default or custom program and texture
         let program = target.program.unwrap_or(&self.program);
-        let texture = target.texture.unwrap_or(&self.empty_texture);
+        let texture = target.texture;
         let color = target.color.unwrap_or(Color::WHITE);
         let blendmode = target.blendmode.unwrap_or(blendmodes::ALPHA);
         let model_matrix = target.model_matrix.unwrap_or(Mat4::identity());
@@ -252,7 +250,7 @@ impl Renderer {
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
             DrawBuilderViewSource::Source => {
-                let dim = texture.dimensions();
+                let dim = texture.expect("Cannot derive view-matrix from 'source' without a source").dimensions();
                 Mat4::viewport(dim.0 as f32, dim.1 as f32)
             }
         };
