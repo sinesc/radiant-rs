@@ -7,7 +7,7 @@ documentation = "https://docs.rs/radiant-rs/"
 repository = "https://github.com/sinesc/radiant-rs.git"
 license = "MIT"
 readme = "README.md"
-keywords = [ "sprite", "sprites", "glium" ]
+keywords = [ "sprite", "sprites", "text", "prototyping", "glium" ]
 categories = [ "rendering::engine", "game-engines" ]
 
 [features]

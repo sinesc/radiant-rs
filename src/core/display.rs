@@ -84,6 +84,11 @@ impl Display {
         }
     }
 
+    /// Returns an input object for this display, used for retrieving polled inputs.
+    pub fn input(self: &Self) -> Input {
+        Input { input_data: self.input_data.clone() }
+    }
+
     /// Prepares a frame for rendering.
     pub fn prepare_frame(self: &Self) {
         if self.frame.borrow().is_some() {
@@ -161,34 +166,7 @@ impl Display {
     /// [`Input`](struct.Input.html) for basic keyboard and mouse support.
     pub fn poll_events(self: &Self) -> &Self {
         let mut input_data = self.input_data.write().unwrap();
-
-        // todo: poll_id, check if released/pressed(poll_id) == poll_id
-        for key_id in 0..NUM_KEYS {
-            match input_data.key[key_id] {
-                InputState::Pressed | InputState::Repeat => {
-                    input_data.key[key_id] = InputState::Down;
-                }
-                InputState::Released => {
-                    input_data.key[key_id] = InputState::Up;
-                }
-                _ => { }
-            }
-        }
-
-        for button_id in 0..NUM_BUTTONS {
-            match input_data.button[button_id] {
-                InputState::Pressed => {
-                    input_data.button[button_id] = InputState::Down;
-                }
-                InputState::Released => {
-                    input_data.button[button_id] = InputState::Up;
-                }
-                _ => { }
-            }
-        }
-
-        input_data.mouse_delta = (0, 0);
-
+        input_data.reset();
         self.handle.poll_events(|event| {
             match event {
                 Event::KeyboardInput(key_id, down) => {

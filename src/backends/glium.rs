@@ -844,7 +844,7 @@ impl Context {
     }
 
     /// Draw given vertices.
-    fn draw<'b, 'a: 'b>(self: &'a mut Self, target: &core::RenderTarget, vertices: &[core::Vertex], dirty: bool, buffer_hint: usize, program: &Program, mut uniforms: GliumUniformList<'b>, blendmode: &core::BlendMode) {
+    fn draw<'b, 'a: 'b>(self: &'a mut Self, target: &core::RenderTarget, vertices: &[core::Vertex], dirty: bool, buffer_hint: usize, program: &Program, /*mut*/ uniforms: GliumUniformList<'b>, blendmode: &core::BlendMode) {
 
         let num_vertices = vertices.len();
         let num_sprites = num_vertices / 4;
@@ -875,13 +875,13 @@ impl Context {
             blend           : glium_blendmode(blendmode),
             .. Default::default()
         };
-/*
+        /*
         // add texture to uniforms if missing (TODO: seems to work fine without)
 
         if !uniforms.has("_rd_tex") {
             uniforms.add("_rd_tex", GliumUniform::Texture2d(&self.identity_texture.0));
         }
-*/
+        */
         // draw
 
         match target.0 {
@@ -1102,7 +1102,7 @@ fn glium_blendmode(blendmode: &core::BlendMode) -> glium::Blend {
             CF::Max                                         => GF::Max,
             CF::Addition { source, destination }            => GF::Addition { source: blendfactor(source), destination: blendfactor(destination) },
             CF::Subtraction { source, destination }         => GF::Subtraction { source: blendfactor(source), destination: blendfactor(destination) },
-            CF::ReverseSubtraction { source, destination }  => GF::Subtraction { source: blendfactor(source), destination: blendfactor(destination) },
+            CF::ReverseSubtraction { source, destination }  => GF::ReverseSubtraction { source: blendfactor(source), destination: blendfactor(destination) },
         }
     }
 

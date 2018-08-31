@@ -11,11 +11,11 @@ use backends::backend;
 /// [`Renderer::rect()`](struct.Renderer.html#method.rect).
 #[derive(Clone)]
 pub struct Texture {
-    pub(crate) handle   : Rc<backend::Texture2d>,
-    pub(crate) minify   : TextureFilter,
-    pub(crate) magnify  : TextureFilter,
-    pub(crate) wrap     : TextureWrap,
-    dimensions          : Point2<u32>,
+    pub(crate) handle       : Rc<backend::Texture2d>,
+    pub(crate) minify       : TextureFilter,
+    pub(crate) magnify      : TextureFilter,
+    pub(crate) wrap         : TextureWrap,
+    pub(crate) dimensions   : Point2<u32>,
 }
 
 impl Debug for Texture {

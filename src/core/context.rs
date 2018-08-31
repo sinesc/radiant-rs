@@ -59,7 +59,7 @@ struct SpriteBackRef (Weak<SpriteData>);
 
 impl SpriteBackRef {
     /// Creates a new weak reference to SpriteData.
-    fn new(data: Weak<SpriteData>) -> SpriteBackRef {
+    fn new(data: Weak<SpriteData>) -> Self {
         SpriteBackRef(data)
     }
     /// Returns a strong reference to the SpriteData.

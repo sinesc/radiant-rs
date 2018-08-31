@@ -43,6 +43,34 @@ impl InputData {
             dimensions      : (0, 0),
         }
     }
+    pub fn reset(self: &mut Self) {
+        // todo: store poll_id, check if released/pressed(poll_id) == poll_id
+        for key_id in 0..NUM_KEYS {
+            match self.key[key_id] {
+                InputState::Pressed | InputState::Repeat => {
+                    self.key[key_id] = InputState::Down;
+                }
+                InputState::Released => {
+                    self.key[key_id] = InputState::Up;
+                }
+                _ => { }
+            }
+        }
+
+        for button_id in 0..NUM_BUTTONS {
+            match self.button[button_id] {
+                InputState::Pressed => {
+                    self.button[button_id] = InputState::Down;
+                }
+                InputState::Released => {
+                    self.button[button_id] = InputState::Up;
+                }
+                _ => { }
+            }
+        }
+
+        self.mouse_delta = (0, 0);
+    }
 }
 
 enum_from_primitive! {
@@ -246,7 +274,7 @@ impl InputId {
 /// Basic keyboard and mouse support.
 #[derive(Clone)]
 pub struct Input {
-    input_data: Arc<RwLock<InputData>>,
+    pub (crate) input_data: Arc<RwLock<InputData>>,
 }
 
 impl Debug for Input {
