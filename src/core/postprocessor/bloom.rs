@@ -46,7 +46,6 @@ impl Postprocessor for Bloom {
 
     /// Process received data.
     fn process(self: &Self, renderer: &Renderer, _: &Self::T) {
-        use std::ops::DerefMut;
 
         let horizontal = min(self.horizontal as usize, self.targets[0].len());
         let vertical = min(self.vertical as usize, self.targets[0].len());
