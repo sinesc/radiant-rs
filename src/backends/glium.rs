@@ -115,17 +115,20 @@ pub mod public {
     /// Renderers default to rendering to the current frame, unless they were created by `backend::create_renderer()`, in which case control of the
     /// frame/display remains outside of Radiant. This method allows such Renderers to output to Glium frames.
     pub fn target_frame<F>(renderer: &core::Renderer, frame: &mut glium::Frame, draw_func: F) where F: FnMut() {
-
-        let wrapper = {
+        use std::panic::*;
+        let wrapper = AssertUnwindSafe({
             // we need to own the frame to wrap it
             let owned_frame = mem::replace(frame, unsafe { mem::uninitialized() });
             // wrap glium frame to make it rendertarget compatible
             let backend_frame = super::Frame(owned_frame);
             Rc::new(RefCell::new(Some(backend_frame)))
-        };
+        });
+        let render = AssertUnwindSafe(renderer);
+        let func = AssertUnwindSafe(draw_func);
 
         // render to that target
-        renderer.render_to(&core::RenderTarget::frame(&wrapper), draw_func);
+        let result = std::panic::catch_unwind(||
+            render.render_to(&core::RenderTarget::frame(&wrapper), func.0));
 
         // undo the wrapping
         let backend_frame = mem::replace(&mut *wrapper.borrow_mut(), None).unwrap();
@@ -133,6 +136,9 @@ pub mod public {
         // move the frame back, forget owned_frame
         let uninitialized = mem::replace(frame, owned_frame);
         mem::forget(uninitialized);
+        if result.is_err() {
+            resume_unwind(result.err().unwrap()); // back to unwinding
+        }
     }
 
     /// Passes a mutable reference to the current glium::Frame used by Radiant to the given callback.
