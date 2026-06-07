@@ -1,4 +1,4 @@
-use core::*;
+use crate::core::*;
 
 /// A Texture builder.
 #[must_use]
@@ -61,7 +61,7 @@ impl<'a> TextureBuilder<'a> {
     pub fn build(self: Self) -> Result<Texture> {
         Texture::from_builder(self)
     }
-    pub(crate) fn new<'b>(context: &'b Context) -> TextureBuilder {
+    pub(crate) fn new<'b>(context: &'b Context) -> TextureBuilder<'b> {
         TextureBuilder {
             context : context,
             minify  : TextureFilter::Linear,

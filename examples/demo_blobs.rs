@@ -28,9 +28,9 @@ pub fn main() {
 
     // Draw the sprite three times, tinted red, green and blue. No need to do this each frame since we're
     // only going to manipulate the matrices. Also write some text.
-    sprite.draw(&spark_layer, 0, (320., 180.), *Color::RED.scale(1.5));
-    sprite.draw(&spark_layer, 0, (300., 200.), *Color::GREEN.scale(1.5));
-    sprite.draw(&spark_layer, 0, (340., 200.), *Color::BLUE.scale(1.5));
+    sprite.draw(&spark_layer, 0, (320., 180.), Color::RED.scaled(1.5));
+    sprite.draw(&spark_layer, 0, (300., 200.), Color::GREEN.scaled(1.5));
+    sprite.draw(&spark_layer, 0, (340., 200.), Color::BLUE.scaled(1.5));
     big_font.write(&text_layer, "blobs.rs", (355., 330.), Color::RED);
     font.write(&text_layer, "rotating colorful blobs since 2016", (370., 350.), Color::WHITE);
 

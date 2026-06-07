@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
-use core::{Color, Renderer, Texture, BlendMode, Program, Display};
-use core::math::*;
+use crate::core::{Color, Renderer, Texture, BlendMode, Program, Display};
+use crate::core::math::*;
 
 #[derive(Clone)]
 pub struct DrawBuilderFill;
 
 impl DrawBuilderFill {
     // Creates a new DrawBuilderFill instance.
-    pub(crate) fn new(renderer: &Renderer) -> DrawBuilder<DrawBuilderFill> {
+    pub(crate) fn new(renderer: &Renderer) -> DrawBuilder<'_, DrawBuilderFill> {
         DrawBuilder {
             renderer    : renderer,
             phantomdata : PhantomData,
@@ -27,7 +27,7 @@ pub struct DrawBuilderRect;
 
 impl DrawBuilderRect {
     // Creates a new DrawBuilderRect instance.
-    pub(crate) fn new(renderer: &Renderer, rect: Rect) -> DrawBuilder<DrawBuilderRect> {
+    pub(crate) fn new(renderer: &Renderer, rect: Rect) -> DrawBuilder<'_, DrawBuilderRect> {
         DrawBuilder {
             renderer    : renderer,
             phantomdata : PhantomData,

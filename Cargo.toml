@@ -7,33 +7,36 @@ documentation = "https://docs.rs/radiant-rs/"
 repository = "https://github.com/sinesc/radiant-rs.git"
 license = "MIT"
 readme = "README.md"
-keywords = [ "sprite", "sprites", "text", "prototyping", "glium" ]
+keywords = [ "sprite", "sprites", "text", "prototyping", "wgpu" ]
 categories = [ "rendering::engine", "game-engines" ]
+autoexamples = false
+edition = "2018"
 
 [features]
-default = [ "backend-glium" ]
-backend-glium = [ "glium" ]
+default = [ "backend-wgpu" ]
+backend-wgpu = [ "wgpu", "winit", "pollster" ]
 backend-null = [ ]
 serialize-serde = [ "serde", "serde_derive" ]
 
 [dependencies]
-glium = { version = "0.22", optional = true }
-image = "0.19"
+wgpu = { version = "0.20", optional = true }
+winit = { version = "0.30", optional = true }
+pollster = { version = "0.4", optional = true }
+image = "0.24"
 regex = "1.0"
 lazy_static = "1.0"
-rusttype = { version = "0.6", features = [ "gpu_cache" ] }
-unicode-normalization = "0.1.5"
-font-loader = "0.7"
+rusttype = { version = "0.9", features = ["gpu_cache"] }
+unicode-normalization = "0.1"
+font-loader = "0.9"
 enum_primitive = "0.1"
-avec = "0.1.0"
-palette = "0.4"
+avec = "0.1"
+palette = "0.7"
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
 
 [dev-dependencies]
-tiled = "0.4"
-glium = "0.22"
 radiant-utils = { version = "0.4" }
+tiled = "0.9"
 
 [lib]
 name = "radiant_rs"
@@ -87,14 +90,6 @@ path = "examples/10_multi_window.rs"
 [[example]]
 name = "98_threads"
 path = "examples/98_threads.rs"
-
-[[example]]
-name = "glium_less"
-path = "examples/glium_less.rs"
-
-[[example]]
-name = "glium_more"
-path = "examples/glium_more.rs"
 
 [[example]]
 name = "demo_blobs"

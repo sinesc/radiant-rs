@@ -1,5 +1,5 @@
-use prelude::*;
-use core::{Uniform, AsUniform};
+use crate::prelude::*;
+use crate::core::{Uniform, AsUniform};
 
 /// A color value consisting of four floating point values for the color channels red, green, blue
 /// and alpha.
@@ -155,6 +155,11 @@ impl Color {
         self.1 *= scaling;
         self.2 *= scaling;
         self
+    }
+
+    /// Returns a new Color with color channels multiplied by the given scaling factor. Does not modify alpha.
+    pub fn scaled(self: Self, scaling: f32) -> Color {
+        Color(self.0 * scaling, self.1 * scaling, self.2 * scaling, self.3)
     }
 
     // Returns new instance with alpha applied to all color channels.

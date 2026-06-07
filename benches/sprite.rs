@@ -15,19 +15,19 @@ fn sprite_drawing(b: &mut Bencher) {
     let sprite = Sprite::from_file(display.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
     let layer = Layer::new((640., 480.));
 
-    display.clear_frame(Color::black());
+    display.clear_frame(Color::BLACK);
 
     // make sure layer is full allocated
     for i in 0..SPRITE_ITER {
-        sprite.draw(&layer, i, (320., 200.), Color::white());
-        sprite.draw(&layer, i, (0., 0.), Color::red());
+        sprite.draw(&layer, i, (320., 200.), Color::WHITE);
+        sprite.draw(&layer, i, (0., 0.), Color::RED);
     }
 
     b.iter(|| {
         layer.clear();
         for i in 0..SPRITE_ITER {
-            sprite.draw(&layer, i, (320., 200.), Color::white());
-            sprite.draw(&layer, i, (0., 0.), Color::red());
+            sprite.draw(&layer, i, (320., 200.), Color::WHITE);
+            sprite.draw(&layer, i, (0., 0.), Color::RED);
         }
     });
 
@@ -42,19 +42,19 @@ fn sprite_transformed_drawing(b: &mut Bencher) {
     let sprite = Sprite::from_file(display.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
     let layer = Layer::new((640., 480.));
 
-    display.clear_frame(Color::black());
+    display.clear_frame(Color::BLACK);
 
     // make sure layer is full allocated
     for i in 0..SPRITE_ITER {
-        sprite.draw(&layer, i, (320., 200.), Color::white());
-        sprite.draw(&layer, i, (0., 0.), Color::red());
+        sprite.draw(&layer, i, (320., 200.), Color::WHITE);
+        sprite.draw(&layer, i, (0., 0.), Color::RED);
     }
 
     b.iter(|| {
         layer.clear();
         for i in 0..SPRITE_ITER {
-            sprite.draw_transformed(&layer, i, (320., 200.), Color::white(), 1.23, (2.34, 3.45));
-            sprite.draw_transformed(&layer, i, (0., 0.), Color::red(), 2.34, (0.67, 0.79));
+            sprite.draw_transformed(&layer, i, (320., 200.), Color::WHITE, 1.23, (2.34, 3.45));
+            sprite.draw_transformed(&layer, i, (0., 0.), Color::RED, 2.34, (0.67, 0.79));
         }
     });
 

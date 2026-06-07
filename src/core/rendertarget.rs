@@ -1,6 +1,6 @@
-use prelude::*;
-use core::{Texture, Color, TextureFilter, Rect, Point2};
-use backends::backend;
+use crate::prelude::*;
+use crate::core::{Texture, Color, TextureFilter, Rect, Point2};
+use crate::backends::backend;
 
 pub const NO_FRAME_PREPARED: &'static str = "Failed to get frame: None prepared.";
 

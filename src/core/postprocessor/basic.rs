@@ -1,4 +1,4 @@
-use core::{Texture, Renderer, Context, Program, BlendMode, Postprocessor, Color, Point2};
+use crate::core::{Texture, Renderer, Context, Program, BlendMode, Postprocessor, Color, Point2};
 
 /// A basic postprocessor that applies a Program to the given input once.
 ///
@@ -14,7 +14,7 @@ use core::{Texture, Renderer, Context, Program, BlendMode, Postprocessor, Color,
 /// # let renderer = Renderer::new(&display).unwrap();
 /// # let context = display.context();
 /// # let my_layer = Layer::new((1.0, 1.0));
-/// # let program_source = "#version 140\nout vec4 f_color;\nvoid main() { f_color = vec4(0.0, 0.0, 0.0, 0.0); }";
+/// # let program_source = "@fragment\nfn main(input: TextureFragmentInput) -> @location(0) vec4<f32> { return vec4<f32>(0.0, 0.0, 0.0, 0.0); }";
 /// // Load a shader progam.
 /// let my_program = Program::from_string(&context, &program_source).unwrap();
 ///

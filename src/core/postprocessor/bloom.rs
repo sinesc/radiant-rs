@@ -1,4 +1,4 @@
-use core::*;
+use crate::core::*;
 use std::sync::Mutex;
 use std::mem::swap;
 use std::cmp::{min, max};
@@ -112,8 +112,8 @@ impl Bloom {
     pub fn new<T>(context: &Context, dimensions: T, divider_factor: u32) -> Self where Point2<u32>: From<T> {
 
         let dimensions = Point2::<u32>::from(dimensions);
-        let blur_program = Program::from_string(&context, include_str!("../../shader/postprocess/blur.fs")).unwrap();
-        let mut combine_program = Program::from_string(&context, include_str!("../../shader/postprocess/combine.fs")).unwrap();
+        let blur_program = Program::from_string(&context, include_str!("../../shader/postprocess/blur.wgsl")).unwrap();
+        let mut combine_program = Program::from_string(&context, include_str!("../../shader/postprocess/combine.wgsl")).unwrap();
         let targets = Self::create_targets(context, dimensions, divider_factor);
         let max_ops = targets[0].len();
 

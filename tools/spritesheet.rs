@@ -1,7 +1,7 @@
 extern crate image;
 use std::{env, fs, cmp, path, collections, io, process};
 use std::io::Write;
-use image::GenericImage;
+use image::{GenericImage, GenericImageView};
 
 const OUTPUT_ASPECT: f32 = 1.0;
 
@@ -12,9 +12,9 @@ const IMAGE_ERROR: i32 = 4;
 
 fn main() {
     let mut extension_map = collections::HashMap::new();
-    extension_map.insert("jpg", image::ImageFormat::JPEG);
-    extension_map.insert("jpeg", image::ImageFormat::JPEG);
-    extension_map.insert("png", image::ImageFormat::PNG);
+    extension_map.insert("jpg", image::ImageFormat::Jpeg);
+    extension_map.insert("jpeg", image::ImageFormat::Jpeg);
+    extension_map.insert("png", image::ImageFormat::Png);
 
     // get sourcec and target directory
     let source = env::args().nth(1).unwrap_or_else(|| error("Expected source directory as first argument", INVALID_ARGUMENT));
@@ -38,7 +38,7 @@ fn main() {
     for row in 0..rows {
         for col in 0..cols {
             if image_id < images.len() {
-                dest.copy_from(&images[image_id], col * max_width, row * max_height);
+                dest.copy_from(&images[image_id], col * max_width, row * max_height).expect("Failed to copy image into spritesheet");
                 image_id += 1;
             }
         }
@@ -90,9 +90,9 @@ fn load_images(files: &Vec<path::PathBuf>, resize: f32) -> ((u32, u32), Vec<imag
         let image = if resize > 0.0 {
             image_dim.0 = (image_dim.0 as f32 * resize) as u32;
             image_dim.1 = (image_dim.1 as f32 * resize) as u32;
-            image::imageops::resize(&image, image_dim.0, image_dim.1, image::FilterType::Lanczos3)
+            image::imageops::resize(&image, image_dim.0, image_dim.1, image::imageops::FilterType::Lanczos3)
         } else {
-            image.to_rgba()
+            image.to_rgba8()
         };
         max_width = cmp::max(image_dim.0, max_width);
         max_height = cmp::max(image_dim.1, max_height);

@@ -1,7 +1,6 @@
-use core::{self, font, SpriteData, Vertex};
-use prelude::*;
-use std::default::Default;
-use backends::backend;
+use crate::core::{font, SpriteData};
+use crate::prelude::*;
+use crate::backends::backend;
 
 /// Number of texture buckets. Also requires change to renderer.rs at "let uniforms = uniform! { ... }"
 pub const NUM_BUCKETS: usize = 6;
@@ -10,7 +9,7 @@ pub const NUM_BUCKETS: usize = 6;
 pub const INITIAL_CAPACITY: usize = 512;
 
 /// Texture generation (increases each cleanup)
-static GENERATION: AtomicUsize = ATOMIC_USIZE_INIT;
+static GENERATION: AtomicUsize = AtomicUsize::new(0);
 
 /// A thread-safe render-context.
 ///
@@ -185,7 +184,6 @@ pub struct ContextData {
     pub font_cache_dimensions: u32,
     pub font_cache          : font::FontCache,
     pub font_texture        : Option<backend::Texture2d>,
-    pub single_rect         : [core::Vertex; 4],
     generation              : usize,
 }
 
@@ -204,14 +202,14 @@ impl ContextData {
 
         // font cache texture
 
-        let data = core::RawFrame {
+        let data = crate::core::RawFrame {
             width   : self.font_cache_dimensions,
             height  : self.font_cache_dimensions,
             data    : vec![0u8; self.font_cache_dimensions as usize * self.font_cache_dimensions as usize],
             channels: 1,
         };
 
-        let texture = backend::Texture2d::new(&backend_context, 0, 0, core::TextureFormat::U8, Some(data));
+        let texture = backend::Texture2d::new(&backend_context, self.font_cache_dimensions, self.font_cache_dimensions, crate::core::TextureFormat::U8, Some(data));
 
         self.font_texture = Some(texture);
         self.backend_context = Some(backend_context);
@@ -228,7 +226,6 @@ impl ContextData {
             font_cache          : font::FontCache::new(font_cache_dimensions, font_cache_dimensions, 0.01, 0.01),
             font_texture        : None,
             font_cache_dimensions,
-            single_rect         : Self::create_single_rect(),
             generation          : Self::create_generation(),
         }
     }
@@ -276,16 +273,6 @@ impl ContextData {
         for array in self.tex_arrays.iter_mut() {
             array.prune(self.backend_context.as_ref().unwrap(), self.generation);
         }
-    }
-
-    /// creates a single rectangle vertex buffer
-    fn create_single_rect() -> [core::Vertex; 4] {
-        [
-            Vertex { position: [ 0.0,  0.0 ], texture_uv: [ 0.0, 1.0 ], ..Vertex::default() },
-            Vertex { position: [ 1.0,  0.0 ], texture_uv: [ 1.0, 1.0 ], ..Vertex::default() },
-            Vertex { position: [ 0.0,  1.0 ], texture_uv: [ 0.0, 0.0 ], ..Vertex::default() },
-            Vertex { position: [ 1.0,  1.0 ], texture_uv: [ 1.0, 0.0 ], ..Vertex::default() },
-        ]
     }
 
     // Creates a new generation and returns it

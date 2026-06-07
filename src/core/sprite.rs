@@ -1,8 +1,8 @@
-use prelude::*;
-use core::{self, Renderer, Layer, Context, RawFrame};
-use core::math::*;
-use Color;
-use image::{self, GenericImage};
+use crate::prelude::*;
+use crate::core::{Renderer, Layer, Context, RawFrame};
+use crate::core::math::*;
+use crate::core::Color;
+use image::{self, GenericImage, GenericImageView};
 use regex::Regex;
 
 /// A sprite used for drawing on a [`Layer`](struct.Layer.html).
@@ -20,7 +20,7 @@ impl<'a> Sprite {
 
     /// Creates a new sprite texture. Given filename is expected to end
     /// on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
-    pub fn from_file(context: &Context, file: &str) -> core::Result<Self> {
+    pub fn from_file(context: &Context, file: &str) -> crate::core::Result<Self> {
         let path = Path::new(file);
         let mut image = image::open(&path)?;
         let parameters = Self::parse_parameters(image.dimensions(), path);
@@ -29,7 +29,7 @@ impl<'a> Sprite {
     }
 
     /// Creates a new sprite texture.
-    pub fn from_data(context: &Context, data: &[u8], parameters: &SpriteParameters) -> core::Result<Self> {
+    pub fn from_data(context: &Context, data: &[u8], parameters: &SpriteParameters) -> crate::core::Result<Self> {
         let mut image = image::load_from_memory(data)?;
         let descriptor = Self::build_raw_frames(&mut image, parameters);
         Result::Ok(Self::new(context, descriptor))
@@ -143,9 +143,9 @@ impl<'a> Sprite {
 
             // pad image if it doesn't match an available texture array size
             let mut dest = image::DynamicImage::new_rgba8(pad_size, pad_size);
-            dest.copy_from(&subimage, 0, 0);
+            dest.copy_from(&subimage, 0, 0).expect("Failed to copy sprite subimage into padded frame");
             RawFrame {
-                data: core::convert_color(dest.to_rgba()).into_raw(),
+                data: crate::core::convert_color(dest.into_rgba8()).into_raw(),
                 width: pad_size,
                 height: pad_size,
                 channels: 4,
@@ -155,7 +155,7 @@ impl<'a> Sprite {
 
             // perfect fit
             RawFrame {
-                data: core::convert_color(subimage.to_rgba()).into_raw(),
+                data: crate::core::convert_color(subimage.into_rgba8()).into_raw(),
                 width: frame_width,
                 height: frame_height,
                 channels: 4,

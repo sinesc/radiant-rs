@@ -1,9 +1,9 @@
-use prelude::*;
+use crate::prelude::*;
 use avec;
-use core::{blendmodes, BlendMode, context, Color, Program, Vertex};
-use core::math::*;
+use crate::core::{blendmodes, BlendMode, context, Color, Program, Vertex};
+use crate::core::math::*;
 
-static LAYER_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+static LAYER_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 /// A drawing surface for text and sprites that implements send+sync and is wait-free for drawing operations.
 ///
@@ -89,7 +89,7 @@ impl Layer {
     }
 
     /// Returns a mutex guarded mutable reference to the global color multiplicator.
-    pub fn color(self: &Self) -> MutexGuard<Color> {
+    pub fn color(self: &Self) -> MutexGuard<'_, Color> {
         self.color.lock().unwrap()
     }
 
@@ -105,7 +105,7 @@ impl Layer {
 
     /// Returns a mutex guarded mutable reference to the view matrix.
     /// See [`set_view_matrix()`](#method.set_view_matrix) for a description of the view matrix.
-    pub fn view_matrix(self: &Self) -> MutexGuard<Mat4Stack<f32>> {
+    pub fn view_matrix(self: &Self) -> MutexGuard<'_, Mat4Stack<f32>> {
         self.view_matrix.lock().unwrap()
     }
 
@@ -122,7 +122,7 @@ impl Layer {
 
     /// Returns a mutex guarded mutable reference to the model matrix.
     /// See [`set_model_matrix()`](#method.set_model_matrix) for a description of the model matrix.
-    pub fn model_matrix(self: &Self) -> MutexGuard<Mat4Stack<f32>> {
+    pub fn model_matrix(self: &Self) -> MutexGuard<'_, Mat4Stack<f32>> {
         self.model_matrix.lock().unwrap()
     }
 
@@ -133,7 +133,7 @@ impl Layer {
     }
 
     /// Returns a mutex guarded mutable reference to the blendmode.
-    pub fn blendmode(self: &Self) -> MutexGuard<BlendMode> {
+    pub fn blendmode(self: &Self) -> MutexGuard<'_, BlendMode> {
         self.blend.lock().unwrap()
     }
 
@@ -234,7 +234,7 @@ impl Layer {
     }
 
     /// Returns the readguard protected vertex data.
-    pub(crate) fn vertices(self: &Self) -> avec::AVecReadGuard<Vertex> {
+    pub(crate) fn vertices(self: &Self) -> avec::AVecReadGuard<'_, Vertex> {
         self.contents.vertex_data.get()
     }
 

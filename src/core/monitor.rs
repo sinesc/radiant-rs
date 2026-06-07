@@ -1,5 +1,5 @@
-use prelude::*;
-use backends::backend;
+use crate::prelude::*;
+use crate::backends::backend;
 
 /// An individual monitor, returned from [`Display::monitors()`](struct.Display.html#method.monitors).
 #[derive(Clone)]

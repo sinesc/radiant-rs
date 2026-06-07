@@ -1,5 +1,5 @@
-use prelude::*;
-use core::{AsUniform, Uniform};
+use crate::prelude::*;
+use crate::core::{AsUniform, Uniform};
 
 /// A 4x4 matrix.
 pub type Mat4<T = f32> = [ [ T; 4 ]; 4 ];
@@ -104,6 +104,7 @@ impl<T> From<Mat4<T>> for Mat4Stack<T> where T: Copy {
 /// A point in 2d space.
 pub type Point2<T = f32> = (T, T);
 
+#[allow(dead_code)]
 pub trait Point2Trait<T> {
     fn x(self: &Self) -> T;
     fn y(self: &Self) -> T;
@@ -128,6 +129,7 @@ impl<T> Point2Trait<T> for Point2<T> where T: Copy {
 /// A rectangle.
 pub type Rect<T = f32> = (Point2<T>, Point2<T>);
 
+#[allow(dead_code)]
 pub trait RectTrait<T> {
     fn top_left(self: &Self) -> Point2<T>;
     fn top_right(self: &Self) -> Point2<T>;

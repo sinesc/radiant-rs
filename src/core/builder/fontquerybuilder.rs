@@ -1,4 +1,4 @@
-use core::{FontInfo, Font};
+use crate::core::{FontInfo, Font};
 
 /// A FontQueryBuilder builder, returned from Font::query().
 #[must_use]

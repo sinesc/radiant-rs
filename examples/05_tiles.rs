@@ -39,13 +39,15 @@ pub fn main() {
 
     for tile_layer in &map.layers {
         layers.push(Layer::new((640., 480.)));
-        for x in 0..map.width as usize {
-            for y in 0..map.height as usize {
-                let tile_id = tile_layer.tiles[y][x];
-                if tile_id >= first_gid {
-                    let name = tile_to_name[&(tile_id - first_gid)];
-                    let pos = iso_transform * ru::Vec2(x as f32, y as f32);
-                    tileset.draw(&layers.last().unwrap(), name_to_frame_id[name], (pos.0.round(), pos.1.round()), Color::WHITE);
+        if let tiled::LayerData::Finite(ref tiles) = tile_layer.tiles {
+            for x in 0..map.width as usize {
+                for y in 0..map.height as usize {
+                    let gid = tiles[y][x].gid;
+                    if gid >= first_gid {
+                        let name = tile_to_name[&(gid - first_gid)];
+                        let pos = iso_transform * ru::Vec2(x as f32, y as f32);
+                        tileset.draw(&layers.last().unwrap(), name_to_frame_id[name], (pos.0.round(), pos.1.round()), Color::WHITE);
+                    }
                 }
             }
         }

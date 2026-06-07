@@ -1,4 +1,4 @@
-use core::{Display, Monitor, Point2, Context, Result};
+use crate::core::{Display, Monitor, Point2, Context, Result};
 
 /// A display builder.
 ///
@@ -58,7 +58,6 @@ impl DisplayBuilder {
         self
     }
     /// Sets the monitor to create the display on.
-    /// note: currently monitor cannot be aquired prior to display construction due to changes in the glium backend
     pub fn monitor(mut self: Self, monitor: Monitor) -> Self {
         self.monitor = Some(monitor);
         self

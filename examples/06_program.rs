@@ -9,7 +9,7 @@ pub fn main() {
     let sprite = Sprite::from_file(display.context(), r"examples/res/sprites/ball_v2_32x32x18.jpg").unwrap();
 
     // A custom shader program.
-    let program = Program::from_string(display.context(), include_str!("res/effects/ripple.fs")).unwrap();
+    let program = Program::from_string(display.context(), include_str!("res/effects/ripple_sprite.wgsl")).unwrap();
 
     // Two layers, one with the default program, the other one with the custom program.
     // Cloning a layer like this creates a new layer that references the contents of the

@@ -4,7 +4,7 @@
 //! See [`BlendMode`](../struct.BlendMode.html) to define your own blendmodes.
 
 use super::*;
-use core::{Color};
+use crate::core::{Color};
 
 /// Replaces source into destination, overwriting color and alpha values.
 pub const COPY: BlendMode = BlendMode {

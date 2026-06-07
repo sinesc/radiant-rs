@@ -28,9 +28,9 @@ pub fn main() {
     // Load sprite and draw it three times, tinted red, green and blue. No need to do this each frame since we're
     // only going to manipulate the matrices.
     let sprite = Sprite::from_file(&context, r"examples/res/sprites/sparkles2_64x64x1.png").unwrap();
-    sprite.draw(&spark_layer, 0, (320., 180.), *Color::RED.scale(1.5));
-    sprite.draw(&spark_layer, 0, (300., 200.), *Color::GREEN.scale(1.5));
-    sprite.draw(&spark_layer, 0, (340., 200.), *Color::BLUE.scale(1.5));
+    sprite.draw(&spark_layer, 0, (320., 180.), Color::RED.scaled(1.5));
+    sprite.draw(&spark_layer, 0, (300., 200.), Color::GREEN.scaled(1.5));
+    sprite.draw(&spark_layer, 0, (340., 200.), Color::BLUE.scaled(1.5));
 
     // Clone a couple of layer matrices to play around with.
     let mut view1 = spark_layer.view_matrix().clone();
@@ -75,6 +75,6 @@ pub fn main() {
         display1.swap_frame();
         display2.swap_frame();
         display3.swap_frame();
-        !display1.poll_events().was_closed() && !input.down(InputId::Escape)
+        !display1.poll_events().was_closed() && !display2.poll_events().was_closed() && !display3.poll_events().was_closed() && !input.down(InputId::Escape)
     });
 }

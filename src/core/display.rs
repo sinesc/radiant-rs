@@ -1,7 +1,7 @@
-use prelude::*;
-use core::*;
-use core::builder::*;
-use backends::backend;
+use crate::prelude::*;
+use crate::core::*;
+use crate::core::builder::*;
+use crate::backends::backend;
 
 /// A target to render to, e.g. a window or full screen.
 #[derive(Clone)]
@@ -245,10 +245,16 @@ impl Display {
             Context::new()
         };
 
+        // If a context with an existing primary display is being reused, share its GPU
+        // resources so all displays use the same wgpu device and queue.
+        let shared_gpu = descriptor.context.as_ref().and_then(|ctx| {
+            ctx.lock().backend_context.as_ref().map(|bc| bc.shared_gpu())
+        });
+
         // Remember fullscreen state, create a new display for use with this context
 
         let fullscreen = descriptor.monitor.clone();
-        let display = backend::Display::new(descriptor)?;
+        let display = backend::Display::new(descriptor, shared_gpu)?;
 
         // Set primary context display to first created display
         // (this has no relevance to radiant but is to satisfy backend requirements)
@@ -269,11 +275,11 @@ impl Display {
         })
     }
 
-    /// Provides a mutable reference to the backend frame to the given function.
+    /* /// Provides a mutable reference to the backend frame to the given function.
     pub(crate) fn frame<T>(self: &Self, func: T) where T: FnOnce(&mut backend::Frame) {
         let mut frame = self.frame.borrow_mut();
         func(frame.as_mut().expect(NO_FRAME_PREPARED));
-    }
+    } */
 }
 
 impl AsRenderTarget for Display {

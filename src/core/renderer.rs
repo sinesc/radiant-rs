@@ -1,16 +1,13 @@
-use prelude::*;
-use core::{
-    self, context,
+use crate::prelude::*;
+use crate::core::{
+    context,
     Display, Layer, Texture, TextureFilter, Color, Program, Postprocessor,
     Context, AsRenderTarget, RenderTarget, RenderTargetInner,
     blendmodes, TextureFormat
 };
-use core::math::*;
-use core::builder::*;
-use backends::backend;
-
-/// Default fragment shader program
-pub const DEFAULT_FS: &'static str = include_str!("../shader/default.fs");
+use crate::core::math::*;
+use crate::core::builder::*;
+use crate::backends::backend;
 
 lazy_static! {
     static ref VIEWPORT_ONE: Mat4 = Mat4::viewport(1.0, 1.0);
@@ -38,20 +35,20 @@ impl Debug for Renderer {
 impl Renderer {
 
     /// Returns a new renderer instance that renders to given display by default.
-    pub fn new(display: &Display) -> core::Result<Self> {
+    pub fn new(display: &Display) -> crate::core::Result<Self> {
         let target = vec![ RenderTarget(RenderTargetInner::Frame(display.frame.clone())) ];
         Self::create(display.context(), target)
     }
 
     /// Returns a new renderer instance.
-    pub fn headless(context: &Context) -> core::Result<Self> {
+    pub fn headless(context: &Context) -> crate::core::Result<Self> {
         Self::create(context, Vec::new())
     }
 
     /// Returns a new renderer instance.
-    fn create(context: &Context, target: Vec<RenderTarget>) -> core::Result<Self> {
+    fn create(context: &Context, target: Vec<RenderTarget>) -> crate::core::Result<Self> {
 
-        let default_program = Program::new(context, DEFAULT_FS)?;
+        let default_program = Program::new_default(context)?;
         let identity_texture = Texture::builder(context).format(TextureFormat::F16F16F16F16).dimensions((1, 1)).build().unwrap();
         identity_texture.clear(Color::WHITE);
 
@@ -109,7 +106,7 @@ impl Renderer {
     /// renderer.rect(((0., 0.), (640., 480.))).blendmode(blendmodes::ALPHA).texture(&tex).draw();
     /// # display.swap_frame();
     /// ```
-    pub fn rect<T>(self: &Self, target_rect: T) -> DrawBuilder<DrawBuilderRect> where Rect<f32>: From<T> {
+    pub fn rect<T>(self: &Self, target_rect: T) -> DrawBuilder<'_, DrawBuilderRect> where Rect<f32>: From<T> {
         DrawBuilderRect::new(self, Rect::<f32>::from(target_rect))
     }
 
@@ -128,7 +125,7 @@ impl Renderer {
     /// renderer.fill().blendmode(blendmodes::ALPHA).texture(&tex).draw();
     /// # display.swap_frame();
     /// ```
-    pub fn fill(self: &Self) -> DrawBuilder<DrawBuilderFill> {
+    pub fn fill(self: &Self) -> DrawBuilder<'_, DrawBuilderFill> {
         DrawBuilderFill::new(self)
     }
 

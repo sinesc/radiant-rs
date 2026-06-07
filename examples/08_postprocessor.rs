@@ -16,7 +16,7 @@ pub fn main() {
     sprite.draw(&layer, 0, (160., 155.), Color::BLUE);
 
     // Load a shader progam.
-    let program = Program::from_string(display.context(), include_str!("res/effects/ripple.fs")).unwrap();
+    let program = Program::from_string(display.context(), include_str!("res/effects/ripple.wgsl")).unwrap();
 
     // Use a default Basic postprocessor with the given program. It simply draws the input
     // using the given program, but there is a trait to implement custom postprocessors.

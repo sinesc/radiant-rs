@@ -1,4 +1,4 @@
-use core::{Result, Font, FontInfo, Context};
+use crate::core::{Result, Font, FontInfo, Context};
 
 /// A font builder.
 ///
@@ -68,7 +68,7 @@ impl<'a> FontBuilder<'a> {
         }
     }
     // Creates a new FontBuilder instance.
-    pub(crate) fn new<'b>(context: &'b Context) -> FontBuilder {
+    pub(crate) fn new<'b>(context: &'b Context) -> FontBuilder<'b> {
         FontBuilder {
             context : context,
             info    : FontInfo { ..FontInfo::default() },

@@ -1,8 +1,8 @@
-use prelude::*;
-use core::{self, Context, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget, Point2};
-use core::builder::*;
-use image::{self, GenericImage};
-use backends::backend;
+use crate::prelude::*;
+use crate::core::{Context, Color, Uniform, AsUniform, RenderTarget, AsRenderTarget, Point2};
+use crate::core::builder::*;
+use image::{self, GenericImageView};
+use crate::backends::backend;
 
 /// A texture to draw or draw to.
 ///
@@ -46,7 +46,7 @@ impl Texture {
     ///                     .build()
     ///                     .unwrap();
     /// ```
-    pub fn builder(context: &Context) -> TextureBuilder {
+    pub fn builder(context: &Context) -> TextureBuilder<'_> {
         TextureBuilder::new(context)
     }
     /// Creates a new texture with given dimensions. The texture will use linear interpolation
@@ -55,7 +55,7 @@ impl Texture {
         Self::builder(context).width(width).height(height).build().unwrap()
     }
     /// Creates a new texture from given file.
-    pub fn from_file(context: &Context, file: &str) -> core::Result<Self> {
+    pub fn from_file(context: &Context, file: &str) -> crate::core::Result<Self> {
         Self::builder(context).file(file).build()
     }
     /// Creates a new texture with given dimensions and filters. It will internally use the `F16F16F16F16` format.
@@ -81,15 +81,15 @@ impl Texture {
         self.dimensions
     }
     /// Creates a new texture from given TextureBuilder.
-    pub(crate) fn from_builder(mut builder: TextureBuilder) -> core::Result<Self> {
+    pub(crate) fn from_builder(mut builder: TextureBuilder) -> crate::core::Result<Self> {
         let mut context = builder.context.lock();
         let context = context.deref_mut();
         if let Some(filename) = builder.file {
             let image = image::open(filename)?;
             builder.width = image.dimensions().0;
             builder.height = image.dimensions().1;
-            builder.data = Some(core::RawFrame {
-                data: core::convert_color(image.to_rgba()).into_raw(),
+            builder.data = Some(crate::core::RawFrame {
+                data: crate::core::convert_color(image.into_rgba8()).into_raw(),
                 width: builder.width,
                 height: builder.height,
                 channels: 4,

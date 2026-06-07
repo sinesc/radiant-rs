@@ -1,11 +1,11 @@
-use prelude::*;
-use core::{self, Layer, Context, Color, Point2, Rect};
-use core::builder::*;
+use crate::prelude::*;
+use crate::core::{Layer, Context, Color, Point2, Rect};
+use crate::core::builder::*;
 use rusttype;
-use backends::backend;
+use crate::backends::backend;
 use font_loader::system_fonts;
 
-static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+static FONT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 /// A font used for writing on a [`Layer`](struct.Layer.html).
 ///
@@ -17,7 +17,7 @@ static FONT_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 /// with a different size using [`Font::with_size()`](struct.Font.html#method.with_size).
 #[derive(Clone)]
 pub struct Font {
-    data    : Vec<u8>,
+    font    : Arc<rusttype::Font<'static>>,
     font_id : usize,
     size    : f32,
     context : Context,
@@ -26,7 +26,6 @@ pub struct Font {
 impl Debug for Font {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Font")
-            .field("data_len", &self.data.len())
             .field("font_id", &self.font_id)
             .field("size", &self.size)
             .finish()
@@ -46,12 +45,12 @@ impl Font {
     /// # let context = display.context();
     /// let my_font = Font::builder(&context).family("Arial").size(16.0).build().unwrap();
     /// ```
-    pub fn builder(context: &Context) -> FontBuilder {
+    pub fn builder(context: &Context) -> FontBuilder<'_> {
         FontBuilder::new(context)
     }
 
     /// Creates a font instance from a file.
-    pub fn from_file(context: &Context, file: &str) -> core::Result<Font> {
+    pub fn from_file(context: &Context, file: &str) -> crate::core::Result<Font> {
         use std::io::Read;
         let mut f = File::open(Path::new(file))?;
         let mut font_data = Vec::new();
@@ -116,19 +115,20 @@ impl Font {
     }
 
     /// Creates a new font instance from given FontInfo struct.
-    pub(crate) fn from_info(context: &Context, info: FontInfo) -> core::Result<Font> {
+    pub(crate) fn from_info(context: &Context, info: FontInfo) -> crate::core::Result<Font> {
 
         if let Some((font_data, _)) = system_fonts::get(&Self::build_property(&info)) {
             Ok(Self::create(context, font_data, info.size))
         } else {
-            Err(core::Error::FontError("Failed to get system font".to_string()))
+            Err(crate::core::Error::FontError("Failed to get system font".to_string()))
         }
     }
 
     /// Creates a new unique font
     fn create(context: &Context, font_data: Vec<u8>, size: f32) -> Font {
+        let rt_font = rusttype::Font::try_from_vec(font_data).expect("Failed to load font data");
         Font {
-            data    : font_data,
+            font    : Arc::new(rt_font),
             font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
             size    : size,
             context : context.clone(),
@@ -139,20 +139,25 @@ impl Font {
     fn write_paragraph(self: &Self, layer: &Layer, text: &str, x: f32, y: f32, max_width: f32, color: Color, rotation: f32, scale_x: f32, scale_y: f32) {
 
         // !todo probably expensive, but rusttype is completely opaque. would be nice to be able to store Font::info outside of a "may or may not own" container
-        let rt_font = rusttype::FontCollection::from_bytes(&self.data[..]).unwrap().into_font().unwrap();
+        let rt_font = self.font.as_ref();
 
         let bucket_id = 0;
         let glyphs = Self::layout_paragraph(&rt_font, rusttype::Scale::uniform(self.size), max_width, &text);
+        // Safety: The font is 'static (stored in Arc<Font<'static>>), so glyphs borrowing from it
+        // are also effectively 'static even though the compiler sees them as borrowing from self.
+        let glyphs_static: Vec<rusttype::PositionedGlyph<'static>> = unsafe {
+            std::mem::transmute(glyphs)
+        };
         let context = self.context.lock();
 
-        context.font_cache.queue(self.font_id, &glyphs);
+        context.font_cache.queue(self.font_id, &glyphs_static);
 
         let anchor = (0., 0.);
         let scale = (scale_x, scale_y);
         let cos_rot = rotation.cos();
         let sin_rot = rotation.sin();
 
-        for glyph in &glyphs {
+        for glyph in &glyphs_static {
             if let Some((uv, pos, dim)) = context.font_cache.rect_for(self.font_id, glyph) {
                 let dist_x = pos.0 * scale_x;
                 let dist_y = pos.1 * scale_y;
@@ -240,13 +245,12 @@ impl FontCache {
 
     /// Creates a new fontcache instant.
     pub fn new(width: u32, height: u32, scale_tolerance: f32, position_tolerance: f32) -> FontCache {
-        let cache = rusttype::gpu_cache::CacheBuilder {
-            width,
-            height,
-            scale_tolerance,
-            position_tolerance,
-            pad_glyphs: true,
-        }.build();
+        let cache = rusttype::gpu_cache::Cache::builder()
+            .dimensions(width, height)
+            .scale_tolerance(scale_tolerance)
+            .position_tolerance(position_tolerance)
+            .pad_glyphs(true)
+            .build();
         FontCache {
             cache: Mutex::new(cache),
             queue: Mutex::new(Vec::new()),
@@ -255,14 +259,14 @@ impl FontCache {
     }
 
     /// Queues a glyph for caching.
-    pub fn queue(self: &Self, font_id: usize, glyphs: &[rusttype::PositionedGlyph]) {
+    pub fn queue(self: &Self, font_id: usize, glyphs: &[rusttype::PositionedGlyph<'static>]) {
 
         let mut cache = self.cache.lock().unwrap();
         let mut queue = self.queue.lock().unwrap();
         let mut dirties = false;
 
         for glyph in glyphs {
-            cache.queue_glyph(font_id, glyph.standalone());
+            cache.queue_glyph(font_id, glyph.clone());
         }
 
         cache.cache_queued(|rect, data| {

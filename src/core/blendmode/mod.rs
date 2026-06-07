@@ -1,5 +1,5 @@
 pub mod blendmodes;
-use core::{Color};
+use crate::core::{Color};
 
 /// A blendmode for use with [`Layer::set_blendmode()`](struct.Layer.html#method.set_blendmode).
 /// See [blendmodes](blendmodes/index.html) for a list of predefined modes.

@@ -1,5 +1,5 @@
-use prelude::*;
-use core::Display;
+use crate::prelude::*;
+use crate::core::Display;
 
 pub const NUM_KEYS: usize = 256;
 pub const NUM_BUTTONS: usize = 16;
@@ -293,7 +293,7 @@ impl Input {
     }
 
     /// Returns an iterator over all keys and buttons.
-    pub fn iter(self: &Self) -> InputIterator {
+    pub fn iter(self: &Self) -> InputIterator<'_> {
         InputIterator {
             input_data: self.input_data.read().unwrap(),
             position: 0,
@@ -328,7 +328,7 @@ impl Input {
         if id < NUM_KEYS {
             (data.key[id] == InputState::Pressed) || (report_repeats && data.key[id] == InputState::Repeat)
         } else {
-            (data.button[id - NUM_KEYS] == InputState::Pressed)
+            data.button[id - NUM_KEYS] == InputState::Pressed
         }
     }
 
@@ -337,9 +337,9 @@ impl Input {
         let id = key as usize;
         let data = self.get();
         if id < NUM_KEYS {
-            (data.key[id] == InputState::Released) || (data.key[id] == InputState::Up)
+            data.key[id] == InputState::Released || (data.key[id] == InputState::Up)
         } else {
-            (data.button[id - NUM_KEYS] == InputState::Released) || (data.button[id - NUM_KEYS] == InputState::Up)
+            data.button[id - NUM_KEYS] == InputState::Released || (data.button[id - NUM_KEYS] == InputState::Up)
         }
     }
 
@@ -348,9 +348,9 @@ impl Input {
         let id = key as usize;
         let data = self.get();
         if id < NUM_KEYS {
-            (data.key[id] == InputState::Released)
+            data.key[id] == InputState::Released
         } else {
-            (data.button[id - NUM_KEYS] == InputState::Released)
+            data.button[id - NUM_KEYS] == InputState::Released
         }
     }
 
@@ -366,7 +366,7 @@ impl Input {
     }
 
     /// Returns input data.
-    fn get(self: &Self) -> RwLockReadGuard<InputData> {
+    fn get(self: &Self) -> RwLockReadGuard<'_, InputData> {
         self.input_data.read().unwrap()
     }
 }

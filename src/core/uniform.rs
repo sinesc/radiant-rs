@@ -1,5 +1,5 @@
-use prelude::*;
-use core::texture::Texture;
+use crate::prelude::*;
+use crate::core::texture::Texture;
 
 /// A uniform value.
 ///

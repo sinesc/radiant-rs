@@ -4,8 +4,8 @@
 /*!
 Rust sprite rendering engine with a friendly API, wait-free send+sync drawing targets and custom shader support.
 
-It is intended for use in simple 2d games or prototypes but can also be combined with additional functionality from the backend
-library (currently Glium).
+It is intended for use in simple 2d games or prototypes but can also be combined with additional functionality from the wgpu backend
+library.
 
 # Examples
 
@@ -138,25 +138,19 @@ blocking for other manipulations (e.g. matrix modification).
 Complete rendering with steps 7-9 from the *Basic rendering* list in the thread that created the `Renderer`; both it
 and `Display` do not implement `Send`.
 
-# Using Radiant with Glium
-
-The [backend](backend/index.html) module provides various methods to use Radiant along side Glium. The examples glium_less and glium_more
-demonstrate two possible approaches.
-
-Approach "more": Skip creating a Radiant Display and use [`backend::create_renderer()`](backend/fn.create_renderer.html) to create a renderer from a Glium Display.
-Then use [`backend::target_frame`](backend/fn.target_frame.html) to direct the renderer to target the given Glium Frame instead.
-
-Approach "less": Use [`backend::create_display()`](backend/fn.create_display.html) to create a Radiant Display from a Glium Display. Then use
-[`backend::take_frame()`](backend/fn.take_frame.html) to "borrow" a Glium Frame from Radiant. This approach let's you keep Radiant's window/event handling.
-
 # Found and issue? Missing a feature?
 
 Please file a bug report if you encounter any issues with this library. In particular, it has only been tested on a limited number of graphics cards
 so I would expect issues regarding untested hardware.
 */
 
-#[cfg(feature = "glium")]
-#[macro_use] extern crate glium;
+#[cfg(feature = "backend-wgpu")]
+extern crate wgpu;
+#[cfg(feature = "backend-wgpu")]
+extern crate winit;
+#[cfg(feature = "backend-wgpu")]
+extern crate pollster;
+#[cfg(feature = "backend-wgpu")]
 #[macro_use] extern crate enum_primitive;
 #[macro_use] extern crate lazy_static;
 extern crate image;

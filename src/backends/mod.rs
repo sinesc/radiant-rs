@@ -1,11 +1,10 @@
-#[cfg(feature = "backend-glium")]
-mod glium;
+#[cfg(feature = "backend-wgpu")]
+mod wgpu;
 
-#[cfg(feature = "backend-glium")]
+#[cfg(feature = "backend-wgpu")]
 pub mod backend {
-    pub use super::glium::*;
+    pub use super::wgpu::*;
 }
-
 
 #[cfg(feature = "backend-null")]
 mod null;
