@@ -3,8 +3,6 @@ extern crate tiled;
 extern crate radiant_utils as ru;
 use std::collections::HashMap;
 use std::f32::consts::PI;
-use std::path::Path;
-use std::fs::File;
 use radiant_rs::*;
 use ru::Matrix;
 
@@ -21,12 +19,18 @@ pub fn main() {
     // Create a HashMap that maps each tile-name to a frame_id. The sheet and the textfile were generated from a folder of images using tools/spritesheet.rs
     let name_to_frame_id = include_str!(r"res/tiles/iso_64x128.txt").trim().lines().enumerate().map(|(id, line)| (line, id as u32)).collect::<HashMap<_, _>>();
 
-    // Use rs-tiled to load a tilemap (free tiles from http://www.kenney.nl/)
-    let map = tiled::parse(File::open("examples/res/tiles/iso.tmx").unwrap()).unwrap();
+    // Use tiled to load a tilemap (free tiles from http://www.kenney.nl/)
+    let map = tiled::Loader::new().load_tmx_map("examples/res/tiles/iso.tmx").unwrap();
 
-    // Create another HashMap that maps each of tiled's local tile ids to their image file name.
-    let tile_to_name = map.tilesets[0].tiles.iter().map(|tile| (tile.id, Path::new(&tile.images[0].source).file_name().unwrap().to_str().unwrap()) ).collect::<HashMap<_, _>>();
-    let first_gid = map.tilesets[0].first_gid;
+    // Create a HashMap that maps each of tiled's local tile ids to their image file name.
+    let map_tileset = &map.tilesets()[0];
+    let tile_to_name: HashMap<tiled::TileId, String> = map_tileset.tiles()
+        .filter_map(|(id, tile)| {
+            tile.image.as_ref().map(|img| {
+                (id, img.source.file_name().unwrap().to_str().unwrap().to_string())
+            })
+        })
+        .collect();
 
     // Set up an isometric transformation matrix.
     let mut iso_transform = ru::Mat4::identity();
@@ -37,16 +41,17 @@ pub fn main() {
     // Draw each tile-layer onto a single (radiant) layer.
     let mut layers = Vec::new();
 
-    for tile_layer in &map.layers {
+    for layer in map.layers() {
         layers.push(Layer::new((640., 480.)));
-        if let tiled::LayerData::Finite(ref tiles) = tile_layer.tiles {
-            for x in 0..map.width as usize {
-                for y in 0..map.height as usize {
-                    let gid = tiles[y][x].gid;
-                    if gid >= first_gid {
-                        let name = tile_to_name[&(gid - first_gid)];
-                        let pos = iso_transform * ru::Vec2(x as f32, y as f32);
-                        tileset.draw(&layers.last().unwrap(), name_to_frame_id[name], (pos.0.round(), pos.1.round()), Color::WHITE);
+        if let Some(tile_layer) = layer.as_tile_layer() {
+            for x in 0..map.width as i32 {
+                for y in 0..map.height as i32 {
+                    if let Some(layer_tile) = tile_layer.get_tile(x, y) {
+                        let id = layer_tile.id();
+                        if let Some(name) = tile_to_name.get(&id) {
+                            let pos = iso_transform * ru::Vec2(x as f32, y as f32);
+                            tileset.draw(&layers.last().unwrap(), name_to_frame_id[name.as_str()], (pos.0.round(), pos.1.round()), Color::WHITE);
+                        }
                     }
                 }
             }

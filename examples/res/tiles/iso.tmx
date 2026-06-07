@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="isometric" renderorder="right-down" width="10" height="10" tilewidth="256" tileheight="149" backgroundcolor="#323232" nextobjectid="1">
- <tileset firstgid="1" name="Sample" tilewidth="256" tileheight="512">
+ <tileset firstgid="1" name="Sample" tilewidth="256" tileheight="512" tilecount="49" columns="0">
   <tile id="0">
    <image width="256" height="512" source="../Isometric/stone_E.png"/>
   </tile>
