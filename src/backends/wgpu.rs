@@ -103,8 +103,8 @@ impl BlitResources {
         }));
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Blit Layout"),
-            bind_group_layouts: &[&*bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&*bind_group_layout)],
+            immediate_size: 0,
         });
         let pipeline = Arc::new(Context::build_texture_pipeline(
             device, &vert, &frag, &layout, format, wgpu::BlendState::REPLACE,
@@ -455,7 +455,7 @@ impl Display {
         } else {
             let instance = Arc::new(wgpu::Instance::new(wgpu::InstanceDescriptor {
                 backends: wgpu::Backends::all(),
-                ..Default::default()
+                ..wgpu::InstanceDescriptor::new_without_display_handle()
             }));
 
             // Create a temporary surface just for adapter selection.
@@ -469,7 +469,7 @@ impl Display {
                 },
                 force_fallback_adapter: false,
                 compatible_surface: Some(&tmp_surface),
-            }).await.ok_or_else(|| {
+            }).await.map_err(|_| {
                 crate::core::Error::BackendError(Error::NotAvailable("No suitable GPU adapter found".to_string()))
             })?);
 
@@ -477,7 +477,8 @@ impl Display {
                 label: Some("Radiant Device"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
-            }, None).await.map_err(|e| {
+                ..Default::default()
+            }).await.map_err(|e| {
                 crate::core::Error::BackendError(Error::WgpuError(format!("Failed to request device: {:?}", e)))
             })?;
 
@@ -532,15 +533,15 @@ impl Display {
     pub fn draw(self: &Self) -> WgpuFrame {
         let frame = loop {
             match self.inner.surface.get_current_texture() {
-                Ok(frame) => break frame,
-                Err(wgpu::SurfaceError::Outdated) | Err(wgpu::SurfaceError::Lost) => {
+                wgpu::CurrentSurfaceTexture::Success(frame) | wgpu::CurrentSurfaceTexture::Suboptimal(frame) => break frame,
+                wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
                     let size = self.inner.window.inner_size();
                     let mut config = self.inner.config.lock().unwrap();
                     config.width = size.width.max(1);
                     config.height = size.height.max(1);
                     self.inner.surface.configure(&self.inner.device, &config);
                 }
-                Err(e) => panic!("Failed to get swapchain frame: {:?}", e),
+                e => panic!("Failed to get swapchain frame: {:?}", e),
             }
         };
         let view = Arc::new(frame.texture.create_view(&wgpu::TextureViewDescriptor::default()));
@@ -693,6 +694,7 @@ impl WgpuFrame {
                     label: Some("Clear Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view,
+                        depth_slice: None,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color { r: c[0], g: c[1], b: c[2], a: c[3] }),
@@ -702,6 +704,7 @@ impl WgpuFrame {
                     depth_stencil_attachment: None,
                     timestamp_writes: None,
                     occlusion_query_set: None,
+                    multiview_mask: None,
                 });
             }
         }
@@ -919,12 +922,14 @@ impl WgpuFrame {
             label: Some("Radiant Sprite Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
+                depth_slice: None,
                 resolve_target: None,
                 ops: wgpu::Operations { load: load_op, store: wgpu::StoreOp::Store },
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
 
         render_pass.set_pipeline(&pipeline);
@@ -1085,8 +1090,8 @@ impl Program {
 
         let pipeline_layout = Arc::new(device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Custom Pipeline Layout"),
-            bind_group_layouts: &[&*bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&*bind_group_layout)],
+            immediate_size: 0,
         }));
 
         let sampler = Arc::new(device.create_sampler(&wgpu::SamplerDescriptor {
@@ -1251,14 +1256,14 @@ impl Texture2d {
 
         if let Some(raw) = data {
             context.queue.write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d::ZERO,
                     aspect: wgpu::TextureAspect::All,
                 },
                 &raw.data,
-                wgpu::ImageDataLayout {
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(raw.width * raw.channels as u32),
                     rows_per_image: Some(raw.height),
@@ -1289,6 +1294,7 @@ impl Texture2d {
                 label: Some("Texture Clear Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &self.view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color { r: r as f64, g: g as f64, b: b as f64, a: a as f64 }),
@@ -1298,6 +1304,7 @@ impl Texture2d {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
         }
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -1312,14 +1319,14 @@ impl Texture2d {
             return;
         }
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d { x, y, z: 0 },
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(w * self.bytes_per_pixel),
                 rows_per_image: Some(h),
@@ -1415,7 +1422,7 @@ impl Texture2d {
             RF::F32             => wgpu::TextureFormat::R32Float,
             RF::F32F32          => wgpu::TextureFormat::Rg32Float,
             RF::F32F32F32F32    => wgpu::TextureFormat::Rgba32Float,
-            RF::F11F11F10       => wgpu::TextureFormat::Rg11b10Float,
+            RF::F11F11F10       => wgpu::TextureFormat::Rg11b10Ufloat,
         }
     }
 
@@ -1468,14 +1475,14 @@ impl Texture2dArray {
 
         for (i, frame) in raw.iter().enumerate() {
             context.queue.write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d { x: 0, y: 0, z: i as u32 },
                     aspect: wgpu::TextureAspect::All,
                 },
                 &frame.data,
-                wgpu::ImageDataLayout {
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(frame.width * frame.channels as u32),
                     rows_per_image: Some(frame.height),
@@ -1548,7 +1555,7 @@ impl Context {
             label: Some("Nearest Sampler"),
             mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -1559,7 +1566,7 @@ impl Context {
             label: Some("Linear Sampler"),
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -1612,13 +1619,13 @@ impl Context {
 
         let sprite_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Sprite Pipeline Layout"),
-            bind_group_layouts: &[&sprite_bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&sprite_bind_group_layout)],
+            immediate_size: 0,
         });
         let texture_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Texture Pipeline Layout"),
-            bind_group_layouts: &[&texture_bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&texture_bind_group_layout)],
+            immediate_size: 0,
         });
 
         // 1×1 white placeholder texture
@@ -1633,9 +1640,9 @@ impl Context {
             view_formats: &[],
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture { texture: &placeholder_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo { texture: &placeholder_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
             &[255u8, 255, 255, 255],
-            wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
             wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
         );
         let placeholder_view = Arc::new(placeholder_tex.create_view(&wgpu::TextureViewDescriptor::default()));
@@ -1762,7 +1769,7 @@ impl Context {
             layout: Some(layout),
             vertex: wgpu::VertexState {
                 module: vert,
-                entry_point: "main",
+                entry_point: Some("main"),
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: VERTEX_STRIDE,
                     step_mode: wgpu::VertexStepMode::Vertex,
@@ -1781,7 +1788,7 @@ impl Context {
             },
             fragment: Some(wgpu::FragmentState {
                 module: frag,
-                entry_point: "main",
+                entry_point: Some("main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(blend),
@@ -1796,7 +1803,8 @@ impl Context {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            multiview: None,
+            multiview_mask: None,
+            cache: None,
         })
     }
 
@@ -1813,7 +1821,7 @@ impl Context {
             layout: Some(layout),
             vertex: wgpu::VertexState {
                 module: vert,
-                entry_point: "main",
+                entry_point: Some("main"),
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: VERTEX_STRIDE,
                     step_mode: wgpu::VertexStepMode::Vertex,
@@ -1836,7 +1844,7 @@ impl Context {
             },
             fragment: Some(wgpu::FragmentState {
                 module: frag,
-                entry_point: "main",
+                entry_point: Some("main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(blend),
@@ -1851,7 +1859,8 @@ impl Context {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            multiview: None,
+            multiview_mask: None,
+            cache: None,
         })
     }
 
@@ -2032,12 +2041,14 @@ fn render_texture_quad(
         label: Some("Quad Render Pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: target_view,
+            depth_slice: None,
             resolve_target: None,
             ops: wgpu::Operations { load: load_op, store: wgpu::StoreOp::Store },
         })],
         depth_stencil_attachment: None,
         timestamp_writes: None,
         occlusion_query_set: None,
+        multiview_mask: None,
     });
     pass.set_pipeline(pipeline);
     pass.set_bind_group(0, &bind_group, &[]);
@@ -2108,12 +2119,14 @@ fn render_combine_quad(
         label: Some("Combine Render Pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: target_view,
+            depth_slice: None,
             resolve_target: None,
             ops: wgpu::Operations { load: load_op, store: wgpu::StoreOp::Store },
         })],
         depth_stencil_attachment: None,
         timestamp_writes: None,
         occlusion_query_set: None,
+        multiview_mask: None,
     });
     pass.set_pipeline(pipeline);
     pass.set_bind_group(0, &bind_group, &[]);
@@ -2388,12 +2401,14 @@ fn draw_sprites_to_texture(
             label: Some("RTT Sprite Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: target_view,
+                depth_slice: None,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&pipeline);
         pass.set_blend_constant(wgpu::Color::TRANSPARENT);
