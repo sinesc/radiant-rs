@@ -22,12 +22,12 @@ serialize-serde = [ "serde", "serde_derive" ]
 wgpu = { version = "29.0.3", optional = true }
 winit = { version = "0.30", optional = true }
 pollster = { version = "0.4", optional = true }
-image = "0.24"
+image = "0.25"
 regex = "1.0"
 lazy_static = "1.0"
 rusttype = { version = "0.9", features = ["gpu_cache"] }
 unicode-normalization = "0.1"
-font-loader = "0.9"
+font-loader = "0.11"
 enum_primitive = "0.1"
 avec = "0.1"
 palette = "0.7"
