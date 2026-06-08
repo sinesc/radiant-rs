@@ -1,4 +1,3 @@
-extern crate image;
 use std::{env, fs, cmp, path, collections, io, process};
 use std::io::Write;
 use image::{GenericImage, GenericImageView};

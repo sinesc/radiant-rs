@@ -143,27 +143,8 @@ and `Display` do not implement `Send`.
 Please file a bug report if you encounter any issues with this library. In particular, it has only been tested on a limited number of graphics cards
 so I would expect issues regarding untested hardware.
 */
-
-#[cfg(feature = "backend-wgpu")]
-extern crate wgpu;
-#[cfg(feature = "backend-wgpu")]
-extern crate winit;
-#[cfg(feature = "backend-wgpu")]
-extern crate pollster;
 #[cfg(feature = "backend-wgpu")]
 #[macro_use] extern crate enum_primitive;
-#[macro_use] extern crate lazy_static;
-extern crate image;
-extern crate regex;
-extern crate rusttype;
-extern crate unicode_normalization;
-extern crate font_loader;
-extern crate avec;
-extern crate palette;
-#[cfg(feature = "serialize-serde")]
-extern crate serde;
-#[cfg(feature = "serialize-serde")]
-#[macro_use] extern crate serde_derive;
 
 mod prelude;
 mod backends;

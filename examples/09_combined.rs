@@ -1,5 +1,4 @@
-extern crate radiant_rs;
-extern crate radiant_utils as ru;
+use radiant_utils as ru;
 use radiant_rs::{Display, Renderer, Layer, Sprite, Color, Texture, TextureFilter, blendmodes};
 use ru::Matrix;
 

@@ -1,5 +1,7 @@
 use crate::prelude::*;
 use crate::core::{Uniform, AsUniform};
+#[cfg(feature = "serialize-serde")]
+use serde_derive::{Deserialize, Serialize};
 
 /// A color value consisting of four floating point values for the color channels red, green, blue
 /// and alpha.

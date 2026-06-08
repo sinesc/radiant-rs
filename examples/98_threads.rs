@@ -1,5 +1,4 @@
-extern crate radiant_rs;
-extern crate radiant_utils as ru;
+use radiant_utils as ru;
 use radiant_rs::{Color, Renderer, Layer, Display, Font, blendmodes};
 use std::thread;
 use std::sync::{Arc, Barrier};

@@ -9,9 +9,7 @@ use crate::core::math::*;
 use crate::core::builder::*;
 use crate::backends::backend;
 
-lazy_static! {
-    static ref VIEWPORT_ONE: Mat4 = Mat4::viewport(1.0, 1.0);
-}
+static VIEWPORT_ONE: std::sync::LazyLock<Mat4> = std::sync::LazyLock::new(|| Mat4::viewport(1.0, 1.0));
 
 /// A renderer is used to render [`Layers`](struct.Layer.html) or [`Textures`](struct.Texture.html) to the
 /// [`Display`](struct.Display.html).

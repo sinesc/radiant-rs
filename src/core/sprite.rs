@@ -191,7 +191,7 @@ impl<'a> Sprite {
         // mysprite_16x16x30x2.png (16x16, 30 frames, 2 components)
         // mysprite_16x16x30+1.png (16x16, inner margin of 1 px, 30 frames)
         // mysprite_16x16+1.png (16x16, inner margin of 1 px, all frames horizontally ordered)
-        lazy_static! { static ref MATCHER: Regex = Regex::new(r"_(\d+)x(\d+)(?:x(\d+)(?:x(\d+))?)?(?:\+(\d+))?\.").unwrap(); }
+        static MATCHER: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| Regex::new(r"_(\d+)x(\d+)(?:x(\d+)(?:x(\d+))?)?(?:\+(\d+))?\.").unwrap());
 
         let filename = path.file_name().unwrap().to_str().unwrap();
         let captures = MATCHER.captures(filename);

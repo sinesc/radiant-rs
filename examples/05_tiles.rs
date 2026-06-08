@@ -1,6 +1,4 @@
-extern crate radiant_rs;
-extern crate tiled;
-extern crate radiant_utils as ru;
+use radiant_utils as ru;
 use std::collections::HashMap;
 use std::f32::consts::PI;
 use radiant_rs::*;
