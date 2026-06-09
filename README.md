@@ -1,4 +1,5 @@
 # radiant-rs
+
 Rust sprite rendering engine with a friendly API, wait-free send+sync drawing targets and custom shader support.
 
 [Getting started and reference here](https://docs.rs/radiant-rs/).
@@ -16,10 +17,10 @@ To compile the examples, use e.g. `cargo run --release --example demo_glare`. Se
 
 ## Linux
 
-On Linux the font loader depends on servo-fontconfig-sys which may require manual installation of cmake, freetype6, expat and fontconfig e.g.
+The font loader depends on servo-fontconfig-sys which may require manual installation of cmake, freetype6, expat and fontconfig e.g.
 
 `sudo apt install cmake libfreetype6-dev libexpat-dev libfontconfig1`
 
 ## Windows
 
-Should just work.
+Untested.
