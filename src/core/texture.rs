@@ -88,6 +88,7 @@ impl Texture {
             let image = image::open(filename)?;
             builder.width = image.dimensions().0;
             builder.height = image.dimensions().1;
+            builder.format = crate::core::TextureFormat::U8U8U8U8;
             builder.data = Some(crate::core::RawFrame {
                 data: crate::core::convert_color(image.into_rgba8()).into_raw(),
                 width: builder.width,
