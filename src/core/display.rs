@@ -6,9 +6,11 @@ use crate::backends::backend;
 /// A target to render to, e.g. a window or full screen.
 #[derive(Clone)]
 pub struct Display {
+    // frame must be declared before handle: struct fields drop in declaration order,
+    // so SurfaceTexture is released before the wgpu Surface is destroyed.
+    pub(crate) frame: Rc<RefCell<Option<backend::Frame>>>,
     pub(crate) handle: backend::Display,
     pub(crate) context: Context,
-    pub(crate) frame: Rc<RefCell<Option<backend::Frame>>>,
     pub(crate) input_data: Arc<RwLock<InputData>>,
     pub(crate) fullscreen: Rc<RefCell<Option<Monitor>>>,
 }
@@ -284,6 +286,22 @@ impl Display {
         let mut frame = self.frame.borrow_mut();
         func(frame.as_mut().expect(NO_FRAME_PREPARED));
     } */
+}
+
+impl Drop for Display {
+    fn drop(&mut self) {
+        // A frame that was prepared but never swapped (e.g. because the render loop
+        // unwound from a panic) leaves a SurfaceTexture acquired from the swapchain.
+        // Simply dropping it does NOT release the Vulkan acquire semaphore — only
+        // present() does — so the later Surface teardown would panic in wgpu-hal with
+        // "SwapchainAcquireSemaphore still in use by a SurfaceTexture". Present the
+        // pending frame here to release it cleanly while `handle` is still alive.
+        if let Ok(mut frame) = self.frame.try_borrow_mut() {
+            if let Some(frame) = frame.take() {
+                frame.finish();
+            }
+        }
+    }
 }
 
 impl AsRenderTarget for Display {
