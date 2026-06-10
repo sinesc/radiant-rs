@@ -215,9 +215,13 @@ impl Display {
                 }
             }
         });
-
         input_data.dimensions = self.handle.window_dimensions().into();
-
+        // Keep the cursor near the window center so it never hits an edge while grabbed.
+        if input_data.cursor_grabbed && input_data.has_focus {
+            let cx = input_data.dimensions.0 as i32 / 2;
+            let cy = input_data.dimensions.1 as i32 / 2;
+            self.handle.set_cursor_position((cx, cy));
+        }
         self
     }
 

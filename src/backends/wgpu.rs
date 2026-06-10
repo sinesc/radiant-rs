@@ -588,7 +588,11 @@ impl Display {
                 self.inner.window.set_cursor_visible(false);
             }
             CS::Grab => {
-                self.inner.window.set_cursor_grab(CursorGrabMode::Confined).ok();
+                // Locked keeps the cursor pinned so deltas are unbounded; Confined is the fallback
+                // for compositors that don't support locking (cursor stops at window edge).
+                if self.inner.window.set_cursor_grab(CursorGrabMode::Locked).is_err() {
+                    self.inner.window.set_cursor_grab(CursorGrabMode::Confined).ok();
+                }
                 self.inner.window.set_cursor_visible(false);
             }
         }
