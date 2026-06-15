@@ -12,6 +12,12 @@ categories = [ "rendering::engine", "game-engines" ]
 autoexamples = false
 edition = "2024"
 
+[workspace]
+members = [ "radiant-utils" ]
+
+[patch.crates-io]
+radiant-utils = { path = "./radiant-utils" }
+
 [features]
 default = [ "backend-wgpu" ]
 backend-wgpu = [ "wgpu", "winit", "pollster" ]
