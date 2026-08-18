@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::core::Mat4Trait;
+use crate::core::{Vertex, Mat4Trait};
 use wgpu;
 use winit;
 use std::sync::OnceLock;
@@ -23,21 +23,23 @@ static WINDOW_EVENTS: OnceLock<Mutex<HashMap<winit::window::WindowId, Vec<crate:
 
 /// GPU resources that can be shared across displays that use the same context.
 pub(crate) struct SharedGpu {
-    pub(crate) instance: Arc<wgpu::Instance>,
-    pub(crate) adapter: Arc<wgpu::Adapter>,
-    pub(crate) device: Arc<wgpu::Device>,
-    pub(crate) queue: Arc<wgpu::Queue>,
+    instance: Arc<wgpu::Instance>,
+    adapter: Arc<wgpu::Adapter>,
+    device: Arc<wgpu::Device>,
+    queue: Arc<wgpu::Queue>,
 }
 
 const MAX_BUFFERS: usize = 10;
-
-use crate::core::Vertex;
-
 const VERTEX_STRIDE: u64 = std::mem::size_of::<Vertex>() as u64;
 
 // Byte offset of texture_uv within a repr(C) Vertex struct.
 // Computed from field sizes: position(8) + offset(8) + rotation(4) + color(16) + bucket_id(4) + texture_id(4) = 44
 const TEXTURE_UV_OFFSET: u64 = 44;
+
+/// Maximum number of user-provided `Texture` uniforms bound to a texture program.
+const MAX_USER_TEXTURES: usize = 8;
+/// Group-0 binding of the first user-provided `Texture` uniform.
+const USER_TEXTURE_BASE_BINDING: u32 = 3;
 
 // --------------
 // Public interface
@@ -529,7 +531,7 @@ impl Display {
         Ok(Display { inner })
     }
 
-    pub fn draw(self: &Self) -> WgpuFrame {
+    pub fn draw(self: &Self) -> Frame {
         let frame = loop {
             match self.inner.surface.get_current_texture() {
                 wgpu::CurrentSurfaceTexture::Success(frame) | wgpu::CurrentSurfaceTexture::Suboptimal(frame) => break frame,
@@ -549,7 +551,7 @@ impl Display {
             &wgpu::CommandEncoderDescriptor { label: Some("Radiant Command Encoder") }
         );
 
-        WgpuFrame {
+        Frame {
             view,
             command_encoder,
             surface_texture: frame,
@@ -670,7 +672,7 @@ impl Display {
 // Frame
 // --------------
 
-pub struct WgpuFrame {
+pub struct Frame {
     view: Arc<wgpu::TextureView>,
     command_encoder: wgpu::CommandEncoder,
     surface_texture: wgpu::SurfaceTexture,
@@ -681,7 +683,7 @@ pub struct WgpuFrame {
     blit_resources: Arc<BlitResources>,
 }
 
-impl WgpuFrame {
+impl Frame {
     pub fn clear(self: &mut Self, color: crate::core::Color) {
         let crate::core::Color(r, g, b, a) = color;
         self.clear_color = Some([r as f64, g as f64, b as f64, a as f64]);
@@ -753,9 +755,7 @@ impl WgpuFrame {
         );
     }
 
-    pub fn copy_rect(self: &mut Self, _source_rect: crate::core::Rect<i32>, _target_rect: crate::core::Rect<i32>, _filter: crate::core::TextureFilter) {
-        // frame-to-frame rect blit: not needed for current examples
-    }
+    pub fn copy_rect(self: &mut Self, _source_rect: crate::core::Rect<i32>, _target_rect: crate::core::Rect<i32>, _filter: crate::core::TextureFilter) { /*TODO*/ }
 
     pub fn copy_rect_from_texture(self: &mut Self, source: &crate::core::Texture, source_rect: crate::core::Rect<i32>, target_rect: crate::core::Rect<i32>, filter: crate::core::TextureFilter) {
         use crate::core::Mat4Trait;
@@ -829,7 +829,7 @@ impl WgpuFrame {
     }
 
     /// Draw sprites to this frame's surface.
-    pub fn draw_sprites(
+    fn draw_sprites(
         &mut self,
         vertices: &[Vertex],
         dirty: bool,
@@ -948,7 +948,7 @@ impl WgpuFrame {
     }
 
     /// Draw a textured quad to this frame.
-    pub fn draw_quad(
+    fn draw_quad(
         &mut self,
         uniforms: &TextureUniforms,
         tex_view: &wgpu::TextureView,
@@ -978,34 +978,27 @@ impl WgpuFrame {
     }
 }
 
-pub type Frame = WgpuFrame;
-
 // --------------
 // Program — custom WGSL pipelines for sprite and texture (quad) shaders
 // --------------
 
-/// Maximum number of user-provided `Texture` uniforms bound to a texture program.
-pub(crate) const MAX_USER_TEXTURES: usize = 8;
-/// Group-0 binding of the first user-provided `Texture` uniform.
-pub(crate) const USER_TEXTURE_BASE_BINDING: u32 = 3;
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum ProgramKind {
+enum ProgramKind {
     Sprite,
     Texture,
 }
 
 pub struct Program {
-    pub(crate) kind: ProgramKind,
+    kind: ProgramKind,
     /// True for the built-in default texture program (no custom effect).
-    pub(crate) is_builtin: bool,
+    is_builtin: bool,
     device: Arc<wgpu::Device>,
     vert_module: Arc<wgpu::ShaderModule>,
     frag_module: Arc<wgpu::ShaderModule>,
-    pub(crate) bind_group_layout: Arc<wgpu::BindGroupLayout>,
+    bind_group_layout: Arc<wgpu::BindGroupLayout>,
     pipeline_layout: Arc<wgpu::PipelineLayout>,
     pipelines: std::sync::Mutex<HashMap<(BlendStateKey, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
-    pub(crate) sampler: Arc<wgpu::Sampler>,
+    sampler: Arc<wgpu::Sampler>,
 }
 
 impl Program {
@@ -1149,27 +1142,27 @@ impl Program {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct SpriteUniforms {
-    pub u_view: [[f32; 4]; 4],
-    pub u_model: [[f32; 4]; 4],
-    pub _rd_color: [f32; 4],
+struct SpriteUniforms {
+    u_view: [[f32; 4]; 4],
+    u_model: [[f32; 4]; 4],
+    _rd_color: [f32; 4],
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct TextureUniforms {
-    pub u_view: [[f32; 4]; 4],       // 64 bytes
-    pub u_model: [[f32; 4]; 4],      // 64 bytes
-    pub _rd_color: [f32; 4],          // 16 bytes
-    pub _rd_offset: [f32; 2],         // 8 bytes
-    pub _rd_dimensions: [f32; 2],     // 8 bytes
-    pub _rd_flags: [f32; 4],          // 16 bytes (custom shader params: [horizontal, brightness, 0, 0])
+struct TextureUniforms {
+    u_view: [[f32; 4]; 4],       // 64 bytes
+    u_model: [[f32; 4]; 4],      // 64 bytes
+    _rd_color: [f32; 4],          // 16 bytes
+    _rd_offset: [f32; 2],         // 8 bytes
+    _rd_dimensions: [f32; 2],     // 8 bytes
+    _rd_flags: [f32; 4],          // 16 bytes (custom shader params: [horizontal, brightness, 0, 0])
     // total: 176 bytes — matches WGSL struct
 }
 
 impl TextureUniforms {
     /// Identity transform — renders the quad at (0,0)–(1,1) with no color tint.
-    pub fn identity() -> Self {
+    fn identity() -> Self {
         TextureUniforms {
             u_view: crate::core::Mat4::viewport(1.0, 1.0).into(),
             u_model: crate::core::Mat4::<f32>::identity().into(),
@@ -1187,12 +1180,12 @@ impl TextureUniforms {
 
 #[derive(Clone)]
 pub struct Monitor {
-    pub inner: MonitorInner,
+    inner: MonitorInner,
 }
 
 #[derive(Clone)]
-pub struct MonitorInner {
-    pub winit_monitor: winit::monitor::MonitorHandle,
+struct MonitorInner {
+    winit_monitor: winit::monitor::MonitorHandle,
 }
 
 impl Monitor {
@@ -1229,11 +1222,11 @@ impl Iterator for MonitorIterator {
 
 pub struct Texture2d {
     texture: Arc<wgpu::Texture>,
-    pub(crate) view: Arc<wgpu::TextureView>,
+    view: Arc<wgpu::TextureView>,
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
-    pub(crate) width: u32,
-    pub(crate) height: u32,
+    width: u32,
+    height: u32,
     bytes_per_pixel: u32,
     blit_res: Arc<BlitResources>,
 }
@@ -1401,8 +1394,9 @@ impl Texture2d {
         self.queue.submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn copy_from_frame(self: &Self, _src_frame: &WgpuFrame, _filter: crate::core::TextureFilter) {}
-    pub fn copy_rect_from_frame(self: &Self, _src_frame: &WgpuFrame, _source_rect: crate::core::Rect<i32>, _target_rect: crate::core::Rect<i32>, _filter: crate::core::TextureFilter) {}
+    pub fn copy_from_frame(self: &Self, _src_frame: &Frame, _filter: crate::core::TextureFilter) { /*TODO*/ }
+
+    pub fn copy_rect_from_frame(self: &Self, _src_frame: &Frame, _source_rect: crate::core::Rect<i32>, _target_rect: crate::core::Rect<i32>, _filter: crate::core::TextureFilter) { /*TODO*/ }
 
     fn convert_format(format: crate::core::TextureFormat) -> wgpu::TextureFormat {
         use crate::core::TextureFormat as RF;
@@ -1453,7 +1447,7 @@ impl Texture2d {
 // --------------
 
 pub struct Texture2dArray {
-    pub(crate) view: wgpu::TextureView,
+    view: wgpu::TextureView,
 }
 
 impl Texture2dArray {
@@ -1513,18 +1507,18 @@ struct VertexBufferCacheItem {
 }
 
 pub struct Context {
-    pub(crate) instance: Arc<wgpu::Instance>,
-    pub(crate) adapter: Arc<wgpu::Adapter>,
-    pub(crate) device: Arc<wgpu::Device>,
-    pub(crate) queue: Arc<wgpu::Queue>,
+    instance: Arc<wgpu::Instance>,
+    adapter: Arc<wgpu::Adapter>,
+    device: Arc<wgpu::Device>,
+    queue: Arc<wgpu::Queue>,
     format: wgpu::TextureFormat,
     index_buffer: wgpu::Buffer,
     index_count: usize,
     vertex_buffers: Vec<VertexBufferCacheItem>,
-    pub(crate) nearest_sampler: wgpu::Sampler,
-    pub(crate) linear_sampler: wgpu::Sampler,
-    pub(crate) sprite_bind_group_layout: wgpu::BindGroupLayout,
-    pub(crate) texture_bind_group_layout: wgpu::BindGroupLayout,
+    nearest_sampler: wgpu::Sampler,
+    linear_sampler: wgpu::Sampler,
+    sprite_bind_group_layout: wgpu::BindGroupLayout,
+    texture_bind_group_layout: wgpu::BindGroupLayout,
     // Shader modules kept alive for lazily creating pipelines by blend mode
     sprite_vert_module: wgpu::ShaderModule,
     sprite_frag_module: wgpu::ShaderModule,
@@ -1535,7 +1529,7 @@ pub struct Context {
     sprite_pipelines: HashMap<(BlendStateKey, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>,
     texture_pipelines: HashMap<(BlendStateKey, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>,
     // 1×1 white Rgba8Unorm texture used as placeholder when draw_rect has no source texture
-    pub(crate) placeholder_view: Arc<wgpu::TextureView>,
+    placeholder_view: Arc<wgpu::TextureView>,
 }
 
 impl Context {
@@ -1757,7 +1751,7 @@ impl Context {
         Arc::new(placeholder_tex.create_view(&wgpu::TextureViewDescriptor::default()))
     }
 
-    pub fn get_or_create_sprite_pipeline(&mut self, blend: wgpu::BlendState, target_format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
+    fn get_or_create_sprite_pipeline(&mut self, blend: wgpu::BlendState, target_format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
         let key = (BlendStateKey::from(&blend), target_format);
         if !self.sprite_pipelines.contains_key(&key) {
             let pipeline = Arc::new(Self::build_sprite_pipeline(
@@ -1769,7 +1763,7 @@ impl Context {
         self.sprite_pipelines[&key].clone()
     }
 
-    pub fn get_or_create_texture_pipeline(&mut self, blend: wgpu::BlendState, target_format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
+    fn get_or_create_texture_pipeline(&mut self, blend: wgpu::BlendState, target_format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
         let key = (BlendStateKey::from(&blend), target_format);
         if !self.texture_pipelines.contains_key(&key) {
             let pipeline = Arc::new(Self::build_texture_pipeline(
@@ -1906,7 +1900,7 @@ impl Context {
         buffer
     }
 
-    pub fn select_vertex_buffer(&mut self, buffer_hint: usize, num_vertices: usize) -> (usize, bool) {
+    fn select_vertex_buffer(&mut self, buffer_hint: usize, num_vertices: usize) -> (usize, bool) {
         for buffer in self.vertex_buffers.iter_mut() {
             buffer.age += 1;
         }
@@ -1934,14 +1928,14 @@ impl Context {
         })
     }
 
-    pub fn update_index_buffer(&mut self, max_sprites: usize) {
+    fn update_index_buffer(&mut self, max_sprites: usize) {
         if max_sprites * 6 > self.index_count {
             self.index_buffer = Self::create_index_buffer(&self.device, &self.queue, max_sprites);
             self.index_count = max_sprites * 6;
         }
     }
 
-    pub fn blendmode_to_wgpu(blendmode: &crate::core::BlendMode) -> wgpu::BlendState {
+    fn blendmode_to_wgpu(blendmode: &crate::core::BlendMode) -> wgpu::BlendState {
         use crate::core::{BlendingFunction, LinearBlendingFactor};
 
         fn convert(factor: LinearBlendingFactor) -> wgpu::BlendFactor {
@@ -1981,7 +1975,7 @@ impl Context {
         }
     }
 
-    pub fn sampler_for_filter<'a>(nearest: &'a wgpu::Sampler, linear: &'a wgpu::Sampler, filter: crate::core::TextureFilter) -> &'a wgpu::Sampler {
+    fn sampler_for_filter<'a>(nearest: &'a wgpu::Sampler, linear: &'a wgpu::Sampler, filter: crate::core::TextureFilter) -> &'a wgpu::Sampler {
         if filter == crate::core::TextureFilter::Linear { linear } else { nearest }
     }
 
@@ -2188,64 +2182,6 @@ fn draw_rect_custom<T>(
     }
 }
 
-// --------------
-// Public draw functions called from radiant_core
-// --------------
-
-pub fn draw_layer(target: &crate::core::RenderTarget, program: &crate::core::Program, context: &mut crate::core::ContextData, layer: &crate::core::Layer, component: u32) {
-    let vertices = layer.vertices();
-    let vertices = vertices.deref();
-    let dirty = layer.undirty();
-    let layer_id = layer.id();
-
-    let view_matrix = *layer.view_matrix().deref().deref();
-    let model_matrix = *layer.model_matrix().deref().deref();
-    let color = layer.color().deref().clone();
-    let blendmode = layer.blendmode().clone();
-    let wgpu_blend = Context::blendmode_to_wgpu(&blendmode);
-
-    let sprite_uniforms = SpriteUniforms {
-        u_view: view_matrix,
-        u_model: model_matrix,
-        _rd_color: color.into(),
-    };
-
-    let font_view = context.font_texture.as_ref().map(|t| t.view.clone());
-    // Invariant: sprite_program is only Some for sprite programs (see core::Program::new).
-    let custom_sprite_prog = program.sprite_program.as_deref();
-
-    let backend_context = context.backend_context.as_mut().unwrap();
-
-    match &target.0 {
-        crate::core::RenderTargetInner::Frame(frame_rc) => {
-            let mut frame = frame_rc.borrow_mut();
-            let frame = frame.as_mut().expect("No frame prepared");
-            let font_view_ref = font_view.as_ref().map(|v| v.as_ref());
-            if let Some(fv) = font_view_ref {
-                frame.draw_sprites(
-                    vertices, dirty, layer_id, component,
-                    wgpu_blend, fv, &context.tex_arrays,
-                    &sprite_uniforms, backend_context, custom_sprite_prog,
-                );
-            }
-        }
-        crate::core::RenderTargetInner::Texture(texture) => {
-            // Render to texture using a temporary command encoder
-            let dest_format = texture.handle.texture.format();
-            let font_view_ref = font_view.as_ref().map(|v| v.as_ref());
-            if let Some(fv) = font_view_ref {
-                draw_sprites_to_texture(
-                    vertices, dirty, layer_id, component,
-                    wgpu_blend, fv, &context.tex_arrays,
-                    &sprite_uniforms, backend_context, &*texture.handle.view, dest_format,
-                    custom_sprite_prog,
-                );
-            }
-        }
-        crate::core::RenderTargetInner::None => {}
-    }
-}
-
 /// Draw sprites directly into a texture view (for render-to-texture).
 fn draw_sprites_to_texture(
     vertices: &[Vertex],
@@ -2339,6 +2275,64 @@ fn draw_sprites_to_texture(
         pass.draw_indexed(0..(num_sprites as u32 * 6), 0, 0..1);
     }
     context.queue.submit(std::iter::once(encoder.finish()));
+}
+
+// --------------
+// Public draw functions called from radiant_core
+// --------------
+
+pub fn draw_layer(target: &crate::core::RenderTarget, program: &crate::core::Program, context: &mut crate::core::ContextData, layer: &crate::core::Layer, component: u32) {
+    let vertices = layer.vertices();
+    let vertices = vertices.deref();
+    let dirty = layer.undirty();
+    let layer_id = layer.id();
+
+    let view_matrix = *layer.view_matrix().deref().deref();
+    let model_matrix = *layer.model_matrix().deref().deref();
+    let color = layer.color().deref().clone();
+    let blendmode = layer.blendmode().clone();
+    let wgpu_blend = Context::blendmode_to_wgpu(&blendmode);
+
+    let sprite_uniforms = SpriteUniforms {
+        u_view: view_matrix,
+        u_model: model_matrix,
+        _rd_color: color.into(),
+    };
+
+    let font_view = context.font_texture.as_ref().map(|t| t.view.clone());
+    // Invariant: sprite_program is only Some for sprite programs (see core::Program::new).
+    let custom_sprite_prog = program.sprite_program.as_deref();
+
+    let backend_context = context.backend_context.as_mut().unwrap();
+
+    match &target.0 {
+        crate::core::RenderTargetInner::Frame(frame_rc) => {
+            let mut frame = frame_rc.borrow_mut();
+            let frame = frame.as_mut().expect("No frame prepared");
+            let font_view_ref = font_view.as_ref().map(|v| v.as_ref());
+            if let Some(fv) = font_view_ref {
+                frame.draw_sprites(
+                    vertices, dirty, layer_id, component,
+                    wgpu_blend, fv, &context.tex_arrays,
+                    &sprite_uniforms, backend_context, custom_sprite_prog,
+                );
+            }
+        }
+        crate::core::RenderTargetInner::Texture(texture) => {
+            // Render to texture using a temporary command encoder
+            let dest_format = texture.handle.texture.format();
+            let font_view_ref = font_view.as_ref().map(|v| v.as_ref());
+            if let Some(fv) = font_view_ref {
+                draw_sprites_to_texture(
+                    vertices, dirty, layer_id, component,
+                    wgpu_blend, fv, &context.tex_arrays,
+                    &sprite_uniforms, backend_context, &*texture.handle.view, dest_format,
+                    custom_sprite_prog,
+                );
+            }
+        }
+        crate::core::RenderTargetInner::None => {}
+    }
 }
 
 pub fn draw_rect<T>(

@@ -74,7 +74,7 @@ impl Program {
         let backend_context = context.backend_context.as_ref().unwrap();
 
         // A sprite shader takes SpriteFragmentInput as its fragment input (see from_string).
-        let is_sprite = source.contains("SpriteFragmentInput");
+        let is_sprite = source.contains("SpriteFragmentInput"); // FIXME: add ShaderType::SPRITE/TEXTURE parameter instead of this
 
         // Prepend preamble unless the shader is self-contained (already declares bindings).
         // Self-contained detection: a shader is self-contained if it declares the
