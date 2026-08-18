@@ -1,3 +1,4 @@
 {
-    "rust-analyzer.files.excludeDirs": ["benches"]
+    "rust-analyzer.files.excludeDirs": ["benches"],
+    "markdown.styles": [".vscode/markdown.css"]
 }
