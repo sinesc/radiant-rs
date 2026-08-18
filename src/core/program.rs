@@ -36,12 +36,23 @@ impl Program {
     }
     /// Creates a program from a WGSL fragment shader string.
     ///
-    /// If the shader does not already declare its own bindings (`@group(0) @binding`),
+    /// If the shader does not already declare its own uniforms buffer (`@group(0) @binding(0)`),
     /// the engine automatically prepends the appropriate preamble, which provides
     /// `sheet()`, `sheetSize()`, `sheetComponent()`, and the input struct.
     ///
     /// For texture shaders (postprocessors, fills): write `@fragment fn main(input: TextureFragmentInput)`.
     /// For sprite shaders (layers): write `@fragment fn main(input: SpriteFragmentInput)`.
+    ///
+    /// Custom parameters set via [`set_uniform`](Self::set_uniform) are routed to texture
+    /// shaders as follows:
+    /// - `f32` and `bool` values are packed into `texture_uniforms._rd_flags` (`.x`, `.y`,
+    ///   `.z`, `.w` in the order they were first set, at most 4 values).
+    /// - `Texture` values are bound as additional `texture_2d<f32>` inputs in consecutive
+    ///   bindings starting at `@group(0) @binding(3)` (at most 8 textures, in the order they
+    ///   were first set). Declare them in the shader and sample them with the sampler at
+    ///   `@group(0) @binding(2)`.
+    ///
+    /// Sprite shaders do not support custom parameters.
     pub fn from_string(context: &Context, source: &str) -> crate::core::Result<Self> {
         Self::new(context, source)
     }
@@ -62,21 +73,30 @@ impl Program {
         let context = context.lock();
         let backend_context = context.backend_context.as_ref().unwrap();
 
+        // A sprite shader takes SpriteFragmentInput as its fragment input (see from_string).
+        let is_sprite = source.contains("SpriteFragmentInput");
+
         // Prepend preamble unless the shader is self-contained (already declares bindings).
-        let combined = if source.contains("@group(0) @binding") {
+        // Self-contained detection: a shader is self-contained if it declares the
+        // uniforms buffer itself (@group(0) @binding(0)). Preamble-style shaders may
+        // declare user textures at binding 3+ without being self-contained.
+        let combined = if source.contains("@group(0) @binding(0)") {
             source.to_string()
-        } else if source.contains("SpriteFragmentInput") {
+        } else if is_sprite {
             format!("{}\n{}", SPRITE_INC, source)
         } else {
             format!("{}\n{}", TEXTURE_INC, source)
         };
 
-        let prog = Arc::new(backend::Program::new(backend_context, &combined)?);
-        let (sprite_program, texture_program) = if matches!(prog.kind, backend::ProgramKind::Sprite) {
-            let default_tex = Arc::new(backend::Program::new_default_texture(backend_context)?);
-            (Some(prog), default_tex)
+        // Sprite programs draw sprite layers; they also get the built-in default texture
+        // program so they can be used with fills (no visible effect there).
+        let (sprite_program, texture_program) = if is_sprite {
+            let sprite = Arc::new(backend::Program::new_sprite(backend_context, &combined)?);
+            let texture = Arc::new(backend::Program::new_default_texture(backend_context)?);
+            (Some(sprite), texture)
         } else {
-            (None, prog)
+            let texture = Arc::new(backend::Program::new_texture(backend_context, &combined)?);
+            (None, texture)
         };
 
         Ok(Program { uniforms, sprite_program, texture_program })

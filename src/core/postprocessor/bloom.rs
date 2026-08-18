@@ -114,6 +114,8 @@ impl Bloom {
         let dimensions = Point2::<u32>::from(dimensions);
         let blur_program = Program::from_string(&context, include_str!("../../shader/postprocess/blur.wgsl")).unwrap();
         let mut combine_program = Program::from_string(&context, include_str!("../../shader/postprocess/combine.wgsl")).unwrap();
+        // The combine shader reads brightness from _rd_flags.x (first scalar uniform).
+        combine_program.set_uniform("brightness", &1.0f32);
         let targets = Self::create_targets(context, dimensions, divider_factor);
         let max_ops = targets[0].len();
 
@@ -140,6 +142,7 @@ impl Bloom {
     /// Rebuilds internal textures to given dimensions.
     pub fn rebuild<T>(self: &mut Self, context: &Context, dimensions: T, divider_factor: u32) where Point2<u32>: From<T> {
         let targets = Self::create_targets(context, Point2::<u32>::from(dimensions), divider_factor);
+        self.combine_program.set_uniform("brightness", &1.0f32);
         self.combine_program.set_uniform("sample0", &targets[0][0]);
         self.combine_program.set_uniform("sample1", &targets[0][1]);
         self.combine_program.set_uniform("sample2", &targets[0][2]);

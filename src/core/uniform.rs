@@ -30,21 +30,40 @@ pub trait AsUniform {
 }
 
 /// Multiple uniforms held by a program.
+///
+/// Uniforms are kept in insertion order; re-inserting an existing name replaces the
+/// value without changing its position.
 #[derive(Clone, Debug)]
-pub struct UniformList (pub (crate) HashMap<String, Uniform>);
+pub struct UniformList (pub (crate) Vec<(String, Uniform)>);
 
 impl UniformList {
     /// Creates a new uniform list.
     pub fn new() -> Self {
-        UniformList(HashMap::new())
+        UniformList(Vec::new())
     }
     /// Inserts a uniform into the list.
     pub fn insert(self: &mut Self, name: &str, uniform: Uniform) {
-        self.0.insert(name.to_string(), uniform);
+        for entry in self.0.iter_mut() {
+            if entry.0 == name {
+                entry.1 = uniform;
+                return;
+            }
+        }
+        self.0.push((name.to_string(), uniform));
     }
     /// Removes a uniform from the list and returns whether it existed.
     pub fn remove(self: &mut Self, name: &str) -> bool {
-        self.0.remove(name).is_some()
+        let len = self.0.len();
+        self.0.retain(|(n, _)| n != name);
+        self.0.len() != len
+    }
+    /// Returns the uniform with the given name.
+    pub fn get(self: &Self, name: &str) -> Option<&Uniform> {
+        self.0.iter().find(|(n, _)| n == name).map(|(_, u)| u)
+    }
+    /// Iterates (name, uniform) pairs in insertion order.
+    pub fn iter(self: &Self) -> impl Iterator<Item = (&str, &Uniform)> {
+        self.0.iter().map(|(n, u)| (n.as_str(), u))
     }
 }
 

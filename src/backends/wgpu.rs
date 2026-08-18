@@ -81,10 +81,12 @@ struct BlitResources {
     bind_group_layout: Arc<wgpu::BindGroupLayout>,
     nearest_sampler: Arc<wgpu::Sampler>,
     linear_sampler: Arc<wgpu::Sampler>,
+    /// Fills unused user texture pool bindings.
+    placeholder_view: Arc<wgpu::TextureView>,
 }
 
 impl BlitResources {
-    fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Arc<Self> {
+    fn new(device: &wgpu::Device, queue: &wgpu::Queue, format: wgpu::TextureFormat) -> Arc<Self> {
         let vert = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Blit Vert"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../shader/texture.wgsl").into()),
@@ -95,11 +97,7 @@ impl BlitResources {
         });
         let bind_group_layout = Arc::new(device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Blit BGL"),
-            entries: &[
-                Context::bgl_uniform(0, wgpu::ShaderStages::VERTEX),
-                Context::bgl_texture_2d(1, wgpu::ShaderStages::FRAGMENT),
-                Context::bgl_sampler(2, wgpu::ShaderStages::FRAGMENT),
-            ],
+            entries: &Context::texture_bgl_entries(),
         }));
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Blit Layout"),
@@ -127,7 +125,8 @@ impl BlitResources {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             ..Default::default()
         }));
-        Arc::new(BlitResources { pipeline, bind_group_layout, nearest_sampler, linear_sampler })
+        let placeholder_view = Context::create_placeholder_view(device, queue);
+        Arc::new(BlitResources { pipeline, bind_group_layout, nearest_sampler, linear_sampler, placeholder_view })
     }
 }
 
@@ -514,7 +513,7 @@ impl Display {
         };
         surface.configure(&*device, &config);
 
-        let blit_resources = BlitResources::new(&device, config.format);
+        let blit_resources = BlitResources::new(&device, &queue, config.format);
 
         let inner = Arc::new(DisplayInner {
             window,
@@ -746,6 +745,8 @@ impl WgpuFrame {
             &BLIT_QUAD,
             &*source.handle.view,
             sampler,
+            &[],
+            &blit.placeholder_view,
             &blit.pipeline,
             &blit.bind_group_layout,
             load_op,
@@ -808,6 +809,8 @@ impl WgpuFrame {
             &quad,
             &*source.handle.view,
             sampler,
+            &[],
+            &blit.placeholder_view,
             &blit.pipeline,
             &blit.bind_group_layout,
             load_op,
@@ -966,6 +969,8 @@ impl WgpuFrame {
             &BLIT_QUAD,
             tex_view,
             sampler,
+            &[],
+            &context.placeholder_view,
             &pipeline,
             &context.texture_bind_group_layout,
             load_op,
@@ -976,18 +981,24 @@ impl WgpuFrame {
 pub type Frame = WgpuFrame;
 
 // --------------
-// Program — custom WGSL pipelines for blur / combine / default shaders
+// Program — custom WGSL pipelines for sprite and texture (quad) shaders
 // --------------
 
+/// Maximum number of user-provided `Texture` uniforms bound to a texture program.
+pub(crate) const MAX_USER_TEXTURES: usize = 8;
+/// Group-0 binding of the first user-provided `Texture` uniform.
+pub(crate) const USER_TEXTURE_BASE_BINDING: u32 = 3;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum ProgramKind {
-    Default,
-    Combine,
     Sprite,
+    Texture,
 }
 
 pub struct Program {
     pub(crate) kind: ProgramKind,
-    pub(crate) is_custom: bool,
+    /// True for the built-in default texture program (no custom effect).
+    pub(crate) is_builtin: bool,
     device: Arc<wgpu::Device>,
     vert_module: Arc<wgpu::ShaderModule>,
     frag_module: Arc<wgpu::ShaderModule>,
@@ -998,99 +1009,90 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn new(context: &Context, fragment_shader: &str) -> crate::core::Result<Program> {
-        Self::new_inner(context, fragment_shader, true)
-    }
-
-    fn new_inner(context: &Context, fragment_shader: &str, is_custom: bool) -> crate::core::Result<Program> {
+    /// Creates a program for a custom sprite fragment shader (used by sprite layers).
+    pub fn new_sprite(context: &Context, fragment_shader: &str) -> crate::core::Result<Program> {
         let device = &context.device;
 
-        let kind = if fragment_shader.contains("SpriteFragmentInput") {
-            ProgramKind::Sprite
-        } else if fragment_shader.contains("sample4") {
-            ProgramKind::Combine
-        } else {
-            ProgramKind::Default
-        };
-
         let vert_module = Arc::new(device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Custom Vert"),
-            source: wgpu::ShaderSource::Wgsl(match kind {
-                ProgramKind::Sprite => include_str!("../shader/sprite.wgsl").into(),
-                _ => include_str!("../shader/texture.wgsl").into(),
-            }),
+            label: Some("Custom Sprite Vert"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../shader/sprite.wgsl").into()),
         }));
 
-        let frag_module = Arc::new(match kind {
-            ProgramKind::Sprite | ProgramKind::Default => device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("Custom Frag"),
-                source: wgpu::ShaderSource::Wgsl(fragment_shader.into()),
-            }),
-            ProgramKind::Combine => device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("Combine Frag"),
-                source: wgpu::ShaderSource::Wgsl(fragment_shader.into()),
-            }),
-        });
+        let frag_module = Arc::new(device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Custom Sprite Frag"),
+            source: wgpu::ShaderSource::Wgsl(fragment_shader.into()),
+        }));
 
-        let vert_frag = wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT;
-        // Custom programs may read texture_uniforms (binding 0) in the fragment stage.
-        // Built-in programs only use it in the vertex stage.
-        let uniform_visibility = if is_custom { vert_frag } else { wgpu::ShaderStages::VERTEX };
+        let bind_group_layout = Arc::new(device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Custom Sprite BGL"),
+            entries: &[
+                Context::bgl_uniform(0, wgpu::ShaderStages::VERTEX),
+                Context::bgl_texture_2d(1, wgpu::ShaderStages::FRAGMENT),
+                Context::bgl_sampler(2, wgpu::ShaderStages::FRAGMENT),
+                Context::bgl_texture_2d_array(3, wgpu::ShaderStages::FRAGMENT),
+                Context::bgl_texture_2d_array(4, wgpu::ShaderStages::FRAGMENT),
+                Context::bgl_texture_2d_array(5, wgpu::ShaderStages::FRAGMENT),
+                Context::bgl_texture_2d_array(6, wgpu::ShaderStages::FRAGMENT),
+                Context::bgl_texture_2d_array(7, wgpu::ShaderStages::FRAGMENT),
+                Context::bgl_uniform(8, wgpu::ShaderStages::FRAGMENT),
+            ],
+        }));
 
-        let bind_group_layout = Arc::new(match kind {
-            ProgramKind::Combine => device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Combine BGL"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: vert_frag,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    Context::bgl_texture_2d(1, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d(2, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d(3, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d(4, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d(5, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_sampler(6, wgpu::ShaderStages::FRAGMENT),
-                ],
-            }),
-            ProgramKind::Default => device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Default Custom BGL"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: uniform_visibility,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    Context::bgl_texture_2d(1, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_sampler(2, wgpu::ShaderStages::FRAGMENT),
-                ],
-            }),
-            ProgramKind::Sprite => device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Custom Sprite BGL"),
-                entries: &[
-                    Context::bgl_uniform(0, wgpu::ShaderStages::VERTEX),
-                    Context::bgl_texture_2d(1, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_sampler(2, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d_array(3, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d_array(4, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d_array(5, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d_array(6, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_texture_2d_array(7, wgpu::ShaderStages::FRAGMENT),
-                    Context::bgl_uniform(8, wgpu::ShaderStages::FRAGMENT),
-                ],
-            }),
-        });
+        Self::finish(context, ProgramKind::Sprite, false, vert_module, frag_module, bind_group_layout)
+    }
+
+    /// Creates a program for a custom texture fragment shader (used by postprocessors and fills).
+    ///
+    /// The fragment shader either uses the engine preamble (providing `texture_uniforms`,
+    /// `_rd_tex` at binding 1, `_rd_sampler` at binding 2, and `TextureFragmentInput`) or
+    /// declares its own bindings following the same convention (0 = `texture_uniforms`,
+    /// 1 = main texture, 2 = sampler).
+    ///
+    /// Additional inputs are routed from the program's uniforms:
+    /// - `f32`/`bool` uniforms are packed into `texture_uniforms._rd_flags` (`.x`–`.w`
+    ///   in first-set order, at most 4).
+    /// - `Texture` uniforms are bound to the user texture pool: consecutive
+    ///   `texture_2d<f32>` bindings starting at [`USER_TEXTURE_BASE_BINDING`] in first-set
+    ///   order (at most [`MAX_USER_TEXTURES`]). The shader declares them itself and
+    ///   samples them with the sampler at binding 2.
+    pub fn new_texture(context: &Context, fragment_shader: &str) -> crate::core::Result<Program> {
+        Self::new_texture_inner(context, fragment_shader, false)
+    }
+
+    /// Creates the built-in default texture program (no custom effect).
+    pub fn new_default_texture(context: &Context) -> crate::core::Result<Program> {
+        Self::new_texture_inner(context, include_str!("../shader/texture_frag.wgsl"), true)
+    }
+
+    fn new_texture_inner(context: &Context, fragment_shader: &str, is_builtin: bool) -> crate::core::Result<Program> {
+        let device = &context.device;
+
+        let vert_module = Arc::new(device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Custom Texture Vert"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../shader/texture.wgsl").into()),
+        }));
+
+        let frag_module = Arc::new(device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Custom Texture Frag"),
+            source: wgpu::ShaderSource::Wgsl(fragment_shader.into()),
+        }));
+
+        // Same layout as the context's built-in texture pipeline, so the draw paths can
+        // bind identically regardless of which texture program is in use.
+        let bind_group_layout = Arc::new(context.texture_bind_group_layout.clone());
+
+        Self::finish(context, ProgramKind::Texture, is_builtin, vert_module, frag_module, bind_group_layout)
+    }
+
+    fn finish(
+        context: &Context,
+        kind: ProgramKind,
+        is_builtin: bool,
+        vert_module: Arc<wgpu::ShaderModule>,
+        frag_module: Arc<wgpu::ShaderModule>,
+        bind_group_layout: Arc<wgpu::BindGroupLayout>,
+    ) -> crate::core::Result<Program> {
+        let device = &context.device;
 
         let pipeline_layout = Arc::new(device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Custom Pipeline Layout"),
@@ -1110,7 +1112,7 @@ impl Program {
 
         Ok(Program {
             kind,
-            is_custom,
+            is_builtin,
             device: context.device.clone(),
             vert_module,
             frag_module,
@@ -1119,10 +1121,6 @@ impl Program {
             pipelines: std::sync::Mutex::new(HashMap::new()),
             sampler,
         })
-    }
-
-    pub fn new_default_texture(context: &Context) -> crate::core::Result<Program> {
-        Self::new_inner(context, include_str!("../shader/texture_frag.wgsl"), false)
     }
 
     pub fn get_or_create_pipeline(&self, blend: wgpu::BlendState, format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
@@ -1134,7 +1132,7 @@ impl Program {
                     &self.device, &self.vert_module, &self.frag_module,
                     &self.pipeline_layout, format, blend,
                 ),
-                _ => Context::build_texture_pipeline(
+                ProgramKind::Texture => Context::build_texture_pipeline(
                     &self.device, &self.vert_module, &self.frag_module,
                     &self.pipeline_layout, format, blend,
                 ),
@@ -1276,7 +1274,7 @@ impl Texture2d {
             );
         }
 
-        let blit_res = BlitResources::new(&context.device, wgpu_format);
+        let blit_res = BlitResources::new(&context.device, &context.queue, wgpu_format);
 
         Texture2d {
             texture: Arc::new(texture),
@@ -1349,6 +1347,8 @@ impl Texture2d {
             &uniforms, &BLIT_QUAD,
             &*src_texture.handle.view,
             sampler,
+            &[],
+            &self.blit_res.placeholder_view,
             &self.blit_res.pipeline,
             &self.blit_res.bind_group_layout,
             wgpu::LoadOp::Load,
@@ -1392,6 +1392,8 @@ impl Texture2d {
             &uniforms, &quad,
             &*src_texture.handle.view,
             sampler,
+            &[],
+            &self.blit_res.placeholder_view,
             &self.blit_res.pipeline,
             &self.blit_res.bind_group_layout,
             wgpu::LoadOp::Load,
@@ -1593,14 +1595,10 @@ impl Context {
             ],
         });
 
-        // Texture bind group layout: uniforms, source tex, sampler
+        // Texture bind group layout: uniforms, source tex, sampler, user texture pool
         let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Texture Bind Group Layout"),
-            entries: &[
-                Self::bgl_uniform(0, wgpu::ShaderStages::VERTEX),
-                Self::bgl_texture_2d(1, wgpu::ShaderStages::FRAGMENT),
-                Self::bgl_sampler(2, wgpu::ShaderStages::FRAGMENT),
-            ],
+            entries: &Self::texture_bgl_entries(),
         });
 
         // Shader modules
@@ -1633,23 +1631,7 @@ impl Context {
         });
 
         // 1×1 white placeholder texture
-        let placeholder_tex = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Placeholder Texture"),
-            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &placeholder_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            &[255u8, 255, 255, 255],
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
-            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-        );
-        let placeholder_view = Arc::new(placeholder_tex.create_view(&wgpu::TextureViewDescriptor::default()));
+        let placeholder_view = Self::create_placeholder_view(&device, &queue);
 
         // Pre-create the default alpha-blending pipelines
         let mut sprite_pipelines = HashMap::new();
@@ -1734,6 +1716,45 @@ impl Context {
             ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
             count: None,
         }
+    }
+
+    /// Group-0 bind group layout entries for texture programs.
+    ///
+    /// Binding 0 = `texture_uniforms` (visible to vertex and fragment; custom fragment
+    /// shaders may read e.g. `_rd_flags`), binding 1 = main texture, binding 2 = sampler,
+    /// bindings 3..3+MAX_USER_TEXTURES = user texture pool (filled from `Texture`
+    /// uniforms, see [`Program::new_texture`]).
+    fn texture_bgl_entries() -> Vec<wgpu::BindGroupLayoutEntry> {
+        let mut entries = vec![
+            Self::bgl_uniform(0, wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT),
+            Self::bgl_texture_2d(1, wgpu::ShaderStages::FRAGMENT),
+            Self::bgl_sampler(2, wgpu::ShaderStages::FRAGMENT),
+        ];
+        for i in 0..MAX_USER_TEXTURES {
+            entries.push(Self::bgl_texture_2d(USER_TEXTURE_BASE_BINDING + i as u32, wgpu::ShaderStages::FRAGMENT));
+        }
+        entries
+    }
+
+    /// Creates a 1×1 white placeholder texture view.
+    fn create_placeholder_view(device: &wgpu::Device, queue: &wgpu::Queue) -> Arc<wgpu::TextureView> {
+        let placeholder_tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Placeholder Texture"),
+            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo { texture: &placeholder_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &[255u8, 255, 255, 255],
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+        );
+        Arc::new(placeholder_tex.create_view(&wgpu::TextureViewDescriptor::default()))
     }
 
     pub fn get_or_create_sprite_pipeline(&mut self, blend: wgpu::BlendState, target_format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
@@ -1992,6 +2013,8 @@ fn render_texture_quad(
     quad: &[Vertex; 4],
     tex_view: &wgpu::TextureView,
     sampler: &wgpu::Sampler,
+    user_textures: &[&wgpu::TextureView],
+    placeholder: &wgpu::TextureView,
     pipeline: &wgpu::RenderPipeline,
     layout: &wgpu::BindGroupLayout,
     load_op: wgpu::LoadOp<wgpu::Color>,
@@ -2031,96 +2054,29 @@ fn render_texture_quad(
     queue.write_buffer(&ib, 0, index_bytes);
     queue.write_buffer(&ub, 0, uniform_bytes);
 
+    // Bind the user texture pool (see `Context::texture_bgl_entries`); slots without a
+    // corresponding `Texture` uniform receive the placeholder.
+    let mut entries = vec![
+        wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &ub, offset: 0, size: None }) },
+        wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(tex_view) },
+        wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(sampler) },
+    ];
+    for i in 0..MAX_USER_TEXTURES {
+        let view = user_textures.get(i).copied().unwrap_or(placeholder);
+        entries.push(wgpu::BindGroupEntry {
+            binding: USER_TEXTURE_BASE_BINDING + i as u32,
+            resource: wgpu::BindingResource::TextureView(view),
+        });
+    }
+
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Quad Bind Group"),
         layout,
-        entries: &[
-            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &ub, offset: 0, size: None }) },
-            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(tex_view) },
-            wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(sampler) },
-        ],
+        entries: &entries,
     });
 
     let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("Quad Render Pass"),
-        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: target_view,
-            depth_slice: None,
-            resolve_target: None,
-            ops: wgpu::Operations { load: load_op, store: wgpu::StoreOp::Store },
-        })],
-        depth_stencil_attachment: None,
-        timestamp_writes: None,
-        occlusion_query_set: None,
-        multiview_mask: None,
-    });
-    pass.set_pipeline(pipeline);
-    pass.set_bind_group(0, &bind_group, &[]);
-    pass.set_vertex_buffer(0, vb.slice(..));
-    pass.set_index_buffer(ib.slice(..), wgpu::IndexFormat::Uint32);
-    pass.draw_indexed(0..6, 0, 0..1);
-}
-
-fn render_combine_quad(
-    encoder: &mut wgpu::CommandEncoder,
-    target_view: &wgpu::TextureView,
-    device: &wgpu::Device,
-    queue: &wgpu::Queue,
-    uniforms: &TextureUniforms,
-    textures: [&wgpu::TextureView; 5],
-    sampler: &wgpu::Sampler,
-    pipeline: &wgpu::RenderPipeline,
-    layout: &wgpu::BindGroupLayout,
-    load_op: wgpu::LoadOp<wgpu::Color>,
-) {
-    let indices = QUAD_INDICES;
-    let vb = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Combine VB"),
-        size: (4 * std::mem::size_of::<Vertex>()) as u64,
-        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let ib = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Combine IB"),
-        size: (6 * 4) as u64,
-        usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let ub = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Combine UB"),
-        size: std::mem::size_of::<TextureUniforms>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let vertex_bytes = unsafe {
-        std::slice::from_raw_parts(BLIT_QUAD.as_ptr() as *const u8, 4 * std::mem::size_of::<Vertex>())
-    };
-    let index_bytes = unsafe {
-        std::slice::from_raw_parts(indices.as_ptr() as *const u8, 6 * 4)
-    };
-    let uniform_bytes = unsafe {
-        std::slice::from_raw_parts(uniforms as *const TextureUniforms as *const u8, std::mem::size_of::<TextureUniforms>())
-    };
-    queue.write_buffer(&vb, 0, vertex_bytes);
-    queue.write_buffer(&ib, 0, index_bytes);
-    queue.write_buffer(&ub, 0, uniform_bytes);
-
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Combine Bind Group"),
-        layout,
-        entries: &[
-            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &ub, offset: 0, size: None }) },
-            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(textures[0]) },
-            wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(textures[1]) },
-            wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(textures[2]) },
-            wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(textures[3]) },
-            wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(textures[4]) },
-            wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::Sampler(sampler) },
-        ],
-    });
-
-    let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some("Combine Render Pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: target_view,
             depth_slice: None,
@@ -2154,15 +2110,29 @@ fn draw_rect_custom<T>(
     use crate::core::Point2Trait;
     use crate::core::Uniform;
 
-    // Pack named scalar uniforms into _rd_flags
-    let horizontal = match program.uniforms.0.get("horizontal") {
-        Some(Uniform::Bool(b)) => if *b { 1.0f32 } else { 0.0 },
-        _ => 0.0,
-    };
-    let brightness = match program.uniforms.0.get("brightness") {
-        Some(Uniform::Float(f)) => *f,
-        _ => 1.0,
-    };
+    // Pack user scalar uniforms (Float/Bool, in first-set order) into _rd_flags.
+    let scalars = program.uniforms.iter()
+        .filter_map(|(_, u)| match u {
+            Uniform::Float(f) => Some(*f),
+            Uniform::Bool(b) => Some(if *b { 1.0 } else { 0.0 }),
+            _ => None,
+        })
+        .take(4)
+        .collect::<Vec<_>>();
+    let mut _rd_flags = [0.0f32; 4];
+    for (slot, value) in _rd_flags.iter_mut().zip(scalars.iter()) {
+        *slot = *value;
+    }
+
+    // Collect user texture uniforms (in first-set order) for the user texture pool.
+    let user_textures: Vec<Arc<wgpu::TextureView>> = program.uniforms.iter()
+        .filter_map(|(_, u)| match u {
+            Uniform::Texture(t) => Some(t.handle.view.clone()),
+            _ => None,
+        })
+        .take(MAX_USER_TEXTURES)
+        .collect();
+    let user_refs: Vec<&wgpu::TextureView> = user_textures.iter().map(|v| v.as_ref()).collect();
 
     let uniforms = TextureUniforms {
         u_view: view_matrix.into(),
@@ -2170,104 +2140,51 @@ fn draw_rect_custom<T>(
         _rd_color: color.into(),
         _rd_offset: info.rect.0.as_array(),
         _rd_dimensions: info.rect.1.as_array(),
-        _rd_flags: [horizontal, brightness, 0.0, 0.0],
+        _rd_flags,
     };
 
-    match backend_prog.kind {
-        ProgramKind::Default => {
-            let tex_view: Arc<wgpu::TextureView> = if let Some(tex) = texture {
-                tex.handle.view.clone()
-            } else {
-                backend_context.placeholder_view.clone()
-            };
+    let tex_view: Arc<wgpu::TextureView> = if let Some(tex) = texture {
+        tex.handle.view.clone()
+    } else {
+        backend_context.placeholder_view.clone()
+    };
 
-            match &target.0 {
-                crate::core::RenderTargetInner::Frame(frame_rc) => {
-                    let pipeline = backend_prog.get_or_create_pipeline(wgpu_blend, backend_context.format);
-                    let mut frame = frame_rc.borrow_mut();
-                    let frame = frame.as_mut().expect("No frame prepared");
-                    let load_op = frame.next_load_op();
-                    let view = frame.view.clone();
-                    render_texture_quad(
-                        &mut frame.command_encoder, &view,
-                        &frame.device, &frame.queue,
-                        &uniforms, &BLIT_QUAD, &*tex_view,
-                        &*backend_prog.sampler,
-                        &pipeline, &backend_prog.bind_group_layout,
-                        load_op,
-                    );
-                }
-                crate::core::RenderTargetInner::Texture(dest_texture) => {
-                    let dest_view = dest_texture.handle.view.clone();
-                    let dest_format = dest_texture.handle.texture.format();
-                    let pipeline = backend_prog.get_or_create_pipeline(wgpu_blend, dest_format);
-                    let mut encoder = backend_context.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Custom RTT") });
-                    render_texture_quad(
-                        &mut encoder, &dest_view,
-                        &backend_context.device, &backend_context.queue,
-                        &uniforms, &BLIT_QUAD, &*tex_view,
-                        &*backend_prog.sampler,
-                        &pipeline, &backend_prog.bind_group_layout,
-                        wgpu::LoadOp::Load,
-                    );
-                    backend_context.queue.submit(std::iter::once(encoder.finish()));
-                }
-                crate::core::RenderTargetInner::None => {}
-            }
-        }
-        ProgramKind::Combine => {
-            // Extract sample0–sample4 from the program's uniform list
-            let placeholder = &backend_context.placeholder_view;
-            let get_tex = |name: &str| -> Arc<wgpu::TextureView> {
-                match program.uniforms.0.get(name) {
-                    Some(Uniform::Texture(t)) => t.handle.view.clone(),
-                    _ => placeholder.clone(),
-                }
-            };
-            let s0 = get_tex("sample0");
-            let s1 = get_tex("sample1");
-            let s2 = get_tex("sample2");
-            let s3 = get_tex("sample3");
-            let s4 = get_tex("sample4");
-            let textures = [&*s0, &*s1, &*s2, &*s3, &*s4];
+    let placeholder = &backend_context.placeholder_view;
 
-            match &target.0 {
-                crate::core::RenderTargetInner::Frame(frame_rc) => {
-                    let pipeline = backend_prog.get_or_create_pipeline(wgpu_blend, backend_context.format);
-                    let mut frame = frame_rc.borrow_mut();
-                    let frame = frame.as_mut().expect("No frame prepared");
-                    let load_op = frame.next_load_op();
-                    let view = frame.view.clone();
-                    render_combine_quad(
-                        &mut frame.command_encoder, &view,
-                        &frame.device, &frame.queue,
-                        &uniforms, textures,
-                        &*backend_prog.sampler,
-                        &pipeline, &backend_prog.bind_group_layout,
-                        load_op,
-                    );
-                }
-                crate::core::RenderTargetInner::Texture(dest_texture) => {
-                    let dest_view = dest_texture.handle.view.clone();
-                    let dest_format = dest_texture.handle.texture.format();
-                    let pipeline = backend_prog.get_or_create_pipeline(wgpu_blend, dest_format);
-                    let mut encoder = backend_context.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Combine RTT") });
-                    render_combine_quad(
-                        &mut encoder, &dest_view,
-                        &backend_context.device, &backend_context.queue,
-                        &uniforms, textures,
-                        &*backend_prog.sampler,
-                        &pipeline, &backend_prog.bind_group_layout,
-                        wgpu::LoadOp::Load,
-                    );
-                    backend_context.queue.submit(std::iter::once(encoder.finish()));
-                }
-                crate::core::RenderTargetInner::None => {}
-            }
+    match &target.0 {
+        crate::core::RenderTargetInner::Frame(frame_rc) => {
+            let pipeline = backend_prog.get_or_create_pipeline(wgpu_blend, backend_context.format);
+            let mut frame = frame_rc.borrow_mut();
+            let frame = frame.as_mut().expect("No frame prepared");
+            let load_op = frame.next_load_op();
+            let view = frame.view.clone();
+            render_texture_quad(
+                &mut frame.command_encoder, &view,
+                &frame.device, &frame.queue,
+                &uniforms, &BLIT_QUAD, &*tex_view,
+                &*backend_prog.sampler,
+                &user_refs, &**placeholder,
+                &pipeline, &backend_prog.bind_group_layout,
+                load_op,
+            );
         }
-        ProgramKind::Sprite => {
-            // Sprite programs are not used for fill/rect draws; texture_program handles those.
+        crate::core::RenderTargetInner::Texture(dest_texture) => {
+            let dest_view = dest_texture.handle.view.clone();
+            let dest_format = dest_texture.handle.texture.format();
+            let pipeline = backend_prog.get_or_create_pipeline(wgpu_blend, dest_format);
+            let mut encoder = backend_context.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Custom RTT") });
+            render_texture_quad(
+                &mut encoder, &dest_view,
+                &backend_context.device, &backend_context.queue,
+                &uniforms, &BLIT_QUAD, &*tex_view,
+                &*backend_prog.sampler,
+                &user_refs, &**placeholder,
+                &pipeline, &backend_prog.bind_group_layout,
+                wgpu::LoadOp::Load,
+            );
+            backend_context.queue.submit(std::iter::once(encoder.finish()));
         }
+        crate::core::RenderTargetInner::None => {}
     }
 }
 
@@ -2294,8 +2211,8 @@ pub fn draw_layer(target: &crate::core::RenderTarget, program: &crate::core::Pro
     };
 
     let font_view = context.font_texture.as_ref().map(|t| t.view.clone());
-    let custom_sprite_prog = program.sprite_program.as_deref()
-        .filter(|p| matches!(p.kind, ProgramKind::Sprite));
+    // Invariant: sprite_program is only Some for sprite programs (see core::Program::new).
+    let custom_sprite_prog = program.sprite_program.as_deref();
 
     let backend_context = context.backend_context.as_mut().unwrap();
 
@@ -2443,7 +2360,7 @@ pub fn draw_rect<T>(
 
     // Custom programs use a dedicated draw path that packs uniforms and uses the program's pipeline.
     let backend_prog = program.texture_program.clone();
-    if backend_prog.is_custom {
+    if !backend_prog.is_builtin {
         draw_rect_custom(target, program, &backend_prog, backend_context, wgpu_blend, &info, view_matrix, model_matrix, color, texture);
         return;
     }
@@ -2487,6 +2404,8 @@ pub fn draw_rect<T>(
                 &BLIT_QUAD,
                 &*tex_view,
                 sampler,
+                &[],
+                &*backend_context.placeholder_view,
                 &pipeline,
                 &backend_context.texture_bind_group_layout,
                 wgpu::LoadOp::Load,

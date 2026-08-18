@@ -1,7 +1,13 @@
 // Texture fragment preamble — automatically prepended to custom texture fragment shaders.
 // Provides bindings, TextureFragmentInput, and sheet*() helpers.
 // Custom shaders write: @fragment fn main(input: TextureFragmentInput) -> @location(0) vec4<f32>
-// Use texture_uniforms._rd_flags.xyzw to receive up to 4 custom float params via set_uniform().
+//
+// Custom parameters (via Program::set_uniform):
+// - f32/bool values are packed into texture_uniforms._rd_flags.x/.y/.z/.w in the order
+//   they were first set (up to 4).
+// - Texture values are bound to consecutive texture_2d<f32> bindings starting at
+//   @group(0) @binding(3) in the order they were first set (up to 8); declare them in
+//   the shader and sample them with _rd_sampler (binding 2).
 
 struct TextureUniforms {
     u_view: mat4x4<f32>,
