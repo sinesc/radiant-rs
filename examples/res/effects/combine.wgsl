@@ -12,20 +12,13 @@ struct TextureUniforms {
     _rd_flags: vec4<f32>,
 }
 
-@group(0) @binding(0)
-var<uniform> texture_uniforms: TextureUniforms;
-@group(0) @binding(1)
-var sample0: texture_2d<f32>;
-@group(0) @binding(2)
-var sample1: texture_2d<f32>;
-@group(0) @binding(3)
-var sample2: texture_2d<f32>;
-@group(0) @binding(4)
-var sample3: texture_2d<f32>;
-@group(0) @binding(5)
-var sample4: texture_2d<f32>;
-@group(0) @binding(6)
-var _rd_sampler: sampler;
+@group(0) @binding(0) var<uniform> texture_uniforms: TextureUniforms;
+@group(0) @binding(1) var sample0: texture_2d<f32>;
+@group(0) @binding(2) var sample1: texture_2d<f32>;
+@group(0) @binding(3) var sample2: texture_2d<f32>;
+@group(0) @binding(4) var sample3: texture_2d<f32>;
+@group(0) @binding(5) var sample4: texture_2d<f32>;
+@group(0) @binding(6) var _rd_sampler: sampler;
 
 struct FragInput {
     @builtin(position) position: vec4<f32>,
