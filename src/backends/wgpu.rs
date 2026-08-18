@@ -755,7 +755,81 @@ impl Frame {
         );
     }
 
-    pub fn copy_rect(self: &mut Self, _source_rect: crate::core::Rect<i32>, _target_rect: crate::core::Rect<i32>, _filter: crate::core::TextureFilter) { /*TODO*/ }
+    pub fn copy_rect(self: &mut Self, source_rect: crate::core::Rect<i32>, target_rect: crate::core::Rect<i32>, filter: crate::core::TextureFilter) {
+        let surface_texture = &self.surface_texture.texture;
+        let fw = surface_texture.size().width as f32;
+        let fh = surface_texture.size().height as f32;
+
+        let sx = (source_rect.0).0.max(0) as u32;
+        let sy = (source_rect.0).1.max(0) as u32;
+        let sw = (source_rect.1).0.max(0) as u32;
+        let sh = (source_rect.1).1.max(0) as u32;
+        if sw == 0 || sh == 0 { return; }
+
+        let dx = (target_rect.0).0 as f32;
+        let dy = (target_rect.0).1 as f32;
+        let dw = (target_rect.1).0 as f32;
+        let dh = (target_rect.1).1 as f32;
+
+        // Copy the source region into a temp texture (surface has COPY_SRC but not TEXTURE_BINDING)
+        let format = surface_texture.format();
+        let tmp = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Copy Rect Temp"),
+            size: wgpu::Extent3d { width: sw, height: sh, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let tmp_view = tmp.create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.command_encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: surface_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d { x: sx, y: sy, z: 0 },
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &tmp,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d { width: sw, height: sh, depth_or_array_layers: 1 },
+        );
+
+        // Render the temp texture to the target rect on the frame
+        let load_op = self.next_load_op();
+        let view = self.view.clone();
+        let blit = self.blit_resources.clone();
+        let sampler = Context::sampler_for_filter(&blit.nearest_sampler, &blit.linear_sampler, filter);
+        let uniforms = TextureUniforms {
+            u_view: <[[f32; 4]; 4] as Mat4Trait<f32>>::viewport(1.0, 1.0),
+            u_model: <[[f32; 4]; 4] as Mat4Trait<f32>>::identity(),
+            _rd_color: [1.0, 1.0, 1.0, 1.0],
+            _rd_offset: [dx / fw, dy / fh],
+            _rd_dimensions: [dw / fw, dh / fh],
+            _rd_flags: [0.0, 0.0, 0.0, 0.0],
+        };
+        render_texture_quad(
+            &mut self.command_encoder,
+            &view,
+            &self.device,
+            &self.queue,
+            &uniforms,
+            &BLIT_QUAD,
+            &tmp_view,
+            sampler,
+            &[],
+            &blit.placeholder_view,
+            &blit.pipeline,
+            &blit.bind_group_layout,
+            load_op,
+        );
+    }
 
     pub fn copy_rect_from_texture(self: &mut Self, source: &crate::core::Texture, source_rect: crate::core::Rect<i32>, target_rect: crate::core::Rect<i32>, filter: crate::core::TextureFilter) {
         use crate::core::Mat4Trait;
@@ -1394,9 +1468,127 @@ impl Texture2d {
         self.queue.submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn copy_from_frame(self: &Self, _src_frame: &Frame, _filter: crate::core::TextureFilter) { /*TODO*/ }
+    pub fn copy_from_frame(self: &Self, src_frame: &Frame, filter: crate::core::TextureFilter) {
+        let surface_texture = &src_frame.surface_texture.texture;
+        let size = surface_texture.size();
+        let format = surface_texture.format();
 
-    pub fn copy_rect_from_frame(self: &Self, _src_frame: &Frame, _source_rect: crate::core::Rect<i32>, _target_rect: crate::core::Rect<i32>, _filter: crate::core::TextureFilter) { /*TODO*/ }
+        // Copy the full surface into a temp texture (surface has COPY_SRC but not TEXTURE_BINDING)
+        let tmp = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Copy From Frame Temp"),
+            size: wgpu::Extent3d { width: size.width, height: size.height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let tmp_view = tmp.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("CopyFromFrame") });
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: surface_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &tmp,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d { width: size.width, height: size.height, depth_or_array_layers: 1 },
+        );
+
+        let sampler = Context::sampler_for_filter(&self.blit_res.nearest_sampler, &self.blit_res.linear_sampler, filter);
+        render_texture_quad(
+            &mut encoder, &self.view,
+            &self.device, &self.queue,
+            &TextureUniforms::identity(), &BLIT_QUAD,
+            &tmp_view,
+            sampler,
+            &[],
+            &self.blit_res.placeholder_view,
+            &self.blit_res.pipeline,
+            &self.blit_res.bind_group_layout,
+            wgpu::LoadOp::Load,
+        );
+        self.queue.submit(std::iter::once(encoder.finish()));
+    }
+
+    pub fn copy_rect_from_frame(self: &Self, src_frame: &Frame, source_rect: crate::core::Rect<i32>, target_rect: crate::core::Rect<i32>, filter: crate::core::TextureFilter) {
+        let surface_texture = &src_frame.surface_texture.texture;
+        let format = surface_texture.format();
+
+        let sx = (source_rect.0).0.max(0) as u32;
+        let sy = (source_rect.0).1.max(0) as u32;
+        let sw = (source_rect.1).0.max(0) as u32;
+        let sh = (source_rect.1).1.max(0) as u32;
+        if sw == 0 || sh == 0 { return; }
+
+        let dw_full = self.width as f32;
+        let dh_full = self.height as f32;
+        let dx = (target_rect.0).0 as f32;
+        let dy = (target_rect.0).1 as f32;
+        let dw = (target_rect.1).0 as f32;
+        let dh = (target_rect.1).1 as f32;
+
+        // Copy the source region from the surface into a temp texture
+        let tmp = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Copy Rect From Frame Temp"),
+            size: wgpu::Extent3d { width: sw, height: sh, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let tmp_view = tmp.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("CopyRectFromFrame") });
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: surface_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d { x: sx, y: sy, z: 0 },
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &tmp,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d { width: sw, height: sh, depth_or_array_layers: 1 },
+        );
+
+        let uniforms = TextureUniforms {
+            u_view: crate::core::Mat4::viewport(1.0, 1.0).into(),
+            u_model: crate::core::Mat4::<f32>::identity().into(),
+            _rd_color: [1.0, 1.0, 1.0, 1.0],
+            _rd_offset: [dx / dw_full, dy / dh_full],
+            _rd_dimensions: [dw / dw_full, dh / dh_full],
+            _rd_flags: [0.0, 0.0, 0.0, 0.0],
+        };
+        let sampler = Context::sampler_for_filter(&self.blit_res.nearest_sampler, &self.blit_res.linear_sampler, filter);
+        render_texture_quad(
+            &mut encoder, &self.view,
+            &self.device, &self.queue,
+            &uniforms, &BLIT_QUAD,
+            &tmp_view,
+            sampler,
+            &[],
+            &self.blit_res.placeholder_view,
+            &self.blit_res.pipeline,
+            &self.blit_res.bind_group_layout,
+            wgpu::LoadOp::Load,
+        );
+        self.queue.submit(std::iter::once(encoder.finish()));
+    }
 
     fn convert_format(format: crate::core::TextureFormat) -> wgpu::TextureFormat {
         use crate::core::TextureFormat as RF;
