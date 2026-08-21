@@ -143,8 +143,8 @@ and `Display` do not implement `Send`.
 Please file a bug report if you encounter any issues with this library. In particular, it has only been tested on a limited number of graphics cards
 so I would expect issues regarding untested hardware.
 */
-#[cfg(feature = "backend-wgpu")]
-#[macro_use] extern crate enum_primitive;
+#[macro_use]
+extern crate enum_primitive;
 
 mod prelude;
 mod backends;
