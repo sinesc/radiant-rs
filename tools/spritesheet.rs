@@ -21,7 +21,7 @@ fn main() {
     let resize = env::args().nth(3).unwrap_or("0".to_string()).parse::<f32>().unwrap_or_else(|_| error("Expected floating point value scale as third argument", INVALID_ARGUMENT));
 
     // load images
-    let files = find_images(&source, &extension_map.keys().map(|&s| s).collect::<Vec<_>>());
+    let files = find_images(&source, &extension_map.keys().copied().collect::<Vec<_>>());
     print!("Loading image files");
     let ((max_width, max_height), images) = load_images(&files, resize);
     println!(".");
@@ -53,9 +53,9 @@ fn main() {
         let fullname = format!("{}_{}x{}.{}", basename.to_str().unwrap(), max_width, max_height, extension.to_str().unwrap());
 
         let mut file = fs::OpenOptions::new().write(true).create_new(true).open(&fullname)
-                            .unwrap_or_else(|_| error(&format!("Target image {} exists or cannot be written", &fullname), FILE_EXISTS));
+                            .unwrap_or_else(|_| error(&format!("Target image {} exists or cannot be written", fullname), FILE_EXISTS));
 
-        println!("Writing file {}...", &fullname);
+        println!("Writing file {}...", fullname);
         let format = extension_map.get(extension.to_str().unwrap()).unwrap_or_else(|| error("Output file type not supported", INVALID_ARGUMENT));
         dest.write_to(&mut file, *format).unwrap_or_else(|_| error("Failed to encode image", IMAGE_ERROR));
     }
@@ -65,26 +65,26 @@ fn main() {
         let fullname = format!("{}_{}x{}.txt", basename.to_str().unwrap(), max_width, max_height);
 
         let file = fs::OpenOptions::new().write(true).create_new(true).open(&fullname)
-                            .unwrap_or_else(|_| error(&format!("Target sprite list {} exists or cannot be written", &fullname), FILE_EXISTS));
+                            .unwrap_or_else(|_| error(&format!("Target sprite list {} exists or cannot be written", fullname), FILE_EXISTS));
 
-        println!("Writing file {}...", &fullname);
+        println!("Writing file {}...", fullname);
         let mut buffer = io::BufWriter::new(file);
 
         for file in files.iter() {
             buffer.write_all(file.file_name().unwrap().to_str().unwrap().as_bytes()).unwrap();
-            buffer.write(&['\n' as u8]).unwrap();
+            buffer.write_all(b"\n").unwrap();
         }
     }
 }
 
 
 // load images into vector
-fn load_images(files: &Vec<path::PathBuf>, resize: f32) -> ((u32, u32), Vec<image::RgbaImage>) {
+fn load_images(files: &[path::PathBuf], resize: f32) -> ((u32, u32), Vec<image::RgbaImage>) {
     let mut max_width = 0;
     let mut max_height = 0;
     let mut images = Vec::new();
     for file in files.iter() {
-        let image = image::open(&file).unwrap_or_else(|_| error(&format!("Could not open image file {}", &file.to_str().unwrap()), IMAGE_ERROR));
+        let image = image::open(file).unwrap_or_else(|_| error(&format!("Could not open image file {}", file.to_str().unwrap()), IMAGE_ERROR));
         let mut image_dim = image.dimensions();
         let image = if resize > 0.0 {
             image_dim.0 = (image_dim.0 as f32 * resize) as u32;
@@ -107,7 +107,7 @@ fn find_images(source: &str, extensions: &[ &str ]) -> Vec<path::PathBuf> {
     let mut files = Vec::new();
     let entry_set = fs::read_dir(source).unwrap_or_else(|_| error("Cannot find source path", INVALID_PATH));
     let mut entries = entry_set.collect::<Result<Vec<_>, _>>().unwrap_or_else(|_| error("Cannot read source path", INVALID_PATH));
-    entries.sort_by(|a, b| a.path().cmp(&b.path()));
+    entries.sort_by_key(|a| a.path());
     for entry in entries {
         let extension = entry.path().extension().map_or("", |p| p.to_str().unwrap()).to_string(); // !todo better solution or intended user experience ?
         if extensions.iter().find(|ext| **ext == extension).is_some() && entry.path().is_file() {

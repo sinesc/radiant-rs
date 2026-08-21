@@ -27,18 +27,18 @@ impl Monitor {
 
     /// Returns the current width in pixels.
     pub fn width(self: &Self) -> u32 {
-        let (width, _) = self.inner.get_dimensions().into();
+        let (width, _) = self.inner.get_dimensions();
         width
     }
 
     /// Returns the current height in pixels.
     pub fn height(self: &Self) -> u32 {
-        let (_, height) = self.inner.get_dimensions().into();
+        let (_, height) = self.inner.get_dimensions();
         height
     }
 
     /// Returns the current width and height in pixels.
     pub fn dimensions(self: &Self) -> (u32, u32) {
-        self.inner.get_dimensions().into()
+        self.inner.get_dimensions()
     }
 }

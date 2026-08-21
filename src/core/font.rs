@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use crate::core::{Layer, Context, Color, Point2, Rect};
 use crate::core::builder::*;
-use rusttype;
 use crate::backends::backend;
 use font_loader::system_fonts;
 
@@ -130,7 +129,7 @@ impl Font {
         Font {
             font    : Arc::new(rt_font),
             font_id : FONT_COUNTER.fetch_add(1, Ordering::Relaxed),
-            size    : size,
+            size,
             context : context.clone(),
         }
     }
@@ -142,7 +141,7 @@ impl Font {
         let rt_font = self.font.as_ref();
 
         let bucket_id = 0;
-        let glyphs = Self::layout_paragraph(&rt_font, rusttype::Scale::uniform(self.size), max_width, &text);
+        let glyphs = Self::layout_paragraph(rt_font, rusttype::Scale::uniform(self.size), max_width, text);
         // Safety: The font is 'static (stored in Arc<Font<'static>>), so glyphs borrowing from it
         // are also effectively 'static even though the compiler sees them as borrowing from self.
         let glyphs_static: Vec<rusttype::PositionedGlyph<'static>> = unsafe {
@@ -180,11 +179,8 @@ impl Font {
 
         for c in text.nfc() {
             if c.is_control() {
-                match c {
-                    '\n' => {
-                        caret = rusttype::point(0.0, caret.y + advance_height);
-                    },
-                    _ => {}
+                if c == '\n' {
+                    caret = rusttype::point(0.0, caret.y + advance_height);
                 }
                 continue;
             }
@@ -198,13 +194,12 @@ impl Font {
             last_glyph_id = Some(base_glyph.id());
             let mut glyph = base_glyph.scaled(scale).positioned(caret);
 
-            if let Some(bb) = glyph.pixel_bounding_box() {
-                if width > 0.0 && bb.max.x > width as i32 {
+            if let Some(bb) = glyph.pixel_bounding_box()
+                && width > 0.0 && bb.max.x > width as i32 {
                     caret = rusttype::point(0.0, caret.y + advance_height);
                     glyph = glyph.into_unpositioned().positioned(caret);
                     last_glyph_id = None;
                 }
-            }
 
             caret.x += glyph.unpositioned().h_metrics().advance_width;
             result.push(glyph);
@@ -215,7 +210,7 @@ impl Font {
     /// Builds a FontProperty for the underlying system_fonts library
     fn build_property(info: &FontInfo) -> system_fonts::FontProperty {
         let mut property = system_fonts::FontPropertyBuilder::new();
-        if info.family != "" {
+        if !info.family.is_empty() {
             property = property.family(&info.family);
         }
         if info.italic {
@@ -283,7 +278,7 @@ impl FontCache {
     pub fn update(self: &Self, texture: &backend::Texture2d) {
         if self.dirty.load(Ordering::Relaxed) {
             let mut queue = self.queue.lock().unwrap();
-            for &(ref rect, ref data) in queue.deref() {
+            for (rect, data) in queue.deref() {
                 texture.write(rect, data);
             }
             queue.clear();

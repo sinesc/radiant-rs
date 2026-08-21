@@ -238,7 +238,7 @@ enum_from_primitive! {
         NavigateForward,
         NavigateBackward,
 
-        Mouse1 = NUM_KEYS as isize +0,
+        Mouse1 = NUM_KEYS as isize,
         Mouse2 = NUM_KEYS as isize +1,
         Mouse3 = NUM_KEYS as isize +2,
         Mouse4 = NUM_KEYS as isize +3,
@@ -263,7 +263,7 @@ impl InputId {
     pub fn button(id: usize) -> InputId {
         use enum_primitive::FromPrimitive;
         let base = InputId::Mouse1 as isize;
-        if (id >= 1) & (id <= 16) {
+        if (1..=16).contains(&id) {
             InputId::from_isize(base + (id as isize - 1)).unwrap()
         } else {
             InputId::Unsupported
@@ -414,7 +414,7 @@ impl<'a> Iterator for InputDownIterator<'a> {
     type Item = InputId;
 
     fn next(self: &mut Self) -> Option<InputId> {
-        while let Some(current) = self.0.next() {
+        for current in self.0.by_ref() {
             let (input_id, button_state) = current;
             if (button_state == InputState::Down) || (button_state == InputState::Pressed) {
                 return Some(input_id);
@@ -431,7 +431,7 @@ impl<'a> Iterator for InputUpIterator<'a> {
     type Item = InputId;
 
     fn next(self: &mut Self) -> Option<InputId> {
-        while let Some(current) = self.0.next() {
+        for current in self.0.by_ref() {
             let (input_id, button_state) = current;
             if (button_state == InputState::Up) || (button_state == InputState::Released) {
                 return Some(input_id);

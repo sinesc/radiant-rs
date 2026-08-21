@@ -9,7 +9,7 @@ impl DrawBuilderFill {
     // Creates a new DrawBuilderFill instance.
     pub(crate) fn new(renderer: &Renderer) -> DrawBuilder<'_, DrawBuilderFill> {
         DrawBuilder {
-            renderer    : renderer,
+            renderer,
             phantomdata : PhantomData,
             rect        : ((0., 0.), (1., 1.)),
             color       : None,
@@ -29,9 +29,9 @@ impl DrawBuilderRect {
     // Creates a new DrawBuilderRect instance.
     pub(crate) fn new(renderer: &Renderer, rect: Rect) -> DrawBuilder<'_, DrawBuilderRect> {
         DrawBuilder {
-            renderer    : renderer,
+            renderer,
             phantomdata : PhantomData,
-            rect        : rect,
+            rect,
             color       : None,
             texture     : None,
             blendmode   : None,

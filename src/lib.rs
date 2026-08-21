@@ -1,3 +1,5 @@
+#![allow(clippy::needless_arbitrary_self_type)]
+#![allow(clippy::too_many_arguments)]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/sinesc/radiant-rs/master/doc/logo.png",
        html_favicon_url = "https://raw.githubusercontent.com/sinesc/radiant-rs/master/doc/favicon.png")]
 
@@ -18,7 +20,7 @@ The examples folder contains multiple small examples. They can be run via `cargo
 # Basic rendering
 
 1. Create a [display](struct.Display.html) with `Display::builder()`. This represents the window/screen. **Note:** It is also
-possible to use backend window/event handling instead. See further below.
+   possible to use backend window/event handling instead. See further below.
 2. Create a [renderer](struct.Renderer.html) with `Renderer::new()`. It is used to draw to rendertargets like the display.
 3. Grab a [context](struct.Context.html) from the display using the `context()` method. It ties everything together.
 4. Load [sprites](struct.Sprite.html) or [fonts](struct.Font.html) using e.g. `Font::from_file()` or `Sprite::from_file()`.
@@ -32,7 +34,7 @@ possible to use backend window/event handling instead. See further below.
 
 1. Create a [context](struct.Context.html) with `Context::new()`.
 2. Create as many displays as are needed using `Display::builder()` while using the builder's `context()` method to specify the
-previously created context.
+   previously created context.
 3. Either...
     1. Create a single headless renderer using `Renderer::headless()` and use `Renderer::render_to()` to render to a specific window or
     2. Create a renderer for each `Display`.
@@ -108,7 +110,7 @@ To access the default sampler, the following wrappers are provided:
 - `vec2 sheetSize()` Retrieves the dimensions of the texture.
 - `vec4 sheet(in vec2 texture_coords)` Retrieves texels from the texture.
 - `vec4 sheetComponent(in vec2 texture_coords, in uint component)` Samples a specific sprite
-component instead of the default one set by `Renderer::draw_layer()`.
+  component instead of the default one set by `Renderer::draw_layer()`.
 
 Example: (This is the default shader used by radiant.)
 
@@ -133,7 +135,7 @@ Start with steps 1-5 from the *Basic rendering* list. Then...
 2. Clone the `Arc`s for each thread that needs their contents. The context can be cloned directly.
 3. Move the clones into the thread.
 4. Draw onto your layers, load sprites etc. from any thread(s). Layers are non-blocking for drawing operations,
-blocking for other manipulations (e.g. matrix modification).
+   blocking for other manipulations (e.g. matrix modification).
 
 Complete rendering with steps 7-9 from the *Basic rendering* list in the thread that created the `Renderer`; both it
 and `Display` do not implement `Send`.

@@ -33,6 +33,15 @@ impl Context {
         let context_data = ContextData::new();
         Context(Arc::new(Mutex::new(context_data)))
     }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Context {
     /// Prunes no longer used textures. Requires all layers to be cleared before
     /// adding new sprites or rendering the layer.
     pub fn prune(self: &Self) {
@@ -67,11 +76,7 @@ impl SpriteBackRef {
     }
     /// Returns the texture id-range used by the referenced sprite or None, if it dropped.
     fn range(self: &Self) -> Option<(usize, usize)> {
-        if let Some(data) = self.upgrade() {
-            Some((data.texture_id.load(Ordering::Relaxed), data.num_frames as usize * data.components as usize))
-        } else {
-            None
-        }
+        self.upgrade().map(|data| (data.texture_id.load(Ordering::Relaxed), data.num_frames as usize * data.components as usize))
     }
 }
 
@@ -93,7 +98,7 @@ impl RawFrameArray {
         }
     }
     /// Store given frames to texture arrays.
-    pub fn store_frames<'a>(self: &mut Self, raw_frames: Vec<RawFrame>) -> u32 {
+    pub fn store_frames(self: &mut Self, raw_frames: Vec<RawFrame>) -> u32 {
         let texture_id = self.raw.len() as u32;
         for frame in raw_frames {
             self.raw.push(frame);
@@ -117,15 +122,15 @@ impl RawFrameArray {
         let mut mapping = self.sprites.iter().filter_map(|sprite| sprite.range()).collect::<Vec<(usize, usize)>>();
         mapping.sort_by_key(|a| a.0);
         let mut num_items = 0;
-        for i in 0..mapping.len() {
-            let items = mapping[i].1;
-            mapping[i].1 = mapping[i].0 - num_items;
+        for m in mapping.iter_mut() {
+            let items = m.1;
+            m.1 = m.0 - num_items;
             num_items += items;
         }
-        if mapping.len() > 0 { Some(mapping) } else { None }
+        if !mapping.is_empty() { Some(mapping) } else { None }
     }
     // Shrinks raw data array using given prune-map. Returns hashmap mapping old texture index -> new texture index.
-    fn prune_raw_textures(self: &mut Self, mapping: &Vec<(usize, usize)>) -> HashMap<usize, usize> {
+    fn prune_raw_textures(self: &mut Self, mapping: &[(usize, usize)]) -> HashMap<usize, usize> {
         let new_size = self.raw.len() - mapping.last().unwrap().1;
         let mut destination_map = HashMap::new();
         for m in 0..mapping.len() {
@@ -237,7 +242,7 @@ impl ContextData {
 
     /// Associates the context with a display as required by some backends.
     pub fn set_primary_display(self: &mut Self, display: &backend::Display) {
-        self.init_backend(&display);
+        self.init_backend(display);
     }
 
     /// Returns the context's generation.

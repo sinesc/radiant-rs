@@ -111,7 +111,7 @@ impl Display {
 
     /// Swaps current drawing frame with visible frame.
     pub fn swap_frame(self: &Self) {
-        let frame = mem::replace(&mut *self.frame.borrow_mut(), None);
+        let frame = (*self.frame.borrow_mut()).take();
         if let Some(frame) = frame {
             frame.finish();
         } else {
@@ -186,10 +186,7 @@ impl Display {
         self.handle.poll_events(|event| {
             match event {
                 Event::KeyboardInput(key_id, down) => {
-                    let currently_down = match input_data.key[key_id] {
-                        InputState::Down | InputState::Pressed | InputState::Repeat => true,
-                        _ => false
-                    };
+                    let currently_down = matches!(input_data.key[key_id], InputState::Down | InputState::Pressed | InputState::Repeat);
                     if !currently_down && down {
                         input_data.key[key_id] = InputState::Pressed;
                     } else if currently_down && !down {
@@ -205,10 +202,7 @@ impl Display {
                     input_data.mouse = (x, y);
                 },
                 Event::MouseInput(button_id, down) => {
-                    let currently_down = match input_data.button[button_id] {
-                        InputState::Down | InputState::Pressed => true,
-                        _ => false
-                    };
+                    let currently_down = matches!(input_data.button[button_id], InputState::Down | InputState::Pressed);
                     if !currently_down && down {
                         input_data.button[button_id] = InputState::Pressed
                     } else if currently_down && !down {
@@ -231,7 +225,7 @@ impl Display {
                 }
             }
         });
-        input_data.dimensions = self.handle.window_dimensions().into();
+        input_data.dimensions = self.handle.window_dimensions();
         // Keep the cursor near the window center so it never hits an edge while grabbed.
         if input_data.cursor_grabbed && input_data.has_focus {
             let cx = input_data.dimensions.0 as i32 / 2;
@@ -259,11 +253,7 @@ impl Display {
 
         // Reuse existing context or create new one
 
-        let context = if let Some(existing_context) = descriptor.context.clone() {
-            existing_context
-        } else {
-            Context::new()
-        };
+        let context = descriptor.context.clone().unwrap_or_default();
 
         // If a context with an existing primary display is being reused, share its GPU
         // resources so all displays use the same wgpu device and queue.
@@ -288,7 +278,7 @@ impl Display {
 
         Ok(Display {
             handle      : display,
-            context     : context,
+            context,
             frame       : Rc::new(RefCell::new(None)),
             input_data  : Arc::new(RwLock::new(InputData::new())),
             fullscreen  : Rc::new(RefCell::new(fullscreen)),
@@ -310,11 +300,10 @@ impl Drop for Display {
         // present() does — so the later Surface teardown would panic in wgpu-hal with
         // "SwapchainAcquireSemaphore still in use by a SurfaceTexture". Present the
         // pending frame here to release it cleanly while `handle` is still alive.
-        if let Ok(mut frame) = self.frame.try_borrow_mut() {
-            if let Some(frame) = frame.take() {
+        if let Ok(mut frame) = self.frame.try_borrow_mut()
+            && let Some(frame) = frame.take() {
                 frame.finish();
             }
-        }
     }
 }
 

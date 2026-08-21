@@ -3,8 +3,8 @@ use crate::core::{Context, AsUniform, UniformList, Color};
 use crate::core::math::*;
 use crate::backends::backend;
 
-const SPRITE_INC: &'static str = include_str!("../shader/sprite.inc.wgsl");
-const TEXTURE_INC: &'static str = include_str!("../shader/texture.inc.wgsl");
+const SPRITE_INC: &str = include_str!("../shader/sprite.inc.wgsl");
+const TEXTURE_INC: &str = include_str!("../shader/texture.inc.wgsl");
 
 /// A shader program and its uniforms.
 ///

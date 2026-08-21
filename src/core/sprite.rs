@@ -16,13 +16,13 @@ pub struct Sprite {
     data    : Arc<SpriteData>,
 }
 
-impl<'a> Sprite {
+impl Sprite {
 
     /// Creates a new sprite texture. Given filename is expected to end
     /// on _<width>x<height>x<frames>.<extension>, e.g. asteroid_64x64x24.png.
     pub fn from_file(context: &Context, file: &str) -> crate::core::Result<Self> {
         let path = Path::new(file);
-        let mut image = image::open(&path)?;
+        let mut image = image::open(path)?;
         let parameters = Self::parse_parameters(image.dimensions(), path);
         let descriptor = Self::build_raw_frames(&mut image, &parameters);
         Result::Ok(Self::new(context, descriptor))
@@ -90,7 +90,7 @@ impl<'a> Sprite {
     fn new(context: &Context, descriptor: SpriteRawInfo) -> Self {
 
         let SpriteRawInfo { bucket_id, texture_size, frame_width, frame_height, components, raw_frames } = descriptor;
-        let num_frames = (raw_frames.len() as u32 / components) as u32;
+        let num_frames = raw_frames.len() as u32 / components ;
 
         let mut context = context.lock();
         let texture_id = context.store_frames(bucket_id, raw_frames);
@@ -220,14 +220,14 @@ impl<'a> Sprite {
 
                 SpriteParameters {
                     dimensions  : (frame_width, frame_height),
-                    inner_margin: inner_margin,
-                    num_frames  : num_frames,
+                    inner_margin,
+                    num_frames,
                     components  : frame_channels,
                     layout      : frame_layout
                 }
             }
             None => SpriteParameters {
-                dimensions  : dimensions,
+                dimensions,
                 inner_margin: 0,
                 num_frames  : (1, 1),
                 components  : 1,

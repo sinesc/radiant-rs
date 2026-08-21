@@ -72,7 +72,7 @@ impl Postprocessor for Bloom {
                     renderer.render_to(&self.targets[dst][i], || {
                         let fill = renderer.fill().blendmode(self.iter_blend).texture(&self.targets[src][i]);
                         if i < horizontal {
-                            fill.program(&blur).draw();
+                            fill.program(blur).draw();
                         } else {
                             fill.draw();
                         }
@@ -88,7 +88,7 @@ impl Postprocessor for Bloom {
                     renderer.render_to(&self.targets[dst][i], || {
                         let fill = renderer.fill().blendmode(self.iter_blend).texture(&self.targets[src][i]);
                         if i < vertical {
-                            fill.program(&blur).draw();
+                            fill.program(blur).draw();
                         } else {
                             fill.draw();
                         }
@@ -112,8 +112,8 @@ impl Bloom {
     pub fn new<T>(context: &Context, dimensions: T, divider_factor: u32) -> Self where Point2<u32>: From<T> {
 
         let dimensions = Point2::<u32>::from(dimensions);
-        let blur_program = Program::from_string(&context, include_str!("../../shader/postprocess/blur.wgsl")).unwrap();
-        let mut combine_program = Program::from_string(&context, include_str!("../../shader/postprocess/combine.wgsl")).unwrap();
+        let blur_program = Program::from_string(context, include_str!("../../shader/postprocess/blur.wgsl")).unwrap();
+        let mut combine_program = Program::from_string(context, include_str!("../../shader/postprocess/combine.wgsl")).unwrap();
         // The combine shader reads brightness from _rd_flags.x (first scalar uniform).
         combine_program.set_uniform("brightness", &1.0f32);
         let targets = Self::create_targets(context, dimensions, divider_factor);
@@ -127,8 +127,8 @@ impl Bloom {
 
         Bloom {
             blur_program    : Mutex::new(blur_program),
-            combine_program : combine_program,
-            targets         : targets,
+            combine_program,
+            targets,
             iterations      : 3,
             iter_blend      : blendmodes::COPY,
             draw_blend      : blendmodes::ADD,

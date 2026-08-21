@@ -1,7 +1,5 @@
 use crate::prelude::*;
 use crate::core::{Vertex, Mat4Trait};
-use wgpu;
-use winit;
 use std::sync::OnceLock;
 
 // Newtype that asserts Send+Sync for the event loop, which is safe because we always
@@ -53,11 +51,11 @@ pub mod public {}
 
 #[derive(Debug)]
 pub enum Error {
-    OsError(String),
+    Os(String),
     Incompatible(String),
     NotAvailable(String),
     WindowCreation(String),
-    WgpuError(String),
+    Wgpu(String),
     Unknown,
 }
 
@@ -417,7 +415,7 @@ impl Display {
             match el_result {
                 Ok(el) => { let _ = GLOBAL_EVENT_LOOP.set(Mutex::new(SendableEventLoop(el))); }
                 Err(_) if GLOBAL_EVENT_LOOP.get().is_some() => {} // concurrent init won
-                Err(e) => return Err(crate::core::Error::BackendError(Error::OsError(
+                Err(e) => return Err(crate::core::Error::BackendError(Error::Os(
                     format!("Failed to create event loop: {:?}", e)
                 ))),
             }
@@ -436,7 +434,7 @@ impl Display {
             #[cfg(not(target_os = "macos"))]
             {
                 GLOBAL_EVENT_LOOP.get()
-                    .ok_or_else(|| crate::core::Error::BackendError(Error::OsError("Event loop unavailable".to_string())))?
+                    .ok_or_else(|| crate::core::Error::BackendError(Error::Os("Event loop unavailable".to_string())))?
                     .lock().unwrap().0
                     .create_window(window_attributes)
                     .map_err(|e| crate::core::Error::BackendError(Error::WindowCreation(format!("Failed to create window: {:?}", e))))?
@@ -480,7 +478,7 @@ impl Display {
                 required_limits: wgpu::Limits::default(),
                 ..Default::default()
             }).await.map_err(|e| {
-                crate::core::Error::BackendError(Error::WgpuError(format!("Failed to request device: {:?}", e)))
+                crate::core::Error::BackendError(Error::Wgpu(format!("Failed to request device: {:?}", e)))
             })?;
 
             (instance, adapter, Arc::new(device), Arc::new(queue))
@@ -489,7 +487,7 @@ impl Display {
         let surface = instance.create_surface(window.clone()).map_err(crate::core::Error::from)?;
 
         let size = window.inner_size();
-        let surface_caps = surface.get_capabilities(&*adapter);
+        let surface_caps = surface.get_capabilities(&adapter);
 
         let present_mode = if descriptor.vsync {
             if surface_caps.present_modes.contains(&wgpu::PresentMode::Mailbox) {
@@ -513,7 +511,7 @@ impl Display {
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
-        surface.configure(&*device, &config);
+        surface.configure(&device, &config);
 
         let blit_resources = BlitResources::new(&device, &queue, config.format);
 
@@ -641,8 +639,8 @@ impl Display {
 
             // Distribute the just-collected events into the per-window queues.
             let queues = WINDOW_EVENTS.get_or_init(|| Mutex::new(HashMap::new()));
-            if let Some(collector) = collected {
-                if let Ok(mut map) = queues.lock() {
+            if let Some(collector) = collected
+                && let Ok(mut map) = queues.lock() {
                     for (win_id, event) in collector.window_events {
                         map.entry(win_id).or_default().push(event);
                     }
@@ -652,16 +650,14 @@ impl Display {
                         }
                     }
                 }
-            }
 
             // Drain this window's events and forward them to the caller.
-            if let Ok(mut map) = queues.lock() {
-                if let Some(events) = map.remove(&self.inner.window.id()) {
+            if let Ok(mut map) = queues.lock()
+                && let Some(events) = map.remove(&self.inner.window.id()) {
                     for event in events {
                         callback(event);
                     }
                 }
-            }
         }
         // macOS: pump_app_events unavailable; poll_events remains a no-op
         #[cfg(target_os = "macos")]
@@ -704,8 +700,8 @@ impl Frame {
 
     pub fn finish(mut self: Self) {
         // If no render pass was issued (e.g. empty frame), apply the pending clear now.
-        if self.first_pass {
-            if let Some(c) = self.clear_color {
+        if self.first_pass
+            && let Some(c) = self.clear_color {
                 let encoder = &mut self.command_encoder;
                 let view = &*self.view;
                 let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -725,7 +721,6 @@ impl Frame {
                     multiview_mask: None,
                 });
             }
-        }
         self.queue.submit(std::iter::once(self.command_encoder.finish()));
         self.surface_texture.present();
         // device.poll(Wait) is omitted: it is unnecessary for rendering and panics on
@@ -758,7 +753,7 @@ impl Frame {
             &self.queue,
             &uniforms,
             &BLIT_QUAD,
-            &*source.handle.view,
+            &source.handle.view,
             sampler,
             &[],
             &blit.placeholder_view,
@@ -894,7 +889,7 @@ impl Frame {
             &self.queue,
             &uniforms,
             &quad,
-            &*source.handle.view,
+            &source.handle.view,
             sampler,
             &[],
             &blit.placeholder_view,
@@ -941,7 +936,7 @@ impl Frame {
             let vertex_bytes = unsafe {
                 std::slice::from_raw_parts(
                     vertices.as_ptr() as *const u8,
-                    num_vertices * std::mem::size_of::<Vertex>(),
+                    std::mem::size_of_val(vertices),
                 )
             };
             self.queue.write_buffer(&context.vertex_buffers[vb_index].buffer, 0, vertex_bytes);
@@ -1206,8 +1201,9 @@ impl Program {
     pub fn get_or_create_pipeline(&self, blend: wgpu::BlendState, format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
         let key = (BlendStateKey::from(&blend), format);
         let mut pipelines = self.pipelines.lock().unwrap();
-        if !pipelines.contains_key(&key) {
-            let pipeline = Arc::new(match self.kind {
+        pipelines.entry(key).or_insert_with(|| {
+            
+            Arc::new(match self.kind {
                 ProgramKind::Sprite => Context::build_sprite_pipeline(
                     &self.device, &self.vert_module, &self.frag_module,
                     &self.pipeline_layout, format, blend,
@@ -1216,9 +1212,8 @@ impl Program {
                     &self.device, &self.vert_module, &self.frag_module,
                     &self.pipeline_layout, format, blend,
                 ),
-            });
-            pipelines.insert(key, pipeline);
-        }
+            })
+        });
         pipelines[&key].clone()
     }
 }
@@ -1251,8 +1246,8 @@ impl TextureUniforms {
     /// Identity transform — renders the quad at (0,0)–(1,1) with no color tint.
     fn identity() -> Self {
         TextureUniforms {
-            u_view: crate::core::Mat4::viewport(1.0, 1.0).into(),
-            u_model: crate::core::Mat4::<f32>::identity().into(),
+            u_view: crate::core::Mat4::viewport(1.0, 1.0),
+            u_model: crate::core::Mat4::<f32>::identity(),
             _rd_color: [1.0, 1.0, 1.0, 1.0],
             _rd_offset: [0.0, 0.0],
             _rd_dimensions: [1.0, 1.0],
@@ -1392,7 +1387,7 @@ impl Texture2d {
         self.queue.submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn write(self: &Self, rect: &crate::core::Rect<u32>, data: &Vec<u8>) {
+    pub fn write(self: &Self, rect: &crate::core::Rect<u32>, data: &[u8]) {
         let x = (rect.0).0;
         let y = (rect.0).1;
         let w = (rect.1).0 - x;
@@ -1425,7 +1420,7 @@ impl Texture2d {
             &mut encoder, &self.view,
             &self.device, &self.queue,
             &uniforms, &BLIT_QUAD,
-            &*src_texture.handle.view,
+            &src_texture.handle.view,
             sampler,
             &[],
             &self.blit_res.placeholder_view,
@@ -1457,8 +1452,8 @@ impl Texture2d {
             Vertex { position: [1.0, 1.0], texture_uv: [u1, v1], ..Vertex::default() },
         ];
         let uniforms = TextureUniforms {
-            u_view: crate::core::Mat4::viewport(1.0, 1.0).into(),
-            u_model: crate::core::Mat4::<f32>::identity().into(),
+            u_view: crate::core::Mat4::viewport(1.0, 1.0),
+            u_model: crate::core::Mat4::<f32>::identity(),
             _rd_color: [1.0, 1.0, 1.0, 1.0],
             _rd_offset: [dx / dw_full, dy / dh_full],
             _rd_dimensions: [dw / dw_full, dh / dh_full],
@@ -1470,7 +1465,7 @@ impl Texture2d {
             &mut encoder, &self.view,
             &self.device, &self.queue,
             &uniforms, &quad,
-            &*src_texture.handle.view,
+            &src_texture.handle.view,
             sampler,
             &[],
             &self.blit_res.placeholder_view,
@@ -1580,8 +1575,8 @@ impl Texture2d {
         );
 
         let uniforms = TextureUniforms {
-            u_view: crate::core::Mat4::viewport(1.0, 1.0).into(),
-            u_model: crate::core::Mat4::<f32>::identity().into(),
+            u_view: crate::core::Mat4::viewport(1.0, 1.0),
+            u_model: crate::core::Mat4::<f32>::identity(),
             _rd_color: [1.0, 1.0, 1.0, 1.0],
             _rd_offset: [dx / dw_full, dy / dh_full],
             _rd_dimensions: [dw / dw_full, dh / dh_full],
@@ -1656,7 +1651,7 @@ pub struct Texture2dArray {
 }
 
 impl Texture2dArray {
-    pub fn new(context: &Context, raw: &Vec<crate::core::RawFrame>) -> Self {
+    pub fn new(context: &Context, raw: &[crate::core::RawFrame]) -> Self {
         let layer_count = if raw.is_empty() { 1 } else { raw.len() as u32 };
         let width = raw.first().map_or(1, |f| f.width);
         let height = raw.first().map_or(1, |f| f.height);
@@ -2334,8 +2329,8 @@ fn draw_rect_custom<T>(
     let user_refs: Vec<&wgpu::TextureView> = user_textures.iter().map(|v| v.as_ref()).collect();
 
     let uniforms = TextureUniforms {
-        u_view: view_matrix.into(),
-        u_model: model_matrix.into(),
+        u_view: view_matrix,
+        u_model: model_matrix,
         _rd_color: color.into(),
         _rd_offset: info.rect.0.as_array(),
         _rd_dimensions: info.rect.1.as_array(),
@@ -2360,9 +2355,9 @@ fn draw_rect_custom<T>(
             render_texture_quad(
                 &mut frame.command_encoder, &view,
                 &frame.device, &frame.queue,
-                &uniforms, &BLIT_QUAD, &*tex_view,
-                &*backend_prog.sampler,
-                &user_refs, &**placeholder,
+                &uniforms, &BLIT_QUAD, &tex_view,
+                &backend_prog.sampler,
+                &user_refs, placeholder,
                 &pipeline, &backend_prog.bind_group_layout,
                 load_op,
             );
@@ -2375,9 +2370,9 @@ fn draw_rect_custom<T>(
             render_texture_quad(
                 &mut encoder, &dest_view,
                 &backend_context.device, &backend_context.queue,
-                &uniforms, &BLIT_QUAD, &*tex_view,
-                &*backend_prog.sampler,
-                &user_refs, &**placeholder,
+                &uniforms, &BLIT_QUAD, &tex_view,
+                &backend_prog.sampler,
+                &user_refs, placeholder,
                 &pipeline, &backend_prog.bind_group_layout,
                 wgpu::LoadOp::Load,
             );
@@ -2414,7 +2409,7 @@ fn draw_sprites_to_texture(
 
     if dirty || vb_dirty {
         let vertex_bytes = unsafe {
-            std::slice::from_raw_parts(vertices.as_ptr() as *const u8, num_vertices * std::mem::size_of::<Vertex>())
+            std::slice::from_raw_parts(vertices.as_ptr() as *const u8, std::mem::size_of_val(vertices))
         };
         context.queue.write_buffer(&context.vertex_buffers[vb_index].buffer, 0, vertex_bytes);
     }
@@ -2494,8 +2489,8 @@ pub fn draw_layer(target: &crate::core::RenderTarget, program: &crate::core::Pro
 
     let view_matrix = *layer.view_matrix().deref().deref();
     let model_matrix = *layer.model_matrix().deref().deref();
-    let color = layer.color().deref().clone();
-    let blendmode = layer.blendmode().clone();
+    let color = *layer.color().deref();
+    let blendmode = *layer.blendmode();
     let wgpu_blend = Context::blendmode_to_wgpu(&blendmode);
 
     let sprite_uniforms = SpriteUniforms {
@@ -2531,7 +2526,7 @@ pub fn draw_layer(target: &crate::core::RenderTarget, program: &crate::core::Pro
                 draw_sprites_to_texture(
                     vertices, dirty, layer_id, component,
                     wgpu_blend, fv, &context.tex_arrays,
-                    &sprite_uniforms, backend_context, &*texture.handle.view, dest_format,
+                    &sprite_uniforms, backend_context, &texture.handle.view, dest_format,
                     custom_sprite_prog,
                 );
             }
@@ -2565,8 +2560,8 @@ pub fn draw_rect<T>(
     }
 
     let uniforms = TextureUniforms {
-        u_view: view_matrix.into(),
-        u_model: model_matrix.into(),
+        u_view: view_matrix,
+        u_model: model_matrix,
         _rd_color: color.into(),
         _rd_offset: info.rect.0.as_array(),
         _rd_dimensions: info.rect.1.as_array(),
@@ -2586,7 +2581,7 @@ pub fn draw_rect<T>(
         crate::core::RenderTargetInner::Frame(frame_rc) => {
             let mut frame = frame_rc.borrow_mut();
             let frame = frame.as_mut().expect("No frame prepared");
-            frame.draw_quad(&uniforms, &*tex_view, filter, wgpu_blend, backend_context);
+            frame.draw_quad(&uniforms, &tex_view, filter, wgpu_blend, backend_context);
         }
         crate::core::RenderTargetInner::Texture(dest_texture) => {
             let dest_view = dest_texture.handle.view.clone();
@@ -2601,10 +2596,10 @@ pub fn draw_rect<T>(
                 &backend_context.queue,
                 &uniforms,
                 &BLIT_QUAD,
-                &*tex_view,
+                &tex_view,
                 sampler,
                 &[],
-                &*backend_context.placeholder_view,
+                &backend_context.placeholder_view,
                 &pipeline,
                 &backend_context.texture_bind_group_layout,
                 wgpu::LoadOp::Load,

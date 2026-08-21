@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use avec;
 use crate::core::{blendmodes, BlendMode, context, Color, Program, Vertex};
 use crate::core::math::*;
 
@@ -186,45 +185,45 @@ impl Layer {
         map.set(0, Vertex {
             position    : [pos.0, pos.1],
             offset      : [offset_x0, offset_y0],
-            rotation    : rotation,
+            rotation,
             color       : color.into(),
-            bucket_id   : bucket_id,
-            texture_id  : texture_id,
+            bucket_id,
+            texture_id,
             texture_uv  : uv.top_left().as_array(),
-            components  : components,
+            components,
         });
 
         map.set(1, Vertex {
             position    : [pos.0, pos.1],
             offset      : [offset_x1, offset_y0],
-            rotation    : rotation,
+            rotation,
             color       : color.into(),
-            bucket_id   : bucket_id,
-            texture_id  : texture_id,
+            bucket_id,
+            texture_id,
             texture_uv  : uv.top_right().as_array(),
-            components  : components,
+            components,
         });
 
         map.set(2, Vertex {
             position    : [pos.0, pos.1],
             offset      : [offset_x0, offset_y1],
-            rotation    : rotation,
+            rotation,
             color       : color.into(),
-            bucket_id   : bucket_id,
-            texture_id  : texture_id,
+            bucket_id,
+            texture_id,
             texture_uv  : uv.bottom_left().as_array(),
-            components  : components,
+            components,
         });
 
         map.set(3, Vertex {
             position    : [pos.0, pos.1],
             offset      : [offset_x1, offset_y1],
-            rotation    : rotation,
+            rotation,
             color       : color.into(),
-            bucket_id   : bucket_id,
-            texture_id  : texture_id,
+            bucket_id,
+            texture_id,
             texture_uv  : uv.bottom_right().as_array(),
-            components  : components,
+            components,
         });
     }
 
@@ -262,19 +261,19 @@ impl Layer {
                 generation      : AtomicUsize::new(0),
                 layer_id        : 1 + LAYER_COUNTER.fetch_add(1, Ordering::Relaxed),
             }),
-            program         : program,
+            program,
         }
     }
 
     /// Creates a clone.
     fn create_clone(self: &Self, program: Option<Program>) -> Self {
         Layer {
-            view_matrix     : Mutex::new(self.view_matrix().clone().into()),
-            model_matrix    : Mutex::new(self.model_matrix().clone().into()),
-            blend           : Mutex::new(self.blendmode().clone()),
-            color           : Mutex::new(self.color().clone()),
+            view_matrix     : Mutex::new((**self.view_matrix()).into()),
+            model_matrix    : Mutex::new((**self.model_matrix()).into()),
+            blend           : Mutex::new(*self.blendmode()),
+            color           : Mutex::new(*self.color()),
             contents        : self.contents.clone(),
-            program         : program,
+            program,
         }
     }
 

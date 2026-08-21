@@ -70,7 +70,7 @@ impl<'a> FontBuilder<'a> {
     // Creates a new FontBuilder instance.
     pub(crate) fn new<'b>(context: &'b Context) -> FontBuilder<'b> {
         FontBuilder {
-            context : context,
+            context,
             info    : FontInfo { ..FontInfo::default() },
             file    : None,
         }

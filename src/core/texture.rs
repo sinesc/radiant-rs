@@ -66,9 +66,9 @@ impl Texture {
     pub fn clone_with_options(self: &Self, minify: TextureFilter, magnify: TextureFilter, wrap: TextureWrap) -> Self {
         Texture {
             handle      : self.handle.clone(),
-            minify      : minify,
-            magnify     : magnify,
-            wrap        : wrap,
+            minify,
+            magnify,
+            wrap,
             dimensions  : self.dimensions,
         }
     }

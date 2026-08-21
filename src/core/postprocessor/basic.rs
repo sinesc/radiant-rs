@@ -52,8 +52,8 @@ impl Basic {
         let (width, height) = Point2::<u32>::from(dimensions);
 
         let result = Basic {
-            source      : Texture::new(&context, width, height),
-            program     : program,
+            source      : Texture::new(context, width, height),
+            program,
         };
 
         result.source.clear(Color::TRANSPARENT);

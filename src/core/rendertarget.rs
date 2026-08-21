@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::core::{Texture, Color, TextureFilter, Rect, Point2};
 use crate::backends::backend;
 
-pub const NO_FRAME_PREPARED: &'static str = "Failed to get frame: None prepared.";
+pub const NO_FRAME_PREPARED: &str = "Failed to get frame: None prepared.";
 
 /// A target for rendering.
 pub trait AsRenderTarget {
@@ -40,7 +40,7 @@ impl Debug for RenderTarget {
         let inner = match &self.0 {
             &RenderTargetInner::None => "None".to_string(),
             &RenderTargetInner::Frame(_) => "Frame".to_string(),
-            &RenderTargetInner::Texture(ref texture) => format!("{:?}", texture)
+            RenderTargetInner::Texture(texture) => format!("{:?}", texture)
         };
         write!(f, "RenderTarget {{ {:?} }}", inner)
     }

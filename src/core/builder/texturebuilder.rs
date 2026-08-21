@@ -63,7 +63,7 @@ impl<'a> TextureBuilder<'a> {
     }
     pub(crate) fn new<'b>(context: &'b Context) -> TextureBuilder<'b> {
         TextureBuilder {
-            context : context,
+            context,
             minify  : TextureFilter::Linear,
             magnify : TextureFilter::Linear,
             wrap    : TextureWrap::Clamp,

@@ -1,3 +1,5 @@
+#![allow(clippy::excessive_precision)]
+
 use crate::prelude::*;
 use crate::core::{Uniform, AsUniform};
 #[cfg(feature = "serialize-serde")]
@@ -92,9 +94,9 @@ impl Color {
         }
 
         Color(
-            cmp::max(0, cmp::min(255, red)) as f32 / 255.0,
-            cmp::max(0, cmp::min(255, green)) as f32 / 255.0,
-            cmp::max(0, cmp::min(255, blue)) as f32 / 255.0,
+            red.clamp(0, 255) as f32 / 255.0,
+            green.clamp(0, 255) as f32 / 255.0,
+            blue.clamp(0, 255) as f32 / 255.0,
             alpha
         )
     }
@@ -186,7 +188,7 @@ impl Color {
         if hue < 2.0 / 3.0 {
             return p + (q - p) * (2.0/3.0 - hue) * 6.0;
         }
-        return p;
+        p
     }
 }
 

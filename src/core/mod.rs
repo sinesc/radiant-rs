@@ -33,7 +33,6 @@ pub use self::postprocessor::*;
 pub use self::builder::*;
 pub use self::rendertarget::*;
 pub use self::math::*;
-use image;
 use crate::prelude::*;
 use crate::backends::backend;
 

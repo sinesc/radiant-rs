@@ -5,11 +5,11 @@ use super::{Texture, Renderer};
 /// Postprocessing happens in three steps:
 ///
 /// - first, `target()` is invoked and expected to return an input texture target (to
-/// which the user will draw the input data to be postprocessed).
+///   which the user will draw the input data to be postprocessed).
 /// - `process()` is invoked. Any drawing operations performed within will target the
-/// input texture.
+///   input texture.
 /// - `draw()` is invoked. Any drawing operations performed within will target the
-/// destination defined by the user.
+///   destination defined by the user.
 pub trait Postprocessor {
     /// Custom type for the args parameter supplied to `process()` and `draw()`.
     type T;
