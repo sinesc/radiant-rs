@@ -608,6 +608,19 @@ impl Display {
         true
     }
 
+    pub fn set_dimensions(self: &Self, dimensions: crate::core::Point2<u32>) {
+        // `request_inner_size` returns the size the window actually got (the compositor
+        // may clamp); fall back to the current size if it is unavailable (e.g. hidden
+        // window); clamp to >= 1 as wgpu requires.
+        let size = self.inner.window
+            .request_inner_size(winit::dpi::PhysicalSize::new(dimensions.0, dimensions.1))
+            .unwrap_or_else(|| self.inner.window.inner_size());
+        let mut config = self.inner.config.lock().unwrap();
+        config.width = size.width.max(1);
+        config.height = size.height.max(1);
+        self.inner.surface.configure(&self.inner.device, &config);
+    }
+
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(crate::core::Event) {
         #[cfg(not(target_os = "macos"))]
         {

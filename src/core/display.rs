@@ -154,6 +154,20 @@ impl Display {
         self.handle.framebuffer_dimensions()
     }
 
+    /// Resizes the window to the given dimensions in physical pixels.
+    ///
+    /// If a frame is currently prepared but not yet swapped, it is swapped as-is
+    /// before the resize.
+    pub fn set_dimensions<T>(self: &Self, dimensions: T) where Point2<u32>: From<T> {
+        let dimensions = Point2::<u32>::from(dimensions);
+        // A prepared frame holds an acquired SurfaceTexture; present it first so the
+        // surface can be reconfigured without orphaning it.
+        if let Some(frame) = self.frame.borrow_mut().take() {
+            frame.finish();
+        }
+        self.handle.set_dimensions(dimensions);
+    }
+
     /// Returns a vector of available monitors.
     pub fn monitors() -> Vec<Monitor> {
         let iter = backend::MonitorIterator::new();
