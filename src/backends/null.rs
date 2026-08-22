@@ -57,6 +57,11 @@ impl Display {
     }
     pub fn set_dimensions(self: &Self, dimensions: core::Point2<u32>) {
     }
+    pub fn set_maximized(self: &Self, maximized: bool) {
+    }
+    pub fn is_maximized(self: &Self) -> bool {
+        false
+    }
     pub fn set_cursor_position(self: &Self, position: core::Point2<i32>) {
     }
     pub fn set_cursor_state(self: &Self, state: core::CursorState) {

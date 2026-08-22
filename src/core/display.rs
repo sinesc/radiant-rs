@@ -168,6 +168,19 @@ impl Display {
         self.handle.set_dimensions(dimensions);
     }
 
+    /// Sets the window's maximized state. Note that while a window is maximized
+    /// window managers ignore size requests, so call `set_maximized(false)`
+    /// before `set_dimensions` if the resize must take effect. (The wgpu backend
+    /// already un-maximizes inside `set_dimensions`.)
+    pub fn set_maximized(self: &Self, maximized: bool) {
+        self.handle.set_maximized(maximized);
+    }
+
+    /// Returns whether the window is currently maximized.
+    pub fn is_maximized(self: &Self) -> bool {
+        self.handle.is_maximized()
+    }
+
     /// Returns a vector of available monitors.
     pub fn monitors() -> Vec<Monitor> {
         let iter = backend::MonitorIterator::new();

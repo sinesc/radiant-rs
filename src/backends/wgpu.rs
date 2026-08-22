@@ -155,8 +155,28 @@ struct EventCollector {
     mouse_delta: Option<(i32, i32)>,
 }
 
+// winit 0.30 only exposes the monitor list from within the event loop
+// (ActiveEventLoop::available_monitors), so the last list seen while pumping
+// events is cached here and served from MonitorIterator.
+static MONITORS: std::sync::LazyLock<std::sync::Mutex<Vec<winit::monitor::MonitorHandle>>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(Vec::new()));
+
+fn refresh_monitors(active: &winit::event_loop::ActiveEventLoop) {
+    if let Ok(mut cached) = MONITORS.lock() {
+        *cached = active.available_monitors().collect();
+    }
+}
+
+fn cached_monitors() -> Vec<winit::monitor::MonitorHandle> {
+    MONITORS.lock().map(|m| m.clone()).unwrap_or_default()
+}
+
 #[cfg(not(target_os = "macos"))]
 impl winit::application::ApplicationHandler for EventCollector {
+    fn new_events(&mut self, active: &winit::event_loop::ActiveEventLoop, _: winit::event::StartCause) {
+        refresh_monitors(active);
+    }
+
     fn resumed(&mut self, _: &winit::event_loop::ActiveEventLoop) {}
 
     fn window_event(
@@ -607,6 +627,9 @@ impl Display {
     }
 
     pub fn set_dimensions(self: &Self, dimensions: crate::core::Point2<u32>) {
+        // WMs ignore size requests for maximized windows; un-maximize first so
+        // the resize takes effect.
+        self.inner.window.set_maximized(false);
         // `request_inner_size` returns the size the window actually got (the compositor
         // may clamp); fall back to the current size if it is unavailable (e.g. hidden
         // window); clamp to >= 1 as wgpu requires.
@@ -617,6 +640,14 @@ impl Display {
         config.width = size.width.max(1);
         config.height = size.height.max(1);
         self.inner.surface.configure(&self.inner.device, &config);
+    }
+
+    pub fn set_maximized(self: &Self, maximized: bool) {
+        self.inner.window.set_maximized(maximized);
+    }
+
+    pub fn is_maximized(self: &Self) -> bool {
+        self.inner.window.is_maximized()
     }
 
     pub fn poll_events<F>(self: &Self, mut callback: F) where F: FnMut(crate::core::Event) {
@@ -1287,7 +1318,7 @@ pub struct MonitorIterator {
 
 impl MonitorIterator {
     pub fn new() -> Self {
-        MonitorIterator { monitors: Vec::new().into_iter() }
+        MonitorIterator { monitors: cached_monitors().into_iter() }
     }
 }
 
