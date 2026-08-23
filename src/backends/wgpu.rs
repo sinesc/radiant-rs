@@ -155,20 +155,25 @@ struct EventCollector {
     mouse_delta: Option<(i32, i32)>,
 }
 
-// winit 0.30 only exposes the monitor list from within the event loop
-// (ActiveEventLoop::available_monitors), so the last list seen while pumping
+// winit 0.30 only exposes the monitor list (and per-monitor video modes) from
+// within the event loop (ActiveEventLoop), so the last state seen while pumping
 // events is cached here and served from MonitorIterator.
-static MONITORS: std::sync::LazyLock<std::sync::Mutex<Vec<winit::monitor::MonitorHandle>>> =
-    std::sync::LazyLock::new(|| std::sync::Mutex::new(Vec::new()));
+static MONITORS: std::sync::LazyLock<std::sync::Mutex<Option<Vec<(winit::monitor::MonitorHandle, Vec<winit::monitor::VideoModeHandle>)>>>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(None));
 
 fn refresh_monitors(active: &winit::event_loop::ActiveEventLoop) {
     if let Ok(mut cached) = MONITORS.lock() {
-        *cached = active.available_monitors().collect();
+        *cached = Some(active.available_monitors()
+            .map(|monitor| {
+                let modes = monitor.video_modes().collect();
+                (monitor, modes)
+            })
+            .collect());
     }
 }
 
-fn cached_monitors() -> Vec<winit::monitor::MonitorHandle> {
-    MONITORS.lock().map(|m| m.clone()).unwrap_or_default()
+fn cached_monitors() -> Option<Vec<(winit::monitor::MonitorHandle, Vec<winit::monitor::VideoModeHandle>)>> {
+    MONITORS.lock().ok()?.clone()
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -1299,6 +1304,7 @@ pub struct Monitor {
 #[derive(Clone)]
 struct MonitorInner {
     winit_monitor: winit::monitor::MonitorHandle,
+    modes: Vec<winit::monitor::VideoModeHandle>,
 }
 
 impl Monitor {
@@ -1310,22 +1316,34 @@ impl Monitor {
     pub fn get_name(self: &Self) -> Option<String> {
         self.inner.winit_monitor.name()
     }
+
+    pub fn supported_modes(self: &Self) -> Vec<crate::core::VideoMode> {
+        self.inner.modes.iter().map(|m| {
+            let size = m.size();
+            crate::core::VideoMode {
+                width: size.width,
+                height: size.height,
+                depth: m.bit_depth(),
+                refresh_rate: m.refresh_rate_millihertz(),
+            }
+        }).collect()
+    }
 }
 
 pub struct MonitorIterator {
-    monitors: std::vec::IntoIter<winit::monitor::MonitorHandle>,
+    monitors: std::vec::IntoIter<(winit::monitor::MonitorHandle, Vec<winit::monitor::VideoModeHandle>)>,
 }
 
 impl MonitorIterator {
-    pub fn new() -> Self {
-        MonitorIterator { monitors: cached_monitors().into_iter() }
+    pub fn new() -> Option<Self> {
+        Some(MonitorIterator { monitors: cached_monitors()?.into_iter() })
     }
 }
 
 impl Iterator for MonitorIterator {
     type Item = Monitor;
     fn next(&mut self) -> Option<Monitor> {
-        self.monitors.next().map(|m| Monitor { inner: MonitorInner { winit_monitor: m } })
+        self.monitors.next().map(|(m, modes)| Monitor { inner: MonitorInner { winit_monitor: m, modes } })
     }
 }
 

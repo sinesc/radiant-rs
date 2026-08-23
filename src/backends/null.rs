@@ -138,13 +138,16 @@ impl Monitor {
     pub fn get_name(self: &Self) -> Option<String> {
         Some("Headless".to_string())
     }
+    pub fn supported_modes(self: &Self) -> Vec<core::VideoMode> {
+        Vec::new()
+    }
 }
 
 pub struct MonitorIterator();
 
 impl MonitorIterator {
-    pub fn new() -> Self {
-        MonitorIterator()
+    pub fn new() -> Option<Self> {
+        None
     }
 }
 

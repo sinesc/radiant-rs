@@ -55,7 +55,8 @@ impl Display {
 
         let target = if let Some(given_monitor) = monitor {
             given_monitor
-        } else if let Some(default_monitor) = backend::MonitorIterator::new().next() {
+        } else if let Some(mut iter) = backend::MonitorIterator::new()
+            && let Some(default_monitor) = iter.next() {
             Monitor::new(default_monitor)
         } else {
             return Err(Error::Failed);
@@ -181,14 +182,16 @@ impl Display {
         self.handle.is_maximized()
     }
 
-    /// Returns a vector of available monitors.
-    pub fn monitors() -> Vec<Monitor> {
-        let iter = backend::MonitorIterator::new();
+    /// Returns a vector of available monitors, or `None` if the backend's
+    /// monitor list has not yet been populated (it is refreshed while
+    /// pumping events, so at least one call to [`Display::poll_events`]
+    /// is required on most platforms).
+    pub fn monitors() -> Option<Vec<Monitor>> {
         let mut result = Vec::<Monitor>::new();
-        for monitor in iter {
+        for monitor in backend::MonitorIterator::new()? {
             result.push(Monitor::new(monitor));
         }
-        result
+        Some(result)
     }
 
     /// Polls for events like keyboard or mouse input and changes to the window. See

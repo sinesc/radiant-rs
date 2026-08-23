@@ -1,6 +1,6 @@
 pub use crate::core::{
     BlendMode, BlendingFunction, LinearBlendingFactor, blendmodes,
-    Display, Monitor,
+    Display, Monitor, VideoMode,
     Renderer, RenderTarget, Context, AsRenderTarget,
     Layer, Sprite, Font, Color,
     Texture, TextureFormat, TextureFilter, TextureWrap,

@@ -1,6 +1,20 @@
 use crate::prelude::*;
 use crate::backends::backend;
 
+/// A monitor display mode (resolution, bit depth, refresh rate).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct VideoMode {
+    /// Width in physical pixels.
+    pub width: u32,
+    /// Height in physical pixels.
+    pub height: u32,
+    /// Bit depth: how many bits are available per color. Generally 24 or 32
+    /// on modern systems, depending on whether the alpha channel is counted or not.
+    pub depth: u16,
+    /// Refresh rate in millihertz, e.g. `60_000` for 60 Hz.
+    pub refresh_rate: u32,
+}
+
 /// An individual monitor, returned from [`Display::monitors()`](struct.Display.html#method.monitors).
 #[derive(Clone)]
 pub struct Monitor {
@@ -40,5 +54,10 @@ impl Monitor {
     /// Returns the current width and height in pixels.
     pub fn dimensions(self: &Self) -> (u32, u32) {
         self.inner.get_dimensions()
+    }
+
+    /// Returns the display modes supported by this monitor.
+    pub fn supported_modes(self: &Self) -> Vec<VideoMode> {
+        self.inner.supported_modes()
     }
 }
