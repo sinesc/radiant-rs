@@ -1,8 +1,0 @@
-/* only for code blocks, not inline code */
-pre code {
-	font-family: "Monospace";
-}
-code {
-	font-family: "Monospace";
-}
-
